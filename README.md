@@ -11,13 +11,18 @@ For instance at the moment there are only the initial skull stripping methods:
 
 ```
 |____preprocessing
+
 | |____01_skull_stripping
 | | |____do_adjust_skull_strip_subj8.sh
 | | |____do_skullstrip.py
 | | |____skull_stripping.ipynb
+| | |____README.md
 | | |____launch_do_skullstrip.sh
 | |
-| |____02_registration
+| |____02_fmri_preprocessing
+| | |____tobedone
+| |
+| |____03_registration
 | | |____tobedone
 ```
 
