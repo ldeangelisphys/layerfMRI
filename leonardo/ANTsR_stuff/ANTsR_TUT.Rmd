@@ -274,9 +274,15 @@ ggplot( mydf, aes(jacobian, fill=registration )) + geom_density(alpha = 0.2)
 
 ```
 
-## You can also visualize the jacobian determinant image
+## You can also visualize the jacobian determinant image {.tabset}
+
+### jac of SyN
 ```{r}
 antsplot.single(syn_reg_jac)
+```
+
+### jac of SyNCC
+```{r}
 antsplot.single(synCC_reg_jac)
 ```
 
