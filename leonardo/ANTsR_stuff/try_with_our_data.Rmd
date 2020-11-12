@@ -1,0 +1,138 @@
+---
+title: "ANTsR try with our data"
+output: html_notebook
+---
+
+
+```{r}
+library(ANTsR)
+```
+
+## Define functions for plotting
+```{r}
+
+# Only one image
+antsplot.single <- function(image, axis=3){
+  invisible(
+    plot(
+      image,
+      axis=axis,
+      doCropping = F
+    )  
+  )
+}
+
+
+# Simple overlay with alpha
+antsplot.olay <- function(bg, olay, axis=3, alpha=0.5){
+  invisible(
+    plot(
+      bg, olay,
+      axis=axis,
+      color.overlay='red',
+      doCropping = T,
+      alpha=alpha,
+      window.overlay = quantile(olay, c(0.72,1))
+    )  
+  )
+}
+
+
+# Overlay canny borders
+antsplot.canny <- function(bg, olay, axis=3, alpha=1){
+  canned_olay = iMath(olay, "Canny", 5,5,5)
+  invisible(
+    plot(
+      bg, canned_olay,
+      axis=axis,
+      color.overlay='red',
+      doCropping = F,
+      alpha=alpha
+    )  
+  )
+}
+
+```
+
+
+## Load the data
+```{r}
+bd='/data00/leonardo/layers/regdata/'
+
+full_anat_filename <- paste0(bd,'sub-02/ses-01/anat/full_T1w_bc_brain.nii.gz')
+part_anat_filename <- paste0(bd,'sub-02/ses-01/anat/part_inv2_bc_brain.nii.gz')
+func_filename <- paste0(bd,'sub-02/ses-01/func/task-1_run-1_mean_bc_brain.nii.gz')
+
+```
+
+
+```{r}
+full_anat <- antsImageRead(full_anat_filename)
+part_anat <- antsImageRead(part_anat_filename)
+func <- antsImageRead(func_filename)
+
+antsplot.single(full_anat, axis = 3)
+antsplot.single(part_anat, axis = 3)
+antsplot.single(func)
+
+antsplot.canny(func,part_anat,axis = 3)
+
+antsplot.olay(func,part_anat)
+
+```
+
+## Register func to part_anat
+```{r}
+
+func2part_anat <- antsRegistration(
+  fixed = part_anat,
+  moving = func,
+  typeofTransform = "Rigid",
+  verbose = F
+)
+
+antsplot.canny(func, func2part_anat$warpedmovout)
+
+antsImageMutualInformation(func, part_anat)
+antsImageMutualInformation(func2part_anat$warpedmovout, part_anat)
+
+```
+
+
+## Register part_anat to full_anat
+```{r}
+
+part_anat_2_full_anat <- antsRegistration(
+  fixed = full_anat,
+  moving = part_anat,
+  typeofTransform = "Affine",
+  verbose = F
+)
+
+antsplot.olay(full_anat, part_anat_2_full_anat$warpedmovout, alpha = 0.9)
+
+
+plot(full_anat, slices=seq(50, 300, by=10))
+
+full_anat
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

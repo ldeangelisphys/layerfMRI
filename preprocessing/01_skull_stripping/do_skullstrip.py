@@ -255,15 +255,19 @@ def skullstrip_T123(anat,ses,reg_dir):
   automask.cmdline
   res = automask.run()
 
+  # n3 bias correct the T1w
+  anat['part'][ses]['T1w_bc'] = reg_dir + 'ses-{:02d}/anat/part_T1w_bc.nii.gz'.format(ses)
+  part_inv2_bc = ants.n3_bias_field_correction(ants.image_read(anat['part'][ses]['T1w']))
+  nib.save(part_inv2_bc, anat['part'][ses]['T1w_bc'])
 
-  # Apply the mask using fslmaths
-  anat['part'][ses]['inv2_bc_brain'] = anat['part'][ses]['inv2_bc'].replace('.nii.gz','_brain.nii.gz')
-  fslmaths(anat['part'][ses]['inv2_bc']).mul(anat['part'][ses]['inv2_bc_brain_mask']).run(anat['part'][ses]['inv2_bc_brain'])
+  # Apply the mask to the T1w_bc using fslmaths
+  anat['part'][ses]['T1w_bc_brain'] = anat['part'][ses]['T1w_bc'].replace('.nii.gz','_brain.nii.gz')
+  fslmaths(anat['part'][ses]['T1w_bc']).mul(anat['part'][ses]['inv2_bc_brain_mask']).run(anat['part'][ses]['T1w_bc_brain'])
 
   # Produce an image of the results for QC
   produce_png_func(
     ses,'T123',reg_dir,
-    anat['part'][ses]['inv2_bc'],
+    anat['part'][ses]['T1w_bc'],
     anat['part'][ses]['inv2_bc_brain_mask']
   )
 
