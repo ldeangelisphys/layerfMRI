@@ -1,18 +1,25 @@
 #!/bin/bash
 
-
 # run with
 # time cat list | xargs -n 1 -P 5 -I {} ./do_conversion.sh {}
 
-# sub=02
+# list is a text file with one subject number (NON zeropadded) per line
+
+# NB: For subject 01, 04 and 07 there are missing data,
+# therefore the scheme of the files is different,
+# and for the moment we will not use them
+
+
+# sub=02 <- this is the only variable that the script needs
 sub=`printf %02d $1`
 
 sourcedir=/data02/ritu/2018_7T_14sub_raw
 
-bd=/data00/leonardo/layers/rawdata_LIP/sub_${sub}
+bd=/data00/leonardo/layers/rawdata_RPI/sub_${sub}
 
-logfile=/data00/leonardo/layers/rawdata_LIP/sub_${sub}/log_sub${sub}
+logfile=/data00/leonardo/layers/rawdata_RPI/sub_${sub}/log_sub${sub}
 echo > ${logfile}
+
 
 # Remove previous build
 if [[ -d ${bd} ]]; then
@@ -58,6 +65,7 @@ for ses in 01 02; do
   mv ${bd}/ses_${ses}/*T123* ${bd}/ses_${ses}/anat/
   mv ${bd}/ses_${ses}/*sagittal* ${bd}/ses_${ses}/func/
 done
+
 
 # Move the images for topup in a directory on their own
 for ses in 01 02; do
@@ -109,9 +117,14 @@ ses=01
 
 for task in func_ func2_; do
 
+  # isolate the acquisition number for every task and put it in an array
   arr=($(ls ${bd}/ses_${ses}/func/*${task}* | awk -F_ '{print $NF}' | awk -F. '{print $1}'));
   # echo ${arr[@]};
 
+  # sort the array, because I assume that for every task (func_, func2_ usw)
+  # the acquisition with the lower number refers to run1, and the one with
+  # the higher number to run2
+  # https://unix.stackexchange.com/questions/247655/how-to-create-a-function-that-can-sort-an-array-in-bash
   sortedarr=($(echo ${arr[*]}| tr " " "\n" | sort -n))
   # echo ${sortedarr[@]}
 
@@ -195,9 +208,58 @@ done
 
 
 
+# --------------------- ANATOMICAL SCANS --------------------------------------
+
+# NB: in subj 11 the MP2RAGE full was acquired in the second session, therefore
+# we need to first move it to the first session
+
+if [[ ${sub} -eq "11" ]]; then
+  mv ${bd}/ses_02/anat/*MP2RAGE*  ${bd}/ses_01/anat/
+fi
+
+
+# --------------------- Rename the anatomical scans ---------------------------
+for ses in 01 02; do
+
+  bdanat=${bd}/ses_${ses}/anat
+
+  if [[ ${ses} -eq 01 ]]; then
+    mv ${bdanat}/*MP2RAGE*INV1*_??_ph.nii  ${bdanat}/sub_${sub}_ses_${ses}_acq_full_inv1ph.nii
+    mv ${bdanat}/*MP2RAGE*INV1*_??.nii  ${bdanat}/sub_${sub}_ses_${ses}_acq_full_inv1.nii
+    mv ${bdanat}/*MP2RAGE*INV2*_??_ph.nii  ${bdanat}/sub_${sub}_ses_${ses}_acq_full_inv2ph.nii
+    mv ${bdanat}/*MP2RAGE*INV2*_??.nii  ${bdanat}/sub_${sub}_ses_${ses}_acq_full_inv2.nii
+  fi
+
+  mv ${bdanat}/*T123DEPI*INV1*_??_ph.nii  ${bdanat}/sub_${sub}_ses_${ses}_acq_part_inv1ph.nii
+  mv ${bdanat}/*T123DEPI*INV1*_??.nii  ${bdanat}/sub_${sub}_ses_${ses}_acq_part_inv1.nii
+  mv ${bdanat}/*T123DEPI*INV2*_??_ph.nii  ${bdanat}/sub_${sub}_ses_${ses}_acq_part_inv2ph.nii
+  mv ${bdanat}/*T123DEPI*INV2*_??.nii  ${bdanat}/sub_${sub}_ses_${ses}_acq_part_inv2.nii
+
+done
+
+
+
+# ------------------- Reorient everything to RPI ------------------------------
+
+for image in `find ${bd} -name *.nii`; do
+
+  tmp=`remove_ext ${image}`
+  fslreorient2std ${tmp} ${tmp}_RPI
+  imrm ${tmp}
+  immv ${tmp}_RPI ${tmp}
+
+done
 
 
 
 
 
-### leonardo
+
+
+
+
+
+
+
+
+### EOF
