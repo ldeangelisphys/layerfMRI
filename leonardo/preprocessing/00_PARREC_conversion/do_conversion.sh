@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # run with
-# time cat list | xargs -n 1 -P 5 -I {} ./do_conversion.sh {}
+# time cat list | xargs -n 1 -P 15 -I {} ./do_conversion.sh {}
 
 # list is a text file with one subject number (NON zeropadded) per line
 
@@ -19,6 +19,7 @@ bd=/data00/leonardo/layers/rawdata_RPI/sub_${sub}
 
 logfile=/data00/leonardo/layers/rawdata_RPI/sub_${sub}/log_sub${sub}
 echo > ${logfile}
+
 
 
 # Remove previous build
@@ -74,18 +75,18 @@ for ses in 01 02; do
 done
 
 
-# ------------ TO REMOVE IN PRODUCTION ---------------------
+# ------------ TO REMOVE IN PRODUCTION ----------------------------------------
 # temporary removal, just during development phase
 
 for ses in 01 02; do
   rm -rf ${bd}/ses_${ses}/func/TU
   rm -rf ${bd}/ses_${ses}/json
 done
-# ------------- REMOVE THE PART ABOVE IN PRODUCTION --------
+# ------------- REMOVE THE PART ABOVE IN PRODUCTION ---------------------------
 
 
 
-# -------------- Remove SENSE from the filename --------------
+# -------------- Remove SENSE from the filename -------------------------------
 for ses in 01 02; do
 
   for filename in `ls ${bd}/ses_${ses}/func/*`; do
@@ -112,7 +113,7 @@ echo
 
 
 
-# --------------  Functional of session 01 -----------------------------------
+# ---------------------  Functional of session 01 -----------------------------
 ses=01
 
 for task in func_ func2_; do
@@ -155,7 +156,7 @@ for task in func_ func2_; do
 done
 
 
-# --------------  Functional of session 02 -----------------------------------
+# ---------------------  Functional of session 02 -----------------------------
 ses=02
 
 for task in func3_ func4_; do
@@ -193,15 +194,7 @@ for task in func3_ func4_; do
 done
 
 
-# ------------------------------
-
-
-
-
-
-
-
-
+# --------------------- END of processing FUNCTIONAL scans --------------------
 
 
 
