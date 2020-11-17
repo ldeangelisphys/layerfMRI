@@ -9,16 +9,23 @@ Calling `python do_MP2RAGE_reconstruction.py` by itself will provide usage infor
 If you want to use your own parameters for the parallel processing across all subjects 
 you need to edit `launch_MP2RAGE_reconstruction.sh`
 
-Example output:
-```
+<details>
+<summary>Example output:</summary>
+<p>
+
+```bash
 sub_02
 ├── log_sub02
 ├── ses_01
 │   ├── anat
+│   │   ├── sub_02_ses_01_acq_full_T1map.nii.gz
+│   │   ├── sub_02_ses_01_acq_full_T1w.nii.gz
 │   │   ├── sub_02_ses_01_acq_full_inv1.nii.gz
 │   │   ├── sub_02_ses_01_acq_full_inv1ph.nii.gz
 │   │   ├── sub_02_ses_01_acq_full_inv2.nii.gz
 │   │   ├── sub_02_ses_01_acq_full_inv2ph.nii.gz
+│   │   ├── sub_02_ses_01_acq_part_T1map.nii.gz
+│   │   ├── sub_02_ses_01_acq_part_T1w.nii.gz
 │   │   ├── sub_02_ses_01_acq_part_inv1.nii.gz
 │   │   ├── sub_02_ses_01_acq_part_inv1ph.nii.gz
 │   │   ├── sub_02_ses_01_acq_part_inv2.nii.gz
@@ -30,6 +37,8 @@ sub_02
 │       └── sub_02_ses_01_task_2_run_2.nii.gz
 └── ses_02
     ├── anat
+    │   ├── sub_02_ses_02_acq_part_T1map.nii.gz
+    │   ├── sub_02_ses_02_acq_part_T1w.nii.gz
     │   ├── sub_02_ses_02_acq_part_inv1.nii.gz
     │   ├── sub_02_ses_02_acq_part_inv1ph.nii.gz
     │   ├── sub_02_ses_02_acq_part_inv2.nii.gz
@@ -40,3 +49,6 @@ sub_02
         ├── sub_02_ses_02_task_4_run_1.nii.gz
         └── sub_02_ses_02_task_4_run_2.nii.gz
 ```
+
+</p>
+</details>  
