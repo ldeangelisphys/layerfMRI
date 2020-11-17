@@ -17,3 +17,35 @@ If instead you want to convert a single participant's PAR/REC files, then pass t
 ```
 
 __IMPORTANT:__ The script will erase any previous conversion! (i.e. destination folder)
+
+Example output:
+```
+sub_02
+├── log_sub02
+├── ses_01
+│   ├── anat
+│   │   ├── sub_02_ses_01_acq_full_inv1.nii.gz
+│   │   ├── sub_02_ses_01_acq_full_inv1ph.nii.gz
+│   │   ├── sub_02_ses_01_acq_full_inv2.nii.gz
+│   │   ├── sub_02_ses_01_acq_full_inv2ph.nii.gz
+│   │   ├── sub_02_ses_01_acq_part_inv1.nii.gz
+│   │   ├── sub_02_ses_01_acq_part_inv1ph.nii.gz
+│   │   ├── sub_02_ses_01_acq_part_inv2.nii.gz
+│   │   └── sub_02_ses_01_acq_part_inv2ph.nii.gz
+│   └── func
+│       ├── sub_02_ses_01_task_1_run_1.nii.gz
+│       ├── sub_02_ses_01_task_1_run_2.nii.gz
+│       ├── sub_02_ses_01_task_2_run_1.nii.gz
+│       └── sub_02_ses_01_task_2_run_2.nii.gz
+└── ses_02
+    ├── anat
+    │   ├── sub_02_ses_02_acq_part_inv1.nii.gz
+    │   ├── sub_02_ses_02_acq_part_inv1ph.nii.gz
+    │   ├── sub_02_ses_02_acq_part_inv2.nii.gz
+    │   └── sub_02_ses_02_acq_part_inv2ph.nii.gz
+    └── func
+        ├── sub_02_ses_02_task_3_run_1.nii.gz
+        ├── sub_02_ses_02_task_3_run_2.nii.gz
+        ├── sub_02_ses_02_task_4_run_1.nii.gz
+        └── sub_02_ses_02_task_4_run_2.nii.gz
+```
