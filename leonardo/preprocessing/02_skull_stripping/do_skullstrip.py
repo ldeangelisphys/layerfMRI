@@ -41,8 +41,8 @@ foutroot = datadrive + args.outroot
 
 
 print("Processing subject " + str(sub))
-print("rawdata source is " + finroot + 'sub-{:02d}/'.format(sub))
-print("target directory is " + foutroot + 'regdata/sub-{:02d}/'.format(sub))
+print("rawdata source is " + finroot + 'sub_{:02d}/'.format(sub))
+print("target directory is " + foutroot + 'regdata/sub_{:02d}/'.format(sub))
 print(" ")
 
 # sys.exit(1)

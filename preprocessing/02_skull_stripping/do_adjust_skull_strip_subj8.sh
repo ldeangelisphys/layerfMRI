@@ -2,11 +2,11 @@
 
 
 # to be run INSIDE the following directory
-# /data00/leonardo/layers/regdata/sub-08
+# /data00/leonardo/layers/regdata/sub_08
 
 startingdir=$PWD
 
-cd /data00/leonardo/layers/regdata/sub-08
+cd /data00/leonardo/layers/regdata/sub_08
 
 
 # remove previous masks
