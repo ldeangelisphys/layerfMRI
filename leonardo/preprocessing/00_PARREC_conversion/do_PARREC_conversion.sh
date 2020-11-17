@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # run with
-# time cat list | xargs -n 1 -P 15 -I {} ./do_conversion.sh {}
+# time cat list | xargs -n 1 -P 15 -I {} ./do_PARREC_conversion.sh {}
 
 # list is a text file with one subject number (NON zeropadded) per line
 
@@ -12,7 +12,7 @@
 
 # Error message if no arguments are provided
 [ $# -eq 0 ] && { clear;
-                  printf "\n run with: \n time cat list | xargs -n 1 -P 15 -I {} ./do_conversion.sh {} \n\n"; \
+                  printf "\n run with: \n time cat list | xargs -n 1 -P 15 -I {} ./do_PARREC_conversion.sh {} \n\n"; \
                   printf " PARREC files are in /data02/ritu/2018_7T_14sub_raw \n"; \
                   printf " The script (and this message) should be edited to change this option \n\n"; \
                   exit 1; }
