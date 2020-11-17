@@ -6,8 +6,8 @@ __Main scripts__
 
 `launch_do_skullstrip.sh` : launches N processes of `do_skullstrip.py` in parallel to process all subjects. __ETA is about 5'__
 
-__Important Note__ : the rawdata should be stored in
-`/data00/lorenzo/PROJECTS/layers/rawdata/`
+__Important Note__ : the rawdata is stored in
+`/data00/leonardolayers/rawdata_RPI/`
 
 At the end, one QC folder will be produced in the root of each participant, containing an HTML file with the overlay of the mask on top of the either anatomy or mean functional.
 
