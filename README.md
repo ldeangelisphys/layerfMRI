@@ -1,30 +1,22 @@
 
 # SBL layer fMRI
 
-This is our official repository for processing the data for layer fMRI analysis acquired at the Spinoza Center in Amstedam.
+This is our official repository for processing the data for layer fMRI analysis acquired at the Spinoza Center in Amstedam in 2018.
 
-Each step of the process (processing only so far) is stored within a folder that contains both the notebook - where the operations where tested - and the script to launch the preprocessing/analysis steps separately one from the other.
+Each step of the process (preprocessing only so far) is stored within a folder that contains the script to launch the preprocessing/analysis steps separately one from the other.
 
-Each folder name is preceded by a number indicating which other steps should be carried out in advance.
+Each folder name is preceded by a number indicating which the order in which the scripts should be run.
 
-For instance at the moment there are only the initial skull stripping methods:
+The `layerfMRI` conda environment can be recreated locally with
 
 ```
-|____preprocessing
-
-| |____01_skull_stripping
-| | |____do_adjust_skull_strip_subj8.sh
-| | |____do_skullstrip.py
-| | |____skull_stripping.ipynb
-| | |____README.md
-| | |____launch_do_skullstrip.sh
-| |
-| |____02_fmri_preprocessing
-| | |____tobedone
-| |
-| |____03_registration
-| | |____tobedone
+conda env create -f layerfMRI_conda_env.yml
 ```
+or updated with 
+```
+conda env update --prefix ./env --file layerfMRI_conda_env.yml  --prune
+```
+
 
 There are also personal folders where each of us can store notebook/scripts or whatever else should be shared.
 
