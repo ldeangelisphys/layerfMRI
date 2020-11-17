@@ -28,4 +28,3 @@ For instance at the moment there are only the initial skull stripping methods:
 
 There are also personal folders where each of us can store notebook/scripts or whatever else should be shared.
 
-The root folder is only for the official current software.
