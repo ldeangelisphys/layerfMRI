@@ -10,22 +10,37 @@
 # and for the moment we will not use them
 
 
-# sub=02 <- this is the only variable that the script needs
+# Error message if no arguments are provided
+[ $# -eq 0 ] && { clear;
+                  printf "\n run with: \n time cat list | xargs -n 1 -P 15 -I {} ./do_conversion.sh {} \n\n"; \
+                  printf " PARREC files are in /data02/ritu/2018_7T_14sub_raw \n"; \
+                  printf " The script (and this message) should be edited to change this option \n\n"; \
+                  exit 1; }
+
+
+# This is the only variable that the script needs
 sub=`printf %02d $1`
 
 sourcedir=/data02/ritu/2018_7T_14sub_raw
 
 bd=/data00/leonardo/layers/rawdata_RPI/sub_${sub}
 
-logfile=/data00/leonardo/layers/rawdata_RPI/sub_${sub}/log_sub${sub}
-echo > ${logfile}
+logfile=${bd}/log_sub${sub}
 
 
+# Print information before running
+printf "Using PARREC data from ${sourcedir} \n Converted files will be in ${bd} \n Logfile is ${logfile} \n\n"
 
-# Remove previous build
+
+# Remove previous data
 if [[ -d ${bd} ]]; then
   rm -rf ${bd}
 fi
+
+
+# Create am empty logfile
+echo > ${logfile}
+
 
 # Create the directory tree
 for ses in 01 02; do
@@ -242,12 +257,6 @@ for image in `find ${bd} -name *.nii`; do
   immv ${tmp}_RPI ${tmp}
 
 done
-
-
-
-
-
-
 
 
 
