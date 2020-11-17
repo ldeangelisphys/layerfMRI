@@ -1,4 +1,4 @@
-# T1w and T1map estimattion from MP2RAGE scans
+# T1w and T1map estimation from MP2RAGE scans
 
 The process is launched with `./launch_MP2RAGE_reconstruction.sh`.
 
