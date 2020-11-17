@@ -141,7 +141,7 @@ def produce_png_func(ses,taskrun,reg_dir,bg_img,mask):
       nii_anat, overlay=mask, overlay_alpha=0.3,
       overlay_cmap='autumn', axis=0, nslices=32, ncol=8,
       slices=(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9),
-      title = 'mask func sub_{:02d}ses_{:02d}_{}'.format(sub,ses,taskrun),
+      title = 'mask func sub_{:02d}_ses_{:02d}_{}'.format(sub,ses,taskrun),
       filename=reg_dir + 'QC/skullstrip/images/sub_{:02d}_ses_{:02d}_{}.png'.format(sub,ses,taskrun),
       dpi=72
   )
