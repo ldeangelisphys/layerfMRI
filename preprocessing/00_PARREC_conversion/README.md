@@ -19,7 +19,16 @@ If instead you want to convert a single participant's PAR/REC files, then pass t
 __IMPORTANT:__ The script will erase any previous conversion! (i.e. destination folder)
 
 Example output:
-```
+
+
+
+
+
+<details>
+<summary>I could use some help...</summary>
+<p>
+
+```bash
 sub_02
 ├── log_sub02
 ├── ses_01
@@ -48,21 +57,6 @@ sub_02
         ├── sub_02_ses_02_task_3_run_2.nii.gz
         ├── sub_02_ses_02_task_4_run_1.nii.gz
         └── sub_02_ses_02_task_4_run_2.nii.gz
-```
-
-
-<details>
-<summary>I could use some help...</summary>
-<p>
-
-```c#
-public class Order
-{
-    public int OrderId { get; set; }
-    public int CustomerId { get; set; }
-
-    public List<int> Products { get; set; }
-}
 \```
 
 </p>
