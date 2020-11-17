@@ -306,7 +306,7 @@ os.makedirs(reg_dir + 'QC/skullstrip/images', exist_ok=True)
 
 
 # Launch the whole process
-for ses in [1]:  # should be [1,2]
+for ses in [1,2]:  # should be [1,2]
 
   # Create reg_dir bids directory tree
   for acquisition_type in ['anat', 'func']:
