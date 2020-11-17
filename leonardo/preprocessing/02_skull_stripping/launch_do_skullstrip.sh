@@ -7,7 +7,7 @@
 # NB: pandoc should be installed on the system by sudo
 
 # initialize the proper environment to run the python script
-source activate py37
+source activate layerfMRI
 echo
 echo `conda info | grep "active environment"`
 echo
