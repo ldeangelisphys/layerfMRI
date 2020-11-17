@@ -49,3 +49,21 @@ sub_02
         ├── sub_02_ses_02_task_4_run_1.nii.gz
         └── sub_02_ses_02_task_4_run_2.nii.gz
 ```
+
+
+<details>
+<summary>I could use some help...</summary>
+<p>
+
+```c#
+public class Order
+{
+    public int OrderId { get; set; }
+    public int CustomerId { get; set; }
+
+    public List<int> Products { get; set; }
+}
+\```
+
+</p>
+</details>  
