@@ -18,14 +18,10 @@ If instead you want to convert a single participant's PAR/REC files, then pass t
 
 __IMPORTANT:__ The script will erase any previous conversion! (i.e. destination folder)
 
-Example output:
-
-
-
 
 
 <details>
-<summary>I could use some help...</summary>
+<summary>Example output:</summary>
 <p>
 
 ```bash
