@@ -23,6 +23,7 @@ There are also personal folders where each of us can store notebook/scripts or w
 <summary>Dependencies</summary>
 
 - [nighres](https://nighres.readthedocs.io/en/latest/)
+- [dcm2niix](https://github.com/rordenlab/dcm2niix/releases)
 - [fsl](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki)
 - [AFNI](https://afni.nimh.nih.gov/)
 - [pandoc](https://pandoc.org/installing.html)
