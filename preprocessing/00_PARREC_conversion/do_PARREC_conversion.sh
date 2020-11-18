@@ -260,6 +260,27 @@ done
 
 
 
+# ------------------- Deface the full anatomical using pydeface ---------------
+source activate layerfMRI
+
+anatfulldir=${bd}/ses_01/anat
+todeface=${anatfulldir}/sub_${sub}_ses_01_acq_full_inv2.nii.gz
+
+echo
+echo `conda info | grep "active environment"`
+echo
+echo Running pydeface on ${todeface}
+
+time pydeface ${todeface} --applyto `ls ${bd}/ses_01/anat/*full*` --force
+
+for defaced_filename in `find ${anatfulldir} -name *defaced*`; do
+
+  filename_no_defaced=`echo ${defaced_filename} | sed s@_defaced@@g`
+  mv ${defaced_filename} ${filename_no_defaced}
+
+done
+
+
 
 
 
