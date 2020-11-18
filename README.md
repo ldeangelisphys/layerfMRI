@@ -27,6 +27,7 @@ There are also personal folders where each of us can store notebook/scripts or w
 - [AFNI](https://afni.nimh.nih.gov/)
 - [pandoc](https://pandoc.org/installing.html)
 - [ANTsPy](https://github.com/ANTsX/ANTsPy) ([documentation](https://antspyx.readthedocs.io/en/latest/))
+- [pydeface](https://github.com/poldracklab/pydeface)
 
 </details>
 
