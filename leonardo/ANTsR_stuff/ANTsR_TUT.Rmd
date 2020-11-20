@@ -17,6 +17,7 @@ The Rmd version was evaluated riding on the Storm, but it should work everywhere
 # Read images
 ```{r message=FALSE}
 library(ANTsR)
+library(ggplot2)
 
 # Read images
 r16 = antsImageRead( getANTsRData( "r16" ) )
@@ -71,7 +72,7 @@ antsplot.canny <- function(bg, olay, alpha=1){
 
 
 ## Plot single image
-```{r}
+```{r time_it=TRUE}
 antsplot.single(r16)
 ```
 
@@ -102,7 +103,12 @@ trans_reg = antsRegistration(
   typeofTransform = 'Translation'
 )
 
+readAntsrTransform(trans_reg$fwdtransforms)
+
 antsplot.canny(r16, trans_reg$warpedmovout)
+
+
+
 
 ```
 
@@ -115,6 +121,7 @@ rigid_reg = antsRegistration(
   moving=r64, 
   typeofTransform = 'Rigid'
 )
+
 
 antsplot.canny(r16, rigid_reg$warpedmovout)
 
@@ -146,6 +153,7 @@ syn_reg = antsRegistration(
 )
 
 antsplot.canny(r16, syn_reg$warpedmovout)
+
 ```
 
 
@@ -200,6 +208,7 @@ grid_fw = createWarpedGrid( r16,
                           )
 
 invisible(plot( grid_fw ))
+
 ```
 
 

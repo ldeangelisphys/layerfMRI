@@ -21,7 +21,7 @@ for i in `find . -name *bc.nii.gz | grep -E 'task|part'`; do
 
   # threshold
   tmp=`remove_ext ${i}`
-  fslmaths ${tmp} -thr 1.5e5 ${tmp}_thr
+  fslmaths ${tmp} -thr 1e5 ${tmp}_thr
 
   # create new masks
   3dAutomask -q -prefix ${tmp}_brain_mask.nii.gz ${tmp}_thr.nii.gz

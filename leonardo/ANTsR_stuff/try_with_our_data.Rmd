@@ -6,17 +6,19 @@ output: html_notebook
 
 ```{r}
 library(ANTsR)
+library(dplyr)
 ```
 
 ## Define functions for plotting
 ```{r}
 
 # Only one image
-antsplot.single <- function(image, axis=3){
+antsplot.single <- function(image, axis=1, step=10){
   invisible(
     plot(
       image,
       axis=axis,
+      # slices=seq(90, 160, by=step),
       doCropping = F
     )  
   )
@@ -24,7 +26,7 @@ antsplot.single <- function(image, axis=3){
 
 
 # Simple overlay with alpha
-antsplot.olay <- function(bg, olay, axis=3, alpha=0.5){
+antsplot.olay <- function(bg, olay, axis=1, alpha=0.5){
   invisible(
     plot(
       bg, olay,
@@ -39,12 +41,13 @@ antsplot.olay <- function(bg, olay, axis=3, alpha=0.5){
 
 
 # Overlay canny borders
-antsplot.canny <- function(bg, olay, axis=3, alpha=1){
-  canned_olay = iMath(olay, "Canny", 5,5,5)
+antsplot.canny <- function(bg, olay, axis=1, alpha=1, step=10){
+  canned_olay = iMath(olay, "Canny", 20,20,20)
   invisible(
     plot(
       bg, canned_olay,
       axis=axis,
+      # slices=seq(90, 160, by=step),
       color.overlay='red',
       doCropping = F,
       alpha=alpha
@@ -59,62 +62,91 @@ antsplot.canny <- function(bg, olay, axis=3, alpha=1){
 ```{r}
 bd='/data00/leonardo/layers/regdata/'
 
-full_anat_filename <- paste0(bd,'sub-02/ses-01/anat/full_T1w_bc_brain.nii.gz')
-part_anat_filename <- paste0(bd,'sub-02/ses-01/anat/part_inv2_bc_brain.nii.gz')
-func_filename <- paste0(bd,'sub-02/ses-01/func/task-1_run-1_mean_bc_brain.nii.gz')
+full_filename <- paste0(bd,'sub_02/ses_01/anat/full_T1w_bc_brain.nii.gz')
+part_filename <- paste0(bd,'sub_02/ses_01/anat/part_T1w_bc_brain.nii.gz')
+fmri_filename <- paste0(bd,'sub_02/ses_01/func/task_1_run_1_mean_bc_brain.nii.gz')
 
 ```
 
 
 ```{r}
-full_anat <- antsImageRead(full_anat_filename)
-part_anat <- antsImageRead(part_anat_filename)
-func <- antsImageRead(func_filename)
+full <- antsImageRead(full_filename)
+part <- antsImageRead(part_filename)
+fmri <- antsImageRead(fmri_filename)
 
-antsplot.single(full_anat, axis = 3)
-antsplot.single(part_anat, axis = 3)
-antsplot.single(func)
+antsplot.single(full, axis = 1)
+antsplot.single(part, axis = 1)
+antsplot.single(fmri, axis = 1)
 
-antsplot.canny(func,part_anat,axis = 3)
+antsplot.canny(fmri,part,axis = 1)
 
-antsplot.olay(func,part_anat)
+antsplot.olay(fmri,part)
 
 ```
 
-## Register func to part_anat
+## Register fmri to part
 ```{r}
 
-func2part_anat <- antsRegistration(
-  fixed = part_anat,
-  moving = func,
-  typeofTransform = "Rigid",
+fmri2part <- antsRegistration(
+  fixed = part,
+  moving = fmri,
+  typeofTransform = "Affine",   # Affine or SyNBoldAff
   verbose = F
 )
 
-antsplot.canny(func, func2part_anat$warpedmovout)
+antsplot.canny(fmri2part$warpedmovout, part)
 
-antsImageMutualInformation(func, part_anat)
-antsImageMutualInformation(func2part_anat$warpedmovout, part_anat)
+fmri2part.filename <-  gsub(".nii.gz", "_reg2part.nii.gz", fmri_filename)
+
+antsImageWrite(fmri2part$warpedmovout, fmri2part.filename)
+
 
 ```
 
 
-## Register part_anat to full_anat
+## Register part to full
 ```{r}
 
-part_anat_2_full_anat <- antsRegistration(
-  fixed = full_anat,
-  moving = part_anat,
+part2full <- antsRegistration(
+  fixed = full,
+  moving = part,
   typeofTransform = "Affine",
   verbose = F
 )
 
-antsplot.olay(full_anat, part_anat_2_full_anat$warpedmovout, alpha = 0.9)
+antsplot.canny(part2full$warpedmovout, full)
+
+part2full.filename <-  gsub(".nii.gz", "_reg2full.nii.gz", part_filename)
+antsImageWrite(part2full$warpedmovout, part2full.filename)
+
+```
 
 
-plot(full_anat, slices=seq(50, 300, by=10))
 
-full_anat
+## Register part to full with initial translation
+```{r}
+part2full_translation <- antsRegistration(
+  fixed = full,
+  moving = part,
+  typeofTransform = "Translation",
+  verbose = F
+)
+
+antsplot.canny(part2full_translation$warpedmovout, full)
+
+
+part2full <- antsRegistration(
+  fixed = full,
+  moving = part,
+  typeofTransform = "Affine",
+  initialTransform = part2full_translation$fwd,
+  verbose = F
+)
+
+antsplot.canny(part2full$warpedmovout, full)
+
+part2full.filename <-  gsub(".nii.gz", "_reg2full.nii.gz", part_filename)
+antsImageWrite(part2full$warpedmovout, part2full.filename)
 
 ```
 
@@ -123,6 +155,87 @@ full_anat
 
 
 
+
+## Register func to part_anat
+```{r}
+Func_2_Panat <- antsRegistration(
+  fixed = part_anat,
+  moving = func,
+  typeofTransform = "SyNBoldAff",
+  verbose = F
+)
+
+antsplot.canny(
+  Func_2_Panat$warpedmovout, part_anat
+)
+
+Func_2_Panat.filename <-  gsub(".nii.gz", "_reg2partanat.nii.gz", func_filename)
+
+antsImageWrite(Func_2_Panat$warpedmovout, Func_2_Panat.filename)
+
+
+
+canned_olay = iMath(func, "Canny", 20,20,20)
+
+antsplot.single(part_anat)
+
+gdilated <- iMath(full_anat, "GD", 2)
+
+antsplot.canny(full_anat, gdilated - full_anat)
+
+
+
+antsplot.canny <- function(bg, olay, axis=1, alpha=1, step=10){
+  canned_olay = iMath(olay, "Canny", 20,20,20)
+  invisible(
+    plot(
+      bg, canned_olay,
+      axis=axis,
+      # slices=seq(90, 160, by=step),
+      color.overlay='red',
+      doCropping = F,
+      alpha=alpha
+    )  
+  )
+}
+
+
+
+
+
+```
+
+
+```{r}
+
+denoised <- iMath(part_anat, "PeronaMalik", 20, 0.5)
+
+antsplot.single(part_anat)
+antsplot.single(denoised)
+antsplot.single(part_anat - denoised)
+
+grad <- iMath(denoised, "Grad", 1, 1)
+antsplot.single(grad)
+
+
+canned_olay = iMath(part_anat, "Canny", 10,10,10)
+canned_olay_smooth = smoothImage(canned_olay, 1)
+
+antsplot.olay(denoised, canned_olay, alpha = 1)
+
+antsplot.single(
+  smoothImage(part_anat,0.5)
+)
+
+part_anat %>% 
+  smoothImage(1) %>%
+  iMath("PeronaMalik", 20, 05) %>%
+  iMath("Canny", 5,5,5) %>% 
+  antsplot.single()
+
+
+
+```
 
 
 
