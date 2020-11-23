@@ -89,19 +89,19 @@ def full_reconstruction():
 
 def part_reconstruction(ses):
 
-  partmean={}
+  partone={}
 
   for acq in ['inv1','inv1ph','inv2','inv2ph']:
     nii = nib.load(anat['part'][ses][acq])
-    # delete volumes 2,4,7
-    niigood = np.delete(nii.get_fdata(), [2,4,6], axis=3)
-    niigood_mean = np.mean(niigood, axis=3)
-    nii_niigood_mean = nib.Nifti1Image(niigood_mean, nii.affine)
-    partmean[acq] = nii_niigood_mean
+    # delete all volumes but the first,
+    # otherwise we will have bad noise in the T1w due to motion
+    firstvol = np.delete(nii.get_fdata(), [1,2,3,4,5,6,7], axis=3)
+    nii_firstvol = nib.Nifti1Image(firstvol, nii.affine)
+    partone[acq] = nii_firstvol
 
   result = nighres.intensity.mp2rage_t1_mapping(
-              first_inversion=[partmean['inv1'], partmean['inv1ph']],
-              second_inversion=[partmean['inv2'], partmean['inv2ph']],
+              first_inversion=[partone['inv1'], partone['inv1ph']],
+              second_inversion=[partone['inv2'], partone['inv2ph']],
               inversion_times=[0.8,2.7],
               flip_angles=[7.0,5.0],
               inversion_TR=6.2,
@@ -115,6 +115,44 @@ def part_reconstruction(ses):
           )
 
   return result
+
+
+
+# This below was the reconstruction taking the mean of all "good" images
+# However since there is no motion correction between scans, this causes
+# some bad noise in the final T1w. Therefore I decided to use only the first
+# volume.
+# Motion correction would be very hard to carry out since it would required
+# to have exactly the same transformation in inv1, inv1ph, inv2 and inv2ph
+#
+# def part_reconstruction(ses):
+#
+#   partmean={}
+#
+#   for acq in ['inv1','inv1ph','inv2','inv2ph']:
+#     nii = nib.load(anat['part'][ses][acq])
+#     # delete volumes 2,4,7
+#     niigood = np.delete(nii.get_fdata(), [2,4,6], axis=3)
+#     niigood_mean = np.mean(niigood, axis=3)
+#     nii_niigood_mean = nib.Nifti1Image(niigood_mean, nii.affine)
+#     partmean[acq] = nii_niigood_mean
+#
+#   result = nighres.intensity.mp2rage_t1_mapping(
+#               first_inversion=[partmean['inv1'], partmean['inv1ph']],
+#               second_inversion=[partmean['inv2'], partmean['inv2ph']],
+#               inversion_times=[0.8,2.7],
+#               flip_angles=[7.0,5.0],
+#               inversion_TR=6.2,
+#               excitation_TR=[0.052, 0.052],
+#               N_excitations=160,
+#               efficiency=0.96,
+#               correct_B1=False,
+#               B1_map=None,
+#               scale_phase=True,
+#               save_data=False
+#           )
+#
+#   return result
 
 
 # -------------------- End of functions --------------------------------
