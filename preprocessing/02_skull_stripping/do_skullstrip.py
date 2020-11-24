@@ -32,7 +32,10 @@ datadrive=args.dd
 finroot = datadrive + 'leonardo/layers/rawdata_RPI/'
 foutroot = datadrive + args.outroot
 
+# NB: reg_dir is defined at the end when the whole process is launched
+
 # -------------- End of User defined parameters ---------------
+
 
 
 # print('datadrive is ' + datadrive)
@@ -56,8 +59,6 @@ import json
 
 import nighres
 import ants
-from fsl.wrappers import fslmaths
-from nipype.interfaces import afni as afni
 from nilearn.image import mean_img
 
 from nilearn.datasets import fetch_icbm152_2009
@@ -117,14 +118,12 @@ def pprint(dict):
 
 
 
-# Produce an image of the brain (part) with the mask overlaid on top
-def produce_png_anat(reg_dir,bg_img,mask):
-  nii_anat = ants.image_read(bg_img)
-  nii_mask = ants.image_read(mask)
 
+# Produce an image of the T1 with the mask overlaid on top
+def produce_png_T1w(sub,bg_img,mask):
   ants.plot(
-      nii_anat, overlay=mask, overlay_alpha=0.3,
-      overlay_cmap='autumn', axis=1, nslices=32, ncol=8,
+      bg_img, overlay=mask, overlay_alpha=0.3,
+      overlay_cmap='autumn', axis=0, nslices=32, ncol=8,
       title = 'mask full anat sub {:02d}'.format(sub),
       filename=reg_dir + 'QC/skullstrip/images/full_anat_mask.png'.format(mask),
       dpi=72
@@ -133,16 +132,26 @@ def produce_png_anat(reg_dir,bg_img,mask):
 
 
 # Produce an image of the functional mask for QC
-def produce_png_func(ses,taskrun,reg_dir,bg_img,mask):
-  nii_anat = ants.image_read(bg_img)
-  nii_mask = ants.image_read(mask)
-
+def produce_png_func(sub,ses,taskrun,reg_dir,bg_img,mask):
   ants.plot(
-      nii_anat, overlay=mask, overlay_alpha=0.3,
+      bg_img, overlay=mask, overlay_alpha=0.4,
       overlay_cmap='autumn', axis=0, nslices=32, ncol=8,
       slices=(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9),
-      title = 'mask func sub_{:02d}_ses_{:02d}_{}'.format(sub,ses,taskrun),
+      title = 'mask func sub_{:02d}_ses_{:02d}   {}'.format(sub,ses,taskrun),
       filename=reg_dir + 'QC/skullstrip/images/sub_{:02d}_ses_{:02d}_{}.png'.format(sub,ses,taskrun),
+      dpi=72
+  )
+
+
+
+# Produce an image of the T123 mask for QC
+def produce_png_T123(sub,ses,reg_dir,bg_img,mask):
+  ants.plot(
+      bg_img, overlay=mask, overlay_alpha=0.4,
+      overlay_cmap='autumn', axis=0, nslices=32, ncol=8,
+      slices=(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9),
+      title = 'mask T123 sub_{:02d}_ses_{:02d}_{}'.format(sub,ses,'T123'),
+      filename=reg_dir + 'QC/skullstrip/images/sub_{:02d}_ses_{:02d}_{}.png'.format(sub,ses,'T123'),
       dpi=72
   )
 
@@ -152,21 +161,31 @@ def produce_png_func(ses,taskrun,reg_dir,bg_img,mask):
 
 
 
+
+
 # ------------------- Full Anatomical skull stripping -------------------------
-def skullstrip_anatomical(anat,reg_dir):
+def skullstrip_anatomical(sub,anat,reg_dir):
 
   # inv2 bias correction
   full_inv2 = ants.image_read(anat['full']['inv2'])
   full_inv2_bias_corrected = ants.n3_bias_field_correction(full_inv2)
-  anat['full']['inv2_bc'] = reg_dir + 'ses_01/anat/full_inv2_bc.nii.gz'
-  nib.save(full_inv2_bias_corrected, anat['full']['inv2_bc'])
+  anat['full']['inv2_bc'] =   anat['full']['inv2'].replace('.nii.gz','_bc.nii.gz')
+  ants.image_write(full_inv2_bias_corrected, anat['full']['inv2_bc'])
 
 
-  # T1w bias correction
-  full_T1w = ants.image_read(anat['full']['T1w'])
-  full_T1w_bias_corrected = ants.n3_bias_field_correction(full_T1w)
-  anat['full']['T1w_bc'] = reg_dir + 'ses_01/anat/full_T1w_bc.nii.gz'
-  nib.save(full_T1w_bias_corrected, anat['full']['T1w_bc'])
+  # intensity based skull stripping of inv2_bc
+  strip_results_intensity_based = nighres.brain.intensity_based_skullstripping(
+      main_image=anat['full']['inv2_bc'],
+      noise_model='exponential',
+      skip_zero_values=True,
+      iterate=True,
+      dilate_mask=-2,
+      save_data=False
+  )
+
+  # get the mask from the results of the intensity based skullstripping
+  inv2_bc_brain_mask = ants.from_nibabel(strip_results_intensity_based['brain_mask'])
+
 
 
   # # mp2rage skull stripping (very bad, only for comparison)
@@ -181,112 +200,98 @@ def skullstrip_anatomical(anat,reg_dir):
 
 
 
-  # intensity based skull stripping
-  strip_results_intensity_based = nighres.brain.intensity_based_skullstripping(
-      main_image=anat['full']['inv2_bc'],
-      noise_model='exponential',
-      skip_zero_values=True,
-      iterate=True,
-      dilate_mask=-2,
-      save_data=False
-  )
+  # T1w bias correction
+  full_T1w = ants.image_read(anat['full']['T1w'])
+  full_T1w_bias_corrected = ants.n3_bias_field_correction(full_T1w)
 
-  # save the brain mask derived from the full_inv2_bc
-  anat['full']['inv2_bc_intensityBased_brain_mask'] = reg_dir + 'ses_01/anat/full_inv2_bc_intensityBased_brain_mask.nii.gz'
-  nib.save(strip_results_intensity_based['brain_mask'], anat['full']['inv2_bc_intensityBased_brain_mask'])
+  # mask the T1w_bc with the brain_mask obtained from the inv2_bc
+  full_T1w_brain = full_T1w * inv2_bc_brain_mask
 
-  # create the brain version of the full_T1w_bc using the in
-  anat['full']['T1w_bc_brain'] = reg_dir + 'ses_01/anat/full_T1w_bc_brain.nii.gz'
-  fslmaths(anat['full']['T1w_bc']).mul(anat['full']['inv2_bc_intensityBased_brain_mask']).run(anat['full']['T1w_bc_brain'])
+
+  # save the main T1w_bc, the brain version and the brain mask
+  ants.image_write(full_T1w_bias_corrected, reg_dir + 'ses_01/anat/full_T1w.nii.gz')
+  ants.image_write(full_T1w_brain, reg_dir + 'ses_01/anat/full_T1w_brain.nii.gz')
+  ants.image_write(inv2_bc_brain_mask, reg_dir + 'ses_01/anat/full_T1w_brain_mask.nii.gz')
+
 
   # Produce an image of the mask for QC
-  produce_png_anat(
-      reg_dir,
-      anat['full']['inv2_bc'],
-      anat['full']['inv2_bc_intensityBased_brain_mask']
-  )
+  produce_png_T1w(sub, full_T1w_bias_corrected, inv2_bc_brain_mask)
 
 
 
 
 # ------------------- Functional (mean) skull stripping -----------------------
-def skullstrip_functional(func,ses,taskrun,reg_dir):
+def skullstrip_functional(sub, ses, taskrun, func, reg_dir):
 
-  # calculate mean of the functional 4D
-  mean_func = mean_img(func[ses][taskrun])
-  mean_func_filename = reg_dir + 'ses_{:02d}/func/{}_mean.nii.gz'.format(ses,taskrun)
-  nib.save(mean_func, mean_func_filename)
+  # Calculate mean of the functional 4D
+  mean_func_nb = mean_img(func[ses][taskrun])
 
-  # n3 bias correct the mean functional
-  mean_func_bc = ants.n3_bias_field_correction(ants.image_read(mean_func_filename))
-  mean_func_bc_filename = mean_func_filename.replace('_mean.nii.gz', '_mean_bc.nii.gz')
-  nib.save(mean_func_bc, mean_func_bc_filename)
+  mean_func = ants.from_nibabel(mean_func_nb)
+  mean_func_norm = ants.iMath(mean_func, 'Normalize')
 
-  # AFNI automask
-  func[ses][taskrun + '_brain_mask'] = mean_func_bc_filename.replace('.nii.gz','_brain_mask.nii.gz')
-  automask = afni.Automask()
-  automask.inputs.in_file = mean_func_bc_filename
-  automask.inputs.outputtype = "NIFTI_GZ"
-  automask.inputs.out_file = func[ses][taskrun + '_brain_mask']
-  automask.inputs.brain_file = func[ses][taskrun + '_brain_mask']
-  automask.cmdline
-  res = automask.run()
+  # Threshold and get mask. Sub 8 and 9 need a more strict threshold
+  if sub == 8 or sub == 9:
+    thr = 0.1
+  else:
+    thr = 0.05
 
-  # Apply the mask
-  func[ses][taskrun + '_brain'] = mean_func_bc_filename.replace('.nii.gz','_brain.nii.gz')
-  fslmaths(mean_func_bc_filename).mul(func[ses][taskrun + '_brain_mask']).run(func[ses][taskrun + '_brain'])
+  mean_func_norm_thr = ants.utils.threshold_image(mean_func_norm, low_thresh=thr, binary=False)
+  mean_func_norm_thr_mask = ants.get_mask(mean_func_norm_thr, cleanup=1)
 
-  # Produce an image of the results for QC
-  produce_png_func(
-    ses,taskrun,reg_dir,
-    mean_func_filename,
-    mean_func_bc_filename.replace('.nii.gz','_brain_mask.nii.gz')
-  )
+  # mask the mean_func with the mean_func_norm_thr_mask
+  mean_func_brain = mean_func * mean_func_norm_thr_mask
 
 
-  # Remove unnecessary files
-  os.remove(mean_func_filename)
-  # os.remove(mean_func_bc_filename)
-
-
-
-# ------------------- T123 (mean of vol 1,3,5,7) skull stripping --------------
-def skullstrip_T123(anat,ses,reg_dir):
-
-  # n3 bias correct the T123_inv2
-  anat['part'][ses]['inv2_bc'] = reg_dir + 'ses_{:02d}/anat/part_inv2_bc.nii.gz'.format(ses)
-  part_inv2_bc = ants.n3_bias_field_correction(ants.image_read(anat['part'][ses]['inv2']))
-  nib.save(part_inv2_bc, anat['part'][ses]['inv2_bc'])
-
-
-  # AFNI automask
-  anat['part'][ses]['inv2_bc_brain_mask'] = anat['part'][ses]['inv2_bc'].replace('.nii.gz','_brain_mask.nii.gz')
-  automask = afni.Automask()
-  automask.inputs.in_file = anat['part'][ses]['inv2_bc']
-  automask.inputs.outputtype = "NIFTI_GZ"
-  automask.inputs.out_file = anat['part'][ses]['inv2_bc_brain_mask']
-  automask.inputs.brain_file = anat['part'][ses]['inv2_bc_brain_mask']
-  automask.cmdline
-  res = automask.run()
-
-
-  # n3 bias correct the T1w
-  anat['part'][ses]['T1w_bc'] = reg_dir + 'ses_{:02d}/anat/part_T1w_bc.nii.gz'.format(ses)
-  part_inv2_bc = ants.n3_bias_field_correction(ants.image_read(anat['part'][ses]['T1w']))
-  nib.save(part_inv2_bc, anat['part'][ses]['T1w_bc'])
-
-
-  # Apply the mask to the T1w_bc using fslmaths
-  anat['part'][ses]['T1w_bc_brain'] = anat['part'][ses]['T1w_bc'].replace('.nii.gz','_brain.nii.gz')
-  fslmaths(anat['part'][ses]['T1w_bc']).mul(anat['part'][ses]['inv2_bc_brain_mask']).run(anat['part'][ses]['T1w_bc_brain'])
-
+  # save mean_func_brain and its mask
+  ants.image_write(mean_func, reg_dir + 'ses_{:02d}/func/{}_mean.nii.gz'.format(ses,taskrun))
+  ants.image_write(mean_func_brain, reg_dir + 'ses_{:02d}/func/{}_mean_brain.nii.gz'.format(ses,taskrun))
+  ants.image_write(mean_func_norm_thr_mask, reg_dir + 'ses_{:02d}/func/{}_mean_brain_mask.nii.gz'.format(ses,taskrun))
 
   # Produce an image of the results for QC
   produce_png_func(
-    ses,'T123',reg_dir,
-    anat['part'][ses]['T1w_bc'],
-    anat['part'][ses]['inv2_bc_brain_mask']
+      sub, ses, taskrun, reg_dir,
+      ants.n3_bias_field_correction(mean_func),
+      mean_func_norm_thr_mask
   )
+
+
+
+# ------------------- T123 skull stripping ------------------------------------
+def skullstrip_T123(sub, ses, anat, reg_dir):
+
+  # delete volumes 3,5,7 in nibabel
+  inv2_nb = nib.load(anat['part'][ses]['inv2'])
+  inv2_nb_good = np.delete(inv2_nb.get_fdata(), [2,4,6], axis=3)
+
+  # get the mean of the good volumes in inv2
+  inv2_nb_good_mean = np.mean(inv2_nb_good, axis=3)
+  inv2_nb_good_mean_nifti = nib.Nifti1Image(inv2_nb_good_mean, inv2_nb.affine)
+  inv2_mean = ants.from_nibabel(inv2_nb_good_mean_nifti)
+
+  # apply n3 bias correction to the inv2_mean
+  inv2_mean_bc = ants.n3_bias_field_correction(inv2_mean)
+
+  # threshold inv2_mean_bc and get the mask
+  thr = 1.5e5
+  inv2_mean_bc_thr = ants.utils.threshold_image(inv2_mean_bc, low_thresh=thr, binary=False)
+  inv2_mean_bc_thr_mask = ants.get_mask(inv2_mean_bc_thr, cleanup=1)
+
+  # load the T1w and skullstrip
+  T1w = ants.image_read(anat['part'][ses]['T1w'])
+  T1w_brain = T1w * inv2_mean_bc_thr_mask
+
+  # n3 and denoise the T1w_brain
+  T1w_brain_bc = ants.n3_bias_field_correction(T1w_brain)
+  T1w_brain_bc_denoised = ants.iMath(T1w_brain_bc, 'PeronaMalik', 20, 1)
+
+  # write the denoised T1w_brain to disk, as well as its mask
+  # (taken from the inv2_mean_bc)
+  ants.image_write(T1w, reg_dir + 'ses_{:02d}/anat/part_T1w.nii.gz'.format(ses))
+  ants.image_write(T1w_brain_bc_denoised, reg_dir + 'ses_{:02d}/anat/part_T1w_brain.nii.gz'.format(ses))
+  ants.image_write(inv2_mean_bc_thr_mask, reg_dir + 'ses_{:02d}/anat/part_T1w_brain_mask.nii.gz'.format(ses))
+
+  # Produce an image of the results for QC
+  produce_png_T123(sub, ses, reg_dir, T1w, inv2_mean_bc_thr_mask)
 
 
 
@@ -322,23 +327,24 @@ for ses in [1,2]:  # should be [1,2]
 
   # FULL skull stripping
   if ses == 1:
-    skullstrip_anatomical(anat,reg_dir)
+    skullstrip_anatomical(sub,anat,reg_dir)
 
 
   # PART (T123) skull stripping
-  skullstrip_T123(anat,ses,reg_dir)
+  skullstrip_T123(sub, ses, anat, reg_dir)
 
 
   # Functional mean img skull stripping
   ses_taskrun = list(func[ses].keys())
   for taskrun in ses_taskrun:
-    skullstrip_functional(func,ses,taskrun,reg_dir)
+    skullstrip_functional(sub, ses, taskrun, func, reg_dir)
 
 
 # Produce the HTML page with the QC (requires pandoc to be installed on the machine with apt get)
 os.system('rm {}/QC/skullstrip/*.md'.format(reg_dir))
 os.system('for i in `find {} -name *.png`; do echo !\[image\]\($i\) >> {}/QC/skullstrip/skullstrip.md; done'.format(reg_dir,reg_dir))
 os.system('pandoc --self-contained -f markdown {}/QC/skullstrip/skullstrip.md > {}/QC/skullstrip/skullstrip.html'.format(reg_dir,reg_dir))
+
 
 
 
