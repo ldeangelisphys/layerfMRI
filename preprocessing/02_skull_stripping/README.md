@@ -1,6 +1,6 @@
 # Skull stripping
+_Leonardo Cerliani, november 2020_
 
-__Main scripts__
 
 `do_skullstrip.py` : carries out the entire procedure from the raw images for one subject. Type `python do_skullstrip.py -h` to have information about the parameters
 

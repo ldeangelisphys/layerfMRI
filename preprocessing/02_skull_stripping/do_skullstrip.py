@@ -342,7 +342,7 @@ for ses in [1,2]:  # should be [1,2]
 
 # Produce the HTML page with the QC (requires pandoc to be installed on the machine with apt get)
 os.system('rm {}/QC/skullstrip/*.md'.format(reg_dir))
-os.system('for i in `find {} -name *.png`; do echo !\[image\]\($i\) >> {}/QC/skullstrip/skullstrip.md; done'.format(reg_dir,reg_dir))
+os.system('for i in `find {} -name *.png | sort`; do echo !\[image\]\($i\) >> {}/QC/skullstrip/skullstrip.md; done'.format(reg_dir,reg_dir))
 os.system('pandoc --self-contained -f markdown {}/QC/skullstrip/skullstrip.md > {}/QC/skullstrip/skullstrip.html'.format(reg_dir,reg_dir))
 
 

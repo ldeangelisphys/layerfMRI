@@ -140,7 +140,7 @@ def do_MNI_full(MNI, full, save_nii=False):
 
 
 # full <-- part (1) - find initial translation
-def findInitialTranslation(full, part, niter):
+def findInitialTranslation(full, part, niter=20):
 
   dizio_iterations = {}
 
@@ -337,7 +337,7 @@ MNI_full = do_MNI_full(MNI, full)
 # register full <-- part[session]
 for session in ['ses_01','ses_02']:
   part = ants.image_read(dizio_part[session])
-  full_part = do_full_part(session, full, part, niter=10)
+  full_part = do_full_part(session, full, part, niter=30)
 
   # register part[session] <-- fmri[session][taskrun]
   for taskrun in dizio_fmri[session]:

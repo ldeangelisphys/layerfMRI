@@ -1,4 +1,5 @@
 # PAR/REC conversion and reorienting to RPI
+_Leonardo Cerliani, november 2020_
 
 `do_PARREC_conversion.sh` : carries out the conversion from PAR/REC format to compressed nifti (nii.gz) and reorient the images to RPI
 `list` : is a text file with the id of the participants to process
