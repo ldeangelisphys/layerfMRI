@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# This script runs do_skullstrip.py for all subjects in parallel in the
+# This script runs do_registration.py for all subjects in parallel in the
 # conda environment layerfMRI
-# Check python do_skullstrip.py -h for information about the arguments
+# Check python do_registration.py -h for information about the arguments
 
 # NB: pandoc should be installed on the system by sudo
 
@@ -16,7 +16,7 @@ echo
 # subjects 1 4 7 have missing data
 subjects=(2 3 5 6 8 9 10 11 12 13 14)
 
-printf "%s\n" "${subjects[@]}" | xargs -n 1 -P 12 -I{} python do_skullstrip.py --sub={} --outroot=leonardo/layers/
+printf "%s\n" "${subjects[@]}" | xargs -n 1 -P 12 -I{} python do_registration.py --sub={}
 
 echo
 echo
