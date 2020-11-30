@@ -139,54 +139,28 @@ def do_MNI_full(MNI, full, save_nii=False):
 
 
 
-# full <-- part (1) - find initial translation
-def findInitialTranslation(full, part, niter=20):
+# full <-- part (SyN)
+def do_full_part(session, full, part, save_nii=False):
 
-  dizio_iterations = {}
+  # Full and part are already similarly aligned, however since they have
+  # different FOV, the initial translation carried out by all kinds of
+  # registration - shifts the images to a very disaligned position.
+  # To work around this problem, I carry out an initial
+  # [part <-- part] "translation", which effectively does virtually nothing
+  # and then use the resulting affine - close to an identity - to initialize
+  # the SyN
 
-  for i in np.arange(niter):
-    # carry out the registration
-    full_part_translation = ants.registration(
-        fixed = full,
-        moving = part,
-        type_of_transform = "Translation"
-    )
+  # Initial [part <-- part] "translation" (it does virtually nothing)
+  tx_identity = ants.registration(part, part, type_of_transform="Translation")
 
-    # calculate similarity metric
-    # NB: since we have a partial scan, I need to mask the full with
-    # the mask of the moved part before estimating the image similarity
-    metric = ants.image_similarity(
-        full * ants.get_mask(full_part_translation['warpedmovout'], cleanup=1),
-        full_part_translation['warpedmovout'],
-        metric_type='Correlation'   # MattesMutualInformation or Correlation
-    )
-
-    # store the results in a dictionary
-    dizio_iterations[i] = full_part_translation
-    dizio_iterations[i]['metric'] = np.abs(metric)
-
-    print('similarity = {}'.format(np.abs(metric)))
-
-  maxmetric = np.argmax([dizio_iterations[k]['metric'] for k in dizio_iterations.keys()])
-  # minmetric = np.argmin(np.abs([dizio_iterations[k]['metric'] for k in dizio_iterations.keys()]))
-
-  # copy the transformation with the max similarity in the dict to take to the next step
-  part2full_translation = dizio_iterations[maxmetric]
-
-  return full_part_translation
-
-
-# full <-- part (2) - final registration  (SyN)
-def do_full_part(session, full, part, niter=20, save_nii=False):
-
-  full_part_translation = findInitialTranslation(full, part, niter=niter)
-
+  # final
   full_part = ants.registration(
       fixed = full,
       moving = part,
       type_of_transform = "SyN",
-      initial_transform = full_part_translation['fwdtransforms'][0]
+      initial_transform = tx_identity['fwdtransforms'][0]
   )
+
 
   if save_nii:
     ants.image_write(full_part['warpedmovout'], bd + 'sub_{:02d}/{}/anat/full_part.nii.gz'.format(sub,session))
@@ -197,9 +171,9 @@ def do_full_part(session, full, part, niter=20, save_nii=False):
 
   ants.plot(
       image = full, overlay = canned_full_part,
-      overlay_cmap = 'autumn', slices = tuple(np.arange(0.2,0.4,0.03)[0:6]), ncol=3, figsize=4, dpi=72,
+      overlay_cmap = 'autumn', slices = tuple(np.arange(0.2,0.4,0.03)[0:6]), ncol=3, figsize=4,
       filename = bd + 'sub_{:02d}/QC/registration/images/fig002_sub_{:02d}_full_part_{}.png'.format(sub,sub,session),
-      title='full <-- part  {}'.format(session)
+      title='full <-- part  {}'.format(session), dpi=72
   )
 
   return full_part
@@ -245,6 +219,7 @@ def do_part_fmri(session, taskrun, part, fmri, save_nii=False):
   # )
 
   return part_fmri
+
 
 
 # save the composite MNI <-- full <-- part <-- fmri and its inverse
@@ -337,7 +312,7 @@ MNI_full = do_MNI_full(MNI, full)
 # register full <-- part[session]
 for session in ['ses_01','ses_02']:
   part = ants.image_read(dizio_part[session])
-  full_part = do_full_part(session, full, part, niter=30)
+  full_part = do_full_part(session, full, part)
 
   # register part[session] <-- fmri[session][taskrun]
   for taskrun in dizio_fmri[session]:
