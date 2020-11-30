@@ -22,12 +22,10 @@ There are also personal folders where each of us can store notebook/scripts or w
 <details>
 <summary>Dependencies</summary>
 
-- [nighres](https://nighres.readthedocs.io/en/latest/)
-- [dcm2niix](https://github.com/rordenlab/dcm2niix/releases)
-- [fsl](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki)
-- [AFNI](https://afni.nimh.nih.gov/)
-- [pandoc](https://pandoc.org/installing.html)
 - [ANTsPy](https://github.com/ANTsX/ANTsPy) ([documentation](https://antspyx.readthedocs.io/en/latest/))
+- [dcm2niix](https://github.com/rordenlab/dcm2niix/releases)
+- [nighres](https://nighres.readthedocs.io/en/latest/)
+- [pandoc](https://pandoc.org/installing.html)
 - [pydeface](https://github.com/poldracklab/pydeface)
 
 </details>
