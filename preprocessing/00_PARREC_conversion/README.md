@@ -9,7 +9,7 @@ The `do_PARREC_conversion.sh` script is generally not called directly, but rathe
 ```
 time cat list | xargs -n 1 -P 15 -I {} ./do_PARREC_conversion.sh {}
 ```
-It's recommendable to run this command inside `screen`. It will take 1-2 hrs to complete.
+It's recommendable to run this command inside `screen`. __It will take 1-2 hrs to complete__.
 
 If instead you want to convert a single participant's PAR/REC files, then pass the _non zeropadded_ id to the script, e.g.:
 
