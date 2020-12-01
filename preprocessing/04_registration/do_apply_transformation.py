@@ -158,6 +158,8 @@ for ses in [1,2]:
         interpoltype = 'linear'
     )
 
+    # Remove the initial fmri to save memory
+    del fmri
 
     # transform the mask
     mask = do_MNI_fmri_image(
@@ -173,6 +175,9 @@ for ses in [1,2]:
     print('masking the transformed 4D...')
     MNI_fmri_4D_image_masked = maskant4D(MNI_fmri_4D_image, mask)
 
+    # remove the non-skullstripped MNI_fmri_4D_image to save memory
+    del MNI_fmri_4D_image
+
 
     # write the image
     output_filename = (
@@ -184,6 +189,8 @@ for ses in [1,2]:
 
     ants.image_write(MNI_fmri_4D_image_masked, output_filename)
 
+    print('all done')
+    print(' ')
 
 
 
