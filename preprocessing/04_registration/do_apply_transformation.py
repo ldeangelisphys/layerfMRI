@@ -25,7 +25,7 @@ sub=args.sub
 # -------------- End of User defined parameters ---------------
 
 
-os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = '5'
+os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = '1'
 
 print('Processing subject ' + str(sub))
 print(' ')
@@ -144,10 +144,12 @@ for ses in [1,2]:
     print(fmri_filename)
 
     # load the fmri[session][taskrun] 4D image
+    print('loading 4D...')
     fmri = ants.image_read(fmri_filename)
 
 
     # Transform the 4D
+    print('applying transformation...')
     MNI_fmri_4D_image = do_MNI_fmri_image(
         fixed = MNI,
         moving = fmri,
@@ -168,6 +170,7 @@ for ses in [1,2]:
 
 
     # mask the 4D with the binary mask
+    print('masking the transformed 4D...')
     MNI_fmri_4D_image_masked = maskant4D(MNI_fmri_4D_image, mask)
 
 
