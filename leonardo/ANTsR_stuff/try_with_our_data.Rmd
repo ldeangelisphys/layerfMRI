@@ -300,73 +300,12 @@ fmri %>% iMath("Neg")
 ```
 
 
-# Question to the forum
-
-I work with (f)MRI images, and I am trying to understand how to build a composite transformation fmri --> T1 --> MNI and its inverse.
-
-I am sorry in advance for the size of this post. However I think you will be able to answer very quickly. I tried to make the example in clearest possible way.
-
-I saw [this](http://htmlpreview.github.io/?https://github.com/stnava/fMRIANTs/blob/master/ANTsRfMRI_FAQ.html) Rmd notebook but **I am puzzled by the order of transformation in the composite**. 
-
-The following is an adapted version of the cells in the Rmd notebook which detail the steps of the transformation:
-
 ```{r}
+r16 = antsImageRead( getANTsRData( "r16" ) )
 
-# t1 --> MNI
-t1_to_MNI <- antsRegistration(
-  fixed = MNI, moving = t1,
-  typeofTransform = "SyN"
-)
-
-# t1 --> fmri
-t1_to_fmri <- antsRegistration(
-  fixed = fmri, moving = t1,
-  typeofTransform="SyNBold"
-)
-
-# list of transformation to map fmri --> T1 --> MNI
-# This is what I do not understand
-fulltx<-c(
-  t1_to_MNI$fwdtransforms[1],   # warp
-  t1_to_MNI$fwdtransforms[2],   # aff
-  t1_to_fmri$invtransforms[1],  # aff
-  t1_to_fmri$invtransforms[2]   # warp
-)
-
-# map fmri to MNI
-fmri_to_MNI_image <- antsApplyTransforms(
-  fixed = MNI,
-  moving = fmri, transformlist = fulltx,
-  whichtoinvert = c(F,F,T,F)
-)
+r16 %>% iMath("Neg")
 
 ```
-
-It therefore seems that when applying a composite registration fmri --> t1 --> MNI, the order of the transformation should be reversed, that is first `[t1 --> MNI]` and then `[fmri --> t1]` (in this case `(inv)[fmri --> t1]`).
-
-**Is this a general rule? If I want to compose `A_to_B` (fmri -> t1) and `B_to_C` (t1 -> MNI) to transform `A -> C` (fmri -> MNI) I need to order the transformations as `c(B_to_C, A_to_B)`?**
-
-This appears to be the case also in the composite T2 -> T1 -> T1template [here](https://github.com/ANTsX/ANTs/wiki/Forward-and-inverse-warps-for-warping-images,-pointsets-and-Jacobians), but instead when concatenating _inverse_ transformation it looks like the order remains the "intuitive" one. 
-
-For instance in [this python notebook](https://github.com/ANTsX/ANTsPy/blob/master/tutorials/concatenateRegistrations.ipynb) (snippet below), to go from `img3 -> img2 -> img1` you combine the inverse of `reg12` and `reg23` in the "expected" order: first `reg23[inv]` and `reg12[inv]`
-
-```{python}
-reg12 = ants.registration( img1, img2, 'SyN', reg_iterations = [100,100,20] )
-reg23 = ants.registration( img2, img3, 'SyN', reg_iterations = [100,100,20] )
-
-mytx = reg23[ 'invtransforms'] + reg12[ 'invtransforms']
-
-mywarpedimage = ants.apply_transforms( fixed = img3, 
-                                       moving = seg1['segmentation'] , 
-                                       transformlist = mytx, 
-                                       interpolator  = 'nearestNeighbor', 
-                                       whichtoinvert = [True,False,True,False])
-```
-
-
-Thank you very much for your help!
-
-
 
 
 

@@ -4,7 +4,7 @@ import os
 
 parser = argparse.ArgumentParser(
                 description='Registration fmri <- part <- full <- MNI',
-                epilog='Example: python do_registration.py --sub=2'
+                epilog='Example: python do_estimate_transformation.py --sub=2'
         )
 
 parser.add_argument("--sub", help="subject numba", type=int)
@@ -328,3 +328,8 @@ os.system('rm {}/*.md'.format(QC_reg))
 os.system('rm {}/*.html'.format(QC_reg))
 os.system('for i in `find {}/images -name *.png | sort`; do echo !\[image\]\($i\) >> {}/registration.md; done'.format(QC_reg,QC_reg))
 os.system('pandoc --self-contained -f markdown {}/registration.md > {}/registration.html'.format(QC_reg,QC_reg))
+
+
+
+
+# EOF
