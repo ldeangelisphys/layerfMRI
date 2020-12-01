@@ -15,7 +15,7 @@ __ETA is about 15' with 5 threads per subject__
 `do_apply_transformation.py` : applies the MNI_fmri transformation estimated in the script above
 `launch_do_apply_transformation.sh` : launches N processes of `do_apply_transformation.py` in parallel to process all subjects, with 5 threads per subject.
 
-__ETA is about 60'__
+__ETA is about 6 hours__ because due to memory limitation I can only process two participants at the time.
 
 
 The data is taken from and stored in `/data00/leonardolayers/regdata/`. Specifically, the following two composite transformations are stored in the `/reg` subdir of each participant.
