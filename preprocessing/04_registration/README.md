@@ -12,6 +12,7 @@ fmri <-- part_anat <-- full_anat <-- MNI
 
 __ETA is about 15' with 5 threads per subject__
 
+---
 
 ## 02. Apply transformations
 `do_apply_transformation.py` : applies the MNI_fmri transformation estimated in the script above
