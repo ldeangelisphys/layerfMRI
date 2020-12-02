@@ -10,11 +10,13 @@ fmri <-- part_anat <-- full_anat <-- MNI
 
 `launch_do_estimate_transformation.sh` : launches N processes of `do_estimate_transformation.py` in parallel to process all subjects. The number of threads used by ANTs can be chosen as an argument of `do_estimate_transformation.py`
 
+Overlays of registration results are produced in the `/registration.html` file of each subject's QC directory.
+
 __ETA is about 15' with 5 threads per subject__
 
 ---
 
-## 02. Apply transformations
+## 02. Apply `fmri <-- MNI` transformations
 `do_apply_transformation.py` : applies the MNI_fmri transformation estimated in the script above
 `launch_do_apply_transformation.sh` : launches N processes of `do_apply_transformation.py` in parallel to process all subjects, with 5 threads per subject.
 
@@ -23,4 +25,3 @@ __ETA is about 4 hours__ because due to memory limitation I can only process thr
 
 The data is taken from and stored in `/data00/leonardolayers/regdata/`. Specifically, the following two composite transformations are stored in the `/reg` subdir of each participant.
 
-Overlays of registration results are produced in the `/registration.html` file of each subject's QC directory.
