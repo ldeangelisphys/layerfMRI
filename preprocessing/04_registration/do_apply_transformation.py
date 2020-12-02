@@ -36,6 +36,7 @@ print(' ')
 import numpy as np
 import ants
 import nibabel as nib
+from fsl.wrappers import fslmaths
 import warnings
 import os
 import shutil
@@ -107,24 +108,6 @@ def do_MNI_fmri_image(fixed, moving, transformation, imtype='4d', interpoltype='
   return MNI_fmri_image
 
 
-# Mask a 4D image with a binary mask
-# (how simple in python...)
-def maskant4D(image4D, mask):
-  img4D_nib = image4D.to_nibabel()
-  mask_nib = mask.to_nibabel().get_fdata()
-
-  howmanySon = img4D_nib.shape[3]
-  multi_mask = np.repeat(mask_nib[:,:,:,np.newaxis], howmanySon, axis=3)
-
-  img4D_nib_masked = nib.Nifti1Image(
-      img4D_nib.get_fdata() * multi_mask,
-      img4D_nib.affine
-  )
-
-  img4D_masked = ants.from_nibabel(img4D_nib_masked)
-
-  return img4D_masked
-
 
 # ----------------------------  Main process  ---------------------------------
 
@@ -143,13 +126,20 @@ for ses in [1,2]:
 
     print(fmri_filename)
 
-    # load the fmri[session][taskrun] 4D image
-    print('loading 4D...')
+    # # ------------ take only the first three volumes to speed up the test ---------
+    # fmri_full_nib = nib.load(fmri_filename)
+    # fmri_part_nib = fmri_full_nib.get_fdata()[:,:,:,0:10]
+    # fmri_nib = nib.Nifti1Image(fmri_part_nib, fmri_full_nib.affine)
+    #
+    # fmri = ants.from_nibabel(fmri_nib)
+
+
+    # ------------ now let's apply it to the whole time series --------------------
     fmri = ants.image_read(fmri_filename)
 
 
     # Transform the 4D
-    print('applying transformation...')
+    print('applying transformation to 4D...')
     MNI_fmri_4D_image = do_MNI_fmri_image(
         fixed = MNI,
         moving = fmri,
@@ -170,16 +160,31 @@ for ses in [1,2]:
         interpoltype = 'nn'
     )
 
+    # Masking with fslmaths, requires takin the images to nibabel
+    print('applying mask to the transformed 4D using fslmaths...')
 
-    # mask the 4D with the binary mask
-    print('masking the transformed 4D...')
-    MNI_fmri_4D_image_masked = maskant4D(MNI_fmri_4D_image, mask)
+    # write tmp images to load in nibabel, since ANTsPy leaves a lot of
+    # stuff in /tmp when converting to nibabel
+    tmp_MNI_filename = dizio_fmri[session][taskrun].replace(taskrun,taskrun + '_tmp_MNI')
+    tmp_MNI_mask_filename = dizio_fmri[session][taskrun].replace(taskrun,taskrun + '_tmp_MNI_mask')
 
-    # remove the non-skullstripped MNI_fmri_4D_image and mask to save memory
+    ants.image_write(MNI_fmri_4D_image, tmp_MNI_filename)
+    ants.image_write(mask, tmp_MNI_mask_filename)
+
+
+    MNI_fmri_4D_image_nib_masked = (
+        (
+            fslmaths(nib.load(tmp_MNI_filename))
+                    .mul(nib.load(tmp_MNI_mask_filename))
+                    .run()
+        )
+    )
+
+
+    # Remove MNI_fmri_4D_image and mask to save memory
     del MNI_fmri_4D_image
     del mask
-
-
+    
     # write the image
     output_filename = (
         dizio_fmri[session][taskrun]
@@ -188,11 +193,17 @@ for ses in [1,2]:
         .replace('.nii.gz','_4D_MNI.nii.gz')
     )
 
-    ants.image_write(MNI_fmri_4D_image_masked, output_filename)
-    del MNI_fmri_4D_image_masked
+    print('writing image to disk...')
+    nib.save(MNI_fmri_4D_image_nib_masked, output_filename)
+
+    # Remove MNI_fmri_4D_image_nib_masked to save memory
+    del MNI_fmri_4D_image_nib_masked
+    os.remove(tmp_MNI_filename)
+    os.remove(tmp_MNI_mask_filename)
 
     print('all done')
     print(' ')
+
 
 
 
