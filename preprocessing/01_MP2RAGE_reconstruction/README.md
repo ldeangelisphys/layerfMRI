@@ -21,16 +21,17 @@ you need to edit `launch_MP2RAGE_reconstruction.sh`
 <pre>
 
 rawdata_RPI
-└── sub_02
-    ├── log_sub02
-    ├── ses_01
-    │   ├── anat
-    │   │   ├── <b>sub_02_ses_01_acq_full_T1map.nii.gz </b>
-    │   │   ├── <b>sub_02_ses_01_acq_full_T1w.nii.gz </b>
-    └── ses_02
-        ├── anat
-        │   ├── <b>sub_02_ses_02_acq_part_T1map.nii.gz</b>
-        │   ├── <b>sub_02_ses_02_acq_part_T1w.nii.gz</b>
+|
+sub_02
+├── log_sub02
+├── ses_01
+│   └── anat
+│       ├── <b>sub_02_ses_01_acq_full_T1map.nii.gz </b>
+│       └── <b>sub_02_ses_01_acq_full_T1w.nii.gz </b>
+└── ses_02
+    └── anat
+        ├── <b>sub_02_ses_02_acq_part_T1map.nii.gz</b>
+        └── <b>sub_02_ses_02_acq_part_T1w.nii.gz</b>
 
 </pre>
 
