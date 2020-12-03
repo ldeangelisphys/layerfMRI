@@ -20,3 +20,7 @@ printf "%s\n" "${subjects[@]}" | xargs -n 1 -P 12 -I{} python do_estimate_transf
 
 echo
 echo
+
+
+# when all is done, cleanup the /tmp, since ANTs leaves a lot of stuff there
+rm `find /tmp -user cerliani`

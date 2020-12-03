@@ -19,12 +19,11 @@ if len(sys.argv) < 2:
     print(' ')
     sys.exit(1)
 
-
 # -------------- User defined parameters ----------------------
 
 sub=args.sub                        # mandatory, no default
 datadrive=args.dd                   # optional; default is /data00
-finroot = datadrive + args.raw      # optional; default is /leonardo/layers/rawdata_RPI
+finroot=datadrive + args.raw      # optional; default is /leonardo/layers/rawdata_RPI
 
 
 # -------------- End of User defined parameters ---------------

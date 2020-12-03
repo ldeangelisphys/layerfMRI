@@ -28,7 +28,7 @@ if len(sys.argv) < 2:
 # That's why it's not in the argparse parameters
 
 sub=args.sub
-bd = args.dd + 'leonardo/layers/regdata/'
+bd = args.dd + 'layerfMRI/regdata/'
 os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = args.nThreads
 
 # -------------- End of User defined parameters ---------------

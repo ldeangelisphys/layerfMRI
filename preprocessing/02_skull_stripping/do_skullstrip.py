@@ -3,18 +3,17 @@ import sys
 
 parser = argparse.ArgumentParser(
                 description='Carry out skull stripping of full anat, part anat, mean func',
-                epilog='Example: python do_skullstrip.py --sub=2 --outroot=leonardo/layers/'
+                epilog='Example: python do_skullstrip.py --sub=2'
         )
 
 parser.add_argument("--sub", help="subject numba", type=int)
-parser.add_argument("--outroot", help="target root in dir in the SAME datadrive")
 parser.add_argument("--dd", help="location on storm, default is /data00/", default='/data00/')
 
 
 args = parser.parse_args()
 
 
-if len(sys.argv) < 3:
+if len(sys.argv) < 2:
     parser.print_help()
     print(' ')
     sys.exit(1)
@@ -29,8 +28,8 @@ if len(sys.argv) < 3:
 sub=args.sub
 
 datadrive=args.dd
-finroot = datadrive + 'leonardo/layers/rawdata_RPI/'
-foutroot = datadrive + args.outroot
+finroot = datadrive + 'layerfMRI/rawdata_RPI/'
+foutroot = datadrive + 'layerfMRI/'
 
 # NB: reg_dir is defined at the end when the whole process is launched
 

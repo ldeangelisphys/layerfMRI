@@ -44,7 +44,7 @@ import json
 warnings.filterwarnings("ignore")
 
 
-bd = '/data00/leonardo/layers/'
+bd = '/data00/layerfMRI/'
 rawdir = bd + 'rawdata_RPI/'
 regdir = bd + 'regdata/'
 comptx_dir = regdir + 'sub_{:02d}/reg/'.format(sub)
@@ -184,7 +184,7 @@ for ses in [1,2]:
     # Remove MNI_fmri_4D_image and mask to save memory
     del MNI_fmri_4D_image
     del mask
-    
+
     # write the image
     output_filename = (
         dizio_fmri[session][taskrun]
