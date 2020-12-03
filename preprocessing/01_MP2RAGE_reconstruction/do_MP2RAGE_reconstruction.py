@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("--sub", help="subject numba", type=int)
 parser.add_argument("--dd", help="location on storm, default is /data00", default='/data00')
-parser.add_argument("--raw", help="location of the raw data, default is /leonardo/layers/rawdata_RPI", default='/leonardo/layers/rawdata_RPI')
+parser.add_argument("--raw", help="location of the raw data, default is /layerfMRI/rawdata_RPI", default='/layerfMRI/rawdata_RPI')
 
 
 args = parser.parse_args()
