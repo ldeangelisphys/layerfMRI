@@ -13,8 +13,6 @@ At the end, one QC folder will be produced in the root of each participant, cont
 
 ---
 
-## Example output
-
 <details>
 <summary>Example output:</summary>
 <p>
