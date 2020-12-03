@@ -23,5 +23,5 @@ __ETA is about 15' with 5 threads per subject__
 __ETA is about 3 hours__ because due to memory limitation I can only process five participants at the time.
 
 
-The data is taken from and stored in `/data00/leonardolayers/regdata/`. Specifically, the following two composite transformations are stored in the `/reg` subdir of each participant.
+The data is taken from and stored in `/data00/layerfMRI/regdata/`. Specifically, the following two composite transformations are stored in the `/reg` subdir of each participant.
 
