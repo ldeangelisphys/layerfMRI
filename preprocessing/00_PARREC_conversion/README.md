@@ -27,7 +27,7 @@ __IMPORTANT:__ The script will erase any previous conversion! (i.e. destination 
 
 ```bash
 rawdata_RPI
-|
+│
 sub_02
 ├── log_sub02
 ├── ses_01
