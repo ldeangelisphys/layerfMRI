@@ -37,18 +37,18 @@ regdata/sub_02
 │       ├── skullstrip.html
 │       └── skullstrip.md
 ├── ses_01
-│   ├── anat
-│   │   ├── full_T1w.nii.gz
-│   │   ├── full_T1w_brain.nii.gz
-│   │   ├── full_T1w_brain_mask.nii.gz
-│   │   ├── part_T1w.nii.gz
-│   │   ├── part_T1w_brain.nii.gz
-│   │   └── part_T1w_brain_mask.nii.gz
+│   └── anat
+│       ├── full_T1w.nii.gz
+│       ├── full_T1w_brain.nii.gz
+│       ├── full_T1w_brain_mask.nii.gz
+│       ├── part_T1w.nii.gz
+│       ├── part_T1w_brain.nii.gz
+│       └── part_T1w_brain_mask.nii.gz
 └── ses_02
-    ├── anat
-    │   ├── part_T1w.nii.gz
-    │   ├── part_T1w_brain.nii.gz
-    │   └── part_T1w_brain_mask.nii.gz
+    └── anat
+        ├── part_T1w.nii.gz
+        ├── part_T1w_brain.nii.gz
+        └── part_T1w_brain_mask.nii.gz
 ```
 
 </p>
