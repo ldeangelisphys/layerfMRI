@@ -25,3 +25,65 @@ __ETA is about 3 hours__ because due to memory limitation I can only process fiv
 
 The data is taken from and stored in `/data00/layerfMRI/regdata/`. Specifically, the following two composite transformations are stored in the `/reg` subdir of each participant.
 
+---
+
+## Example output
+
+<details>
+<summary>Example output:</summary>
+<p>
+
+```bash
+
+regdata/sub_02
+├── QC
+│   ├── registration
+│   │   ├── images
+│   │   │   ├── fig001_sub_02_MNI_full.png
+│   │   │   ├── fig002_sub_02_full_part_ses_01.png
+│   │   │   ├── fig002_sub_02_full_part_ses_02.png
+│   │   │   ├── fig003_sub_02_part_fmri_task_1_run_1.png
+│   │   │   ├── fig003_sub_02_part_fmri_task_1_run_2.png
+│   │   │   ├── fig003_sub_02_part_fmri_task_2_run_1.png
+│   │   │   ├── fig003_sub_02_part_fmri_task_2_run_2.png
+│   │   │   ├── fig003_sub_02_part_fmri_task_3_run_1.png
+│   │   │   ├── fig003_sub_02_part_fmri_task_3_run_2.png
+│   │   │   ├── fig003_sub_02_part_fmri_task_4_run_1.png
+│   │   │   └── fig003_sub_02_part_fmri_task_4_run_2.png
+│   │   ├── registration.html
+│   │   └── registration.md
+├── reg
+│   ├── MNI_fmri_ses_01_task_1_run_1_comptx.nii.gz
+│   ├── MNI_fmri_ses_01_task_1_run_2_comptx.nii.gz
+│   ├── MNI_fmri_ses_01_task_2_run_1_comptx.nii.gz
+│   ├── MNI_fmri_ses_01_task_2_run_2_comptx.nii.gz
+│   ├── MNI_fmri_ses_02_task_3_run_1_comptx.nii.gz
+│   ├── MNI_fmri_ses_02_task_3_run_2_comptx.nii.gz
+│   ├── MNI_fmri_ses_02_task_4_run_1_comptx.nii.gz
+│   ├── MNI_fmri_ses_02_task_4_run_2_comptx.nii.gz
+│   ├── fmri_MNI_ses_01_task_1_run_1_comptx.nii.gz
+│   ├── fmri_MNI_ses_01_task_1_run_2_comptx.nii.gz
+│   ├── fmri_MNI_ses_01_task_2_run_1_comptx.nii.gz
+│   ├── fmri_MNI_ses_01_task_2_run_2_comptx.nii.gz
+│   ├── fmri_MNI_ses_02_task_3_run_1_comptx.nii.gz
+│   ├── fmri_MNI_ses_02_task_3_run_2_comptx.nii.gz
+│   ├── fmri_MNI_ses_02_task_4_run_1_comptx.nii.gz
+│   └── fmri_MNI_ses_02_task_4_run_2_comptx.nii.gz
+├── ses_01
+│   └── func
+│       ├── task_1_run_1_4D_MNI.nii.gz
+│       ├── task_1_run_2_4D_MNI.nii.gz
+│       ├── task_2_run_1_4D_MNI.nii.gz
+│       ├── task_2_run_2_4D_MNI.nii.gz
+└── ses_02
+    └── func
+        ├── task_3_run_1_4D_MNI.nii.gz
+        ├── task_3_run_2_4D_MNI.nii.gz
+        ├── task_4_run_1_4D_MNI.nii.gz
+        ├── task_4_run_2_4D_MNI.nii.gz
+```
+
+</p>
+</details>  
+
+
