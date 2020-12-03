@@ -18,6 +18,8 @@ you need to edit `launch_MP2RAGE_reconstruction.sh`
 <p>
 
 
+```bash
+
 sub_02
 ├── log_sub02
 ├── ses_01
@@ -52,7 +54,7 @@ sub_02
         ├── sub_02_ses_02_task_3_run_2.nii.gz
         ├── sub_02_ses_02_task_4_run_1.nii.gz
         └── sub_02_ses_02_task_4_run_2.nii.gz
-
+```
 
 </p>
 </details>  
