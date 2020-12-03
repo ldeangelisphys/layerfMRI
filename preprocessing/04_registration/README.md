@@ -25,12 +25,10 @@ __ETA is about 3 hours__ because due to memory limitation I can only process fiv
 
 The data is taken from and stored in `/data00/layerfMRI/regdata/`. Specifically, the following two composite transformations are stored in the `/reg` subdir of each participant.
 
----
 
-## Example output
 
 <details>
-<summary>Example output:</summary>
+<summary> <h2> Example output: </h2> </summary>
 <p>
 
 ```bash
