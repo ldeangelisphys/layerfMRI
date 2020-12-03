@@ -11,6 +11,8 @@ Calling `python do_MP2RAGE_reconstruction.py` by itself will provide usage infor
 If you want to use your own parameters for the parallel processing across all subjects
 you need to edit `launch_MP2RAGE_reconstruction.sh`
 
+**ETA is about 1 minute**
+
 <details>
 <summary>Example output:</summary>
 <p>
