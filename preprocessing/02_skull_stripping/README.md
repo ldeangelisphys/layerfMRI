@@ -12,3 +12,46 @@ __Important Note__ : the rawdata is stored in
 At the end, one QC folder will be produced in the root of each participant, containing an HTML file with the overlay of the mask on top of the either anatomy or mean functional.
 
 ---
+
+## Example output
+
+<details>
+<summary>Example output:</summary>
+<p>
+
+```bash
+
+regdata/sub_02
+├── QC
+│   └── skullstrip
+│       ├── images
+│       │   ├── full_anat_mask.png
+│       │   ├── sub_02_ses_01_T123.png
+│       │   ├── sub_02_ses_01_task_1_run_1.png
+│       │   ├── sub_02_ses_01_task_1_run_2.png
+│       │   ├── sub_02_ses_01_task_2_run_1.png
+│       │   ├── sub_02_ses_01_task_2_run_2.png
+│       │   ├── sub_02_ses_02_T123.png
+│       │   ├── sub_02_ses_02_task_3_run_1.png
+│       │   ├── sub_02_ses_02_task_3_run_2.png
+│       │   ├── sub_02_ses_02_task_4_run_1.png
+│       │   └── sub_02_ses_02_task_4_run_2.png
+│       ├── skullstrip.html
+│       └── skullstrip.md
+├── ses_01
+│   ├── anat
+│   │   ├── full_T1w.nii.gz
+│   │   ├── full_T1w_brain.nii.gz
+│   │   ├── full_T1w_brain_mask.nii.gz
+│   │   ├── part_T1w.nii.gz
+│   │   ├── part_T1w_brain.nii.gz
+│   │   └── part_T1w_brain_mask.nii.gz
+└── ses_02
+    ├── anat
+    │   ├── part_T1w.nii.gz
+    │   ├── part_T1w_brain.nii.gz
+    │   └── part_T1w_brain_mask.nii.gz
+```
+
+</p>
+</details>  
