@@ -27,34 +27,10 @@ rawdata_RPI
     │   ├── anat
     │   │   ├── <b>sub_02_ses_01_acq_full_T1map.nii.gz </b>
     │   │   ├── <b>sub_02_ses_01_acq_full_T1w.nii.gz </b>
-    │   │   ├── sub_02_ses_01_acq_full_inv1.nii.gz
-    │   │   ├── sub_02_ses_01_acq_full_inv1ph.nii.gz
-    │   │   ├── sub_02_ses_01_acq_full_inv2.nii.gz
-    │   │   ├── sub_02_ses_01_acq_full_inv2ph.nii.gz
-    │   │   ├── <b>sub_02_ses_01_acq_part_T1map.nii.gz</b>
-    │   │   ├── <b>sub_02_ses_01_acq_part_T1w.nii.gz</b>
-    │   │   ├── sub_02_ses_01_acq_part_inv1.nii.gz
-    │   │   ├── sub_02_ses_01_acq_part_inv1ph.nii.gz
-    │   │   ├── sub_02_ses_01_acq_part_inv2.nii.gz
-    │   │   └── sub_02_ses_01_acq_part_inv2ph.nii.gz
-    │   └── func
-    │       ├── sub_02_ses_01_task_1_run_1.nii.gz
-    │       ├── sub_02_ses_01_task_1_run_2.nii.gz
-    │       ├── sub_02_ses_01_task_2_run_1.nii.gz
-    │       └── sub_02_ses_01_task_2_run_2.nii.gz
     └── ses_02
         ├── anat
         │   ├── <b>sub_02_ses_02_acq_part_T1map.nii.gz</b>
         │   ├── <b>sub_02_ses_02_acq_part_T1w.nii.gz</b>
-        │   ├── sub_02_ses_02_acq_part_inv1.nii.gz
-        │   ├── sub_02_ses_02_acq_part_inv1ph.nii.gz
-        │   ├── sub_02_ses_02_acq_part_inv2.nii.gz
-        │   └── sub_02_ses_02_acq_part_inv2ph.nii.gz
-        └── func
-            ├── sub_02_ses_02_task_3_run_1.nii.gz
-            ├── sub_02_ses_02_task_3_run_2.nii.gz
-            ├── sub_02_ses_02_task_4_run_1.nii.gz
-            └── sub_02_ses_02_task_4_run_2.nii.gz
 
 </pre>
 
