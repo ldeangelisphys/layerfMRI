@@ -28,7 +28,7 @@ The data is taken from and stored in `/data00/layerfMRI/regdata/`. Specifically,
 
 
 <details>
-<summary> <h2> Example output: </h2> </summary>
+<summary> Example output: </summary>
 <p>
 
 ```bash
