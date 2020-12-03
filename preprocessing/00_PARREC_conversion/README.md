@@ -26,7 +26,7 @@ __IMPORTANT:__ The script will erase any previous conversion! (i.e. destination 
 <p>
 
 ```bash
-sub_02
+rawdata_RPI/sub_02
 ├── log_sub02
 ├── ses_01
 │   ├── anat
