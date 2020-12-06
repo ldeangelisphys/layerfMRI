@@ -33,7 +33,7 @@ The data is taken from and stored in `/data00/layerfMRI/regdata/`. Specifically,
 
 ```bash
 
-data00/regdata/layerfMRI
+/data00/regdata/layerfMRI/
 │
 sub_02
 ├── QC
