@@ -70,7 +70,7 @@ warnings.filterwarnings("ignore")
 # - dizio_fmri
 def load_data(sub):
 
-  # Get the skullstripped MNI to do the full --> MNI registration
+  # Get the skullstripped MNI to do the MNI <-- full registration
   from nilearn.datasets import fetch_icbm152_2009
   MNI_nilearn = fetch_icbm152_2009()
   # MNI_nilearn.keys()
