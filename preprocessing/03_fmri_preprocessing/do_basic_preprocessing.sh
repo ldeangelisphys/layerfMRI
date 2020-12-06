@@ -21,7 +21,7 @@
 
 # ----------------------  User defined variables ------------------------------
 
-rawdata_dir=/data00/layerfMRI/rawdata_RPI
+rawdata_dir=/data01/layerfMRI/rawdata_RPI
 
 regdata_dir=/data00/layerfMRI/regdata
 

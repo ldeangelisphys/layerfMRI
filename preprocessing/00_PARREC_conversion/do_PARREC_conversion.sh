@@ -13,17 +13,29 @@
 # Error message if no arguments are provided
 [ $# -eq 0 ] && { clear;
                   printf "\n run with: \n time cat list | xargs -n 1 -P 15 -I {} ./do_PARREC_conversion.sh {} \n\n"; \
-                  printf " PARREC files are in /data02/ritu/2018_7T_14sub_raw \n"; \
-                  printf " The script (and this message) should be edited to change this option \n\n"; \
+                  printf " PARREC files are in /data01/layerfMRI/PARREC/2018_7T_14sub_raw \n\n"; \
+                  printf "   ___       \n"
+                  printf "  {o,o}     Make sure you decrypted \n"
+                  printf "  |)__)     /data01/layerfMRI/PARREC/PARREC.enc \n"
+                  printf "  -\"-\"--   before starting the process !! \n\n"
                   exit 1; }
 
+
+# ------------------------  User defined parameters  --------------------------
 
 # This is the only variable that the script needs
 sub=`printf %02d $1`
 
-sourcedir=/data02/ritu/2018_7T_14sub_raw
+sourcedir=/data01/layerfMRI/PARREC/2018_7T_14sub_raw
+# sourcedir=/data02/ritu/2018_7T_14sub_raw
 
-bd=/data00/leonardo/layers/rawdata_RPI/sub_${sub}
+bd=/data01/layerfMRI/rawdata_RPI/sub_${sub}
+
+# ----------------------  End of user defined parameters  ---------------------
+
+
+
+
 
 logfile=${bd}/log_sub${sub}
 

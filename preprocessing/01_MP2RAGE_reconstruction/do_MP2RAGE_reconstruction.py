@@ -7,8 +7,6 @@ parser = argparse.ArgumentParser(
         )
 
 parser.add_argument("--sub", help="subject numba", type=int)
-parser.add_argument("--dd", help="location on storm, default is /data00", default='/data00')
-parser.add_argument("--raw", help="location of the raw data, default is /layerfMRI/rawdata_RPI", default='/layerfMRI/rawdata_RPI')
 
 
 args = parser.parse_args()
@@ -21,10 +19,9 @@ if len(sys.argv) < 2:
 
 # -------------- User defined parameters ----------------------
 
-sub=args.sub                        # mandatory, no default
-datadrive=args.dd                   # optional; default is /data00
-finroot=datadrive + args.raw      # optional; default is /leonardo/layers/rawdata_RPI
+sub=args.sub  
 
+finroot='/data01/layerfMRI/rawdata_RPI'
 
 # -------------- End of User defined parameters ---------------
 

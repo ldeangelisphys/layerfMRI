@@ -22,13 +22,14 @@ if len(sys.argv) < 2:
 
 sub=args.sub
 
+# Limit the number of threads to 5, cuz many subjs in parallel
+os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = '1'
+
 # -------------- End of User defined parameters ---------------
 
 
-os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = '1'
 
-print('Processing subject ' + str(sub))
-print(' ')
+
 
 
 # ----------------------------  Load libraries  -------------------------------
@@ -109,6 +110,9 @@ def do_MNI_fmri_image(fixed, moving, transformation, imtype='4d', interpoltype='
 
 
 # ----------------------------  Main process  ---------------------------------
+
+print('Processing subject ' + str(sub))
+print(' ')
 
 # Load data
 MNI, dizio_fmri = load_data(sub)

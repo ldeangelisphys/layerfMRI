@@ -8,7 +8,6 @@ parser = argparse.ArgumentParser(
         )
 
 parser.add_argument("--sub", help="subject numba", type=int)
-parser.add_argument("--dd", help="location on storm, default is /data00/", default='/data00/')
 parser.add_argument("--nThreads", help="numba of threads for each subject, default = 5", default="5")
 
 
@@ -28,7 +27,10 @@ if len(sys.argv) < 2:
 # That's why it's not in the argparse parameters
 
 sub=args.sub
-bd = args.dd + 'layerfMRI/regdata/'
+
+bd = '/data00/layerfMRI/regdata/'
+
+# Limit the number of threads to 5, cuz many subjs in parallel
 os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = args.nThreads
 
 # -------------- End of User defined parameters ---------------
