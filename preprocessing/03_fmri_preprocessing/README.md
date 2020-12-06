@@ -4,7 +4,7 @@ _Leonardo Cerliani, december 2020_
 
 `do_basic_processing.sh` : carries out realignment and detrending of the raw images for one subject. Run it alone to have information about the parameters
 
-`launch_do_basic_processing.sh` : launches N processes of `do_basic_processing.sh` in parallel to process all subjects. __ETA is about 2 hrs__
+`launch_do_basic_processing.sh` : launches N processes of `do_basic_processing.sh` in parallel to process all subjects. __ETA is about 2.5 hrs__
 
 __Note__: the raw data is in `/data01/layerfMRI/rawdata_RPI`, where the report html with estimated movement parameters will be found, e.g. `sub_02_ses_01_task_1_run_1.feat/report.html`
 
