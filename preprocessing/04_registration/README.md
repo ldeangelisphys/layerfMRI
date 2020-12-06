@@ -12,7 +12,7 @@ fmri <-- part_anat <-- full_anat <-- MNI
 
 Overlays of registration results are produced in the `/registration.html` file of each subject's QC directory.
 
-__ETA is about 15' with 5 threads per subject__
+__ETA is about 30' with 5 threads per subject__
 
 ---
 
