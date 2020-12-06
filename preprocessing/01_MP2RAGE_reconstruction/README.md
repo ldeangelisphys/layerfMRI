@@ -16,7 +16,7 @@ Calling `python do_MP2RAGE_reconstruction.py` by itself will provide usage infor
 
 <pre>
 
-rawdata_RPI
+/data01/layerfMRI/rawdata_RPI
 |
 sub_02
 ├── log_sub02
