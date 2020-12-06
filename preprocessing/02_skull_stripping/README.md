@@ -16,7 +16,9 @@ At the end, one QC folder will be produced in the root of each participant, cont
 
 ```bash
 
-regdata/sub_02
+/data00/layerfMRI/regdata/
+│
+sub_02
 ├── QC
 │   └── skullstrip
 │       ├── images
