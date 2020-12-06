@@ -2,7 +2,7 @@
 _Leonardo Cerliani, december 2020_
 
 
-`do_basic_processing.sh` : carries out the entire procedure from the raw images for one subject. Run it alone to have information about the parameters
+`do_basic_processing.sh` : carries out realignment and detrending of the raw images for one subject. Run it alone to have information about the parameters
 
 `launch_do_basic_processing.sh` : launches N processes of `do_basic_processing.sh` in parallel to process all subjects. __ETA is about 2 hrs__
 
