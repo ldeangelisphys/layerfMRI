@@ -1,5 +1,6 @@
 import argparse
 import sys
+import os
 
 parser = argparse.ArgumentParser(
                 description='Carry out skull stripping of full anat, part anat, mean func',
@@ -7,39 +8,31 @@ parser = argparse.ArgumentParser(
         )
 
 parser.add_argument("--sub", help="subject numba", type=int)
-parser.add_argument("--dd", help="location on storm, default is /data00/", default='/data00/')
-
 
 args = parser.parse_args()
-
 
 if len(sys.argv) < 2:
     parser.print_help()
     print(' ')
     sys.exit(1)
 
-
-
 # -------------- User defined parameters ----------------------
-
-# The finroot should be edited only if the source of the bids data changes!
-# That's why it's not in the argparse parameters
 
 sub=args.sub
 
-datadrive=args.dd
-finroot = datadrive + 'layerfMRI/rawdata_RPI/'
-foutroot = datadrive + 'layerfMRI/'
+finroot = '/data01/layerfMRI/rawdata_RPI/'
+foutroot = '/data00/layerfMRI/'
 
-# NB: reg_dir is defined at the end when the whole process is launched
+# Define reg_dir for this subject, and create it if not there
+reg_dir = foutroot + 'regdata/sub_{:02d}/'.format(sub)
+if not os.path.isdir(reg_dir):
+        os.makedirs(reg_dir)
+
+# Limit the numba of threads per subject
+os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = '5'
 
 # -------------- End of User defined parameters ---------------
 
-
-
-# print('datadrive is ' + datadrive)
-# print('finroot is ' + finroot)
-# print('foutroot is ' + foutroot)
 
 
 print("Processing subject " + str(sub))
@@ -53,14 +46,12 @@ print(" ")
 # Load libraries
 import nibabel as nib
 import numpy as np
-import os,re
 import json
 
 import nighres
 import ants
 from nilearn.image import mean_img
 
-from nilearn.datasets import fetch_icbm152_2009
 
 # Only in notebook
 # !pip install ipython-autotime
@@ -101,14 +92,7 @@ def fetch_data(in_dir,reg_dir,sub,ses):
             run  = f.split('run_')[1].split('_')[0].replace('.nii.gz','')
             func[ses]['task_{}_run_{}'.format(task,run)] = func_fld + f
 
-    # Fetch template
-    icbm = fetch_icbm152_2009()
-    icbm['t1_highres'] = foutroot + 'mni_icbm152_nlin_sym_09b/mni_icbm152_t1_tal_nlin_sym_09b_hires.nii'
-    icbm['t1_highres_masked'] = icbm['t1'].replace('.nii','_masked.nii')
-    icbm['t1_masked'] = icbm['t1'].replace('.nii','_masked.nii')
-
-
-    return anat,func,icbm
+    return anat,func
 
 
 # Pretty print dict
@@ -298,10 +282,10 @@ def skullstrip_T123(sub, ses, anat, reg_dir):
 # Launch the whole process for each type (anat,func), session (1,2)
 # and task/run combination in each session
 
-# Define reg_dir for this subject, and create it if not there
-reg_dir = foutroot + 'regdata/sub_{:02d}/'.format(sub)
-if not os.path.isdir(reg_dir):
-        os.makedirs(reg_dir)
+# # Define reg_dir for this subject, and create it if not there
+# reg_dir = foutroot + 'regdata/sub_{:02d}/'.format(sub)
+# if not os.path.isdir(reg_dir):
+#         os.makedirs(reg_dir)
 
 
 # Create directory for QC
@@ -321,7 +305,7 @@ for ses in [1,2]:  # should be [1,2]
 
   # Fetch rawdata and create the dictionary
   in_dir = finroot + 'sub_{:02d}/ses_{:02d}/'.format(sub,ses)
-  anat,func,templ = fetch_data(in_dir,reg_dir,sub,ses)
+  anat,func = fetch_data(in_dir,reg_dir,sub,ses)
 
 
   # FULL skull stripping

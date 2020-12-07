@@ -12,7 +12,7 @@ fmri <-- part_anat <-- full_anat <-- MNI
 
 Overlays of registration results are produced in the `/registration.html` file of each subject's QC directory.
 
-__ETA is about 15' with 5 threads per subject__
+__ETA is about 30' with 5 threads per subject__
 
 ---
 
@@ -20,7 +20,7 @@ __ETA is about 15' with 5 threads per subject__
 `do_apply_transformation.py` : applies the MNI_fmri transformation estimated in the script above
 `launch_do_apply_transformation.sh` : launches N processes of `do_apply_transformation.py` in parallel to process all subjects, with 5 threads per subject.
 
-__ETA is about 3 hours__ because due to memory limitation I can only process five participants at the time.
+__ETA is about 1.5 hours__ since due to memory limitation I can only process at max 4 participants at the time.
 
 
 The data is taken from and stored in `/data00/layerfMRI/regdata/`. Specifically, the following two composite transformations are stored in the `/reg` subdir of each participant.
@@ -33,7 +33,9 @@ The data is taken from and stored in `/data00/layerfMRI/regdata/`. Specifically,
 
 ```bash
 
-regdata/sub_02
+/data00/regdata/layerfMRI/
+│
+sub_02
 ├── QC
 │   └── registration
 │       ├── images
@@ -83,5 +85,3 @@ regdata/sub_02
 
 </p>
 </details>  
-
-

@@ -9,7 +9,7 @@ The `do_PARREC_conversion.sh` script is generally not called directly, but rathe
 ```
 time cat list | xargs -n 1 -P 15 -I {} ./do_PARREC_conversion.sh {}
 ```
-It's recommendable to run this command inside `screen`. __It will take 1-2 hrs to complete__.
+It's recommendable to run this command inside `screen`. __ETA is about 1hr__.
 
 If instead you want to convert a single participant's PAR/REC files, then pass the _non zeropadded_ id to the script, e.g.:
 
@@ -26,7 +26,7 @@ __IMPORTANT:__ The script will erase any previous conversion! (i.e. destination 
 <p>
 
 ```bash
-rawdata_RPI
+/data01/layerfMRI/rawdata_RPI/
 │
 sub_02
 ├── log_sub02

@@ -22,13 +22,14 @@ if len(sys.argv) < 2:
 
 sub=args.sub
 
+# Limit the number of threads to 5, cuz many subjs in parallel
+os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = '1'
+
 # -------------- End of User defined parameters ---------------
 
 
-os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = '1'
 
-print('Processing subject ' + str(sub))
-print(' ')
+
 
 
 # ----------------------------  Load libraries  -------------------------------
@@ -45,7 +46,6 @@ warnings.filterwarnings("ignore")
 
 
 bd = '/data00/layerfMRI/'
-rawdir = bd + 'rawdata_RPI/'
 regdir = bd + 'regdata/'
 comptx_dir = regdir + 'sub_{:02d}/reg/'.format(sub)
 
@@ -64,7 +64,7 @@ def load_data(sub):
   for ses in [1,2]:
     dizio_fmri['ses_{:02d}'.format(ses)] = {}
     for taskrun in list_taskrun:
-      fmri_filename = rawdir + 'sub_{:02d}/ses_{:02d}/func/sub_{:02d}_ses_{:02d}_{}.nii.gz'.format(sub,ses,sub,ses,taskrun)
+      fmri_filename = regdir + 'sub_{:02d}/ses_{:02d}/func/{}_4D.nii.gz'.format(sub,ses,taskrun)
       if os.path.isfile(fmri_filename):
         dizio_fmri['ses_{:02d}'.format(ses)][taskrun] = fmri_filename
         # print(fmri_filename)
@@ -111,12 +111,26 @@ def do_MNI_fmri_image(fixed, moving, transformation, imtype='4d', interpoltype='
 
 # ----------------------------  Main process  ---------------------------------
 
+print('Processing subject ' + str(sub))
+print(' ')
+
 # Load data
 MNI, dizio_fmri = load_data(sub)
 
+pprint(dizio_fmri)
 
+
+# # for development
+# sub=2
+# ses=1
+# taskrun='task_1_run_1'
+
+
+# remember to put for ses in [1,2] !!!!!!!!!!!!!!!!!!!!!!!!!!!
 for ses in [1,2]:
+
   session = 'ses_{:02d}'.format(ses)
+
   for taskrun in dizio_fmri[session].keys():
 
     # define the files we need
@@ -130,7 +144,7 @@ for ses in [1,2]:
     # fmri_full_nib = nib.load(fmri_filename)
     # fmri_part_nib = fmri_full_nib.get_fdata()[:,:,:,0:10]
     # fmri_nib = nib.Nifti1Image(fmri_part_nib, fmri_full_nib.affine)
-    #
+
     # fmri = ants.from_nibabel(fmri_nib)
 
 
@@ -185,13 +199,9 @@ for ses in [1,2]:
     del MNI_fmri_4D_image
     del mask
 
+
     # write the image
-    output_filename = (
-        dizio_fmri[session][taskrun]
-        .replace('rawdata_RPI','regdata')
-        .replace('sub_{:02d}_ses_{:02d}_'.format(sub,ses),'')
-        .replace('.nii.gz','_4D_MNI.nii.gz')
-    )
+    output_filename = dizio_fmri[session][taskrun].replace('4D.nii.gz','4D_MNI.nii.gz')
 
     print('writing image to disk...')
     nib.save(MNI_fmri_4D_image_nib_masked, output_filename)
@@ -203,6 +213,7 @@ for ses in [1,2]:
 
     print('all done')
     print(' ')
+
 
 
 

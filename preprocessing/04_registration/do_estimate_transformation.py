@@ -8,7 +8,6 @@ parser = argparse.ArgumentParser(
         )
 
 parser.add_argument("--sub", help="subject numba", type=int)
-parser.add_argument("--dd", help="location on storm, default is /data00/", default='/data00/')
 parser.add_argument("--nThreads", help="numba of threads for each subject, default = 5", default="5")
 
 
@@ -28,7 +27,10 @@ if len(sys.argv) < 2:
 # That's why it's not in the argparse parameters
 
 sub=args.sub
-bd = args.dd + 'layerfMRI/regdata/'
+
+bd = '/data00/layerfMRI/regdata/'
+
+# Limit the number of threads to 5, cuz many subjs in parallel
 os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = args.nThreads
 
 # -------------- End of User defined parameters ---------------
@@ -68,9 +70,17 @@ warnings.filterwarnings("ignore")
 # - dizio_fmri
 def load_data(sub):
 
+  # Get the skullstripped MNI to do the MNI <-- full registration
+  from nilearn.datasets import fetch_icbm152_2009
+  MNI_nilearn = fetch_icbm152_2009()
+  # MNI_nilearn.keys()
+  MNI = ants.image_read(MNI_nilearn['t1']) * ants.image_read(MNI_nilearn['mask'])
+
+
   # Load the full anatomy (there is only one so we can load it directly)
   full_filename = bd + 'sub_{:02d}/ses_01/anat/full_T1w_brain.nii.gz'.format(sub)
   full = ants.image_read(full_filename)
+
 
   # create dict for part
   dizio_part = {}
@@ -80,6 +90,7 @@ def load_data(sub):
     if os.path.isfile(part_filename):
       dizio_part['ses_{:02d}'.format(ses)] = part_filename
       # print(part_filename)
+
 
   # create dict for fmri
   list_taskrun = ['task_1_run_1', 'task_1_run_2', 'task_2_run_1', 'task_2_run_2',
@@ -92,12 +103,6 @@ def load_data(sub):
       if os.path.isfile(fmri_filename):
         dizio_fmri['ses_{:02d}'.format(ses)][taskrun] = fmri_filename
         # print(fmri_filename)
-
-  # Get the skullstripped MNI to do the full --> MNI registration
-  from nilearn.datasets import fetch_icbm152_2009
-  MNI_nilearn = fetch_icbm152_2009()
-  # MNI_nilearn.keys()
-  MNI = ants.image_read(MNI_nilearn['t1']) * ants.image_read(MNI_nilearn['mask'])
 
   return MNI, full, dizio_part, dizio_fmri
 
