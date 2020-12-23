@@ -27,6 +27,7 @@ regdata_dir = '/data00/layerfMRI/regdata'
 os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = '5'
 
 # NOTA BENE:
+#
 # The results now go in the regdata_dir, since they are not super heavy - about
 # 1.6 GB per subject.
 # However in the next future we can also send them to rawdata_dir. That's why
@@ -36,7 +37,15 @@ os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = '5'
 layering_dir = regdata_dir + '/sub_{:02d}/ses_01/anat/layering'.format(sub)
 
 if not os.path.isdir(layering_dir):
-    os.makedirs(layering_dir)
+        os.makedirs(layering_dir)
+
+# Create directory for QC - same reason as above
+QCdir = regdata_dir + '/sub_{:02d}/QC/layering'.format(sub)
+os.makedirs(QCdir + '/images', exist_ok=True)
+
+
+# Specify whether the results should be overwritten in nighres functions
+OVERWRITE_FLAG = False
 
 
 # --------------  End of User defined parameters  -----------------------------
@@ -86,11 +95,10 @@ def create_log(dict):
 #
 # MP2RAGE (full)
 # - inversion_times (sec) :	     [0.8, 2.7] # provided by Wietske from Examcard
-# - flip angles (deg) :  	     INV1 = 7.0	INV2 = 5.0	# flip column in PAR in degrees!
-# - inversion_TR (sec) :         5.5  # provided by Wietske  from Examcard
-# - excitation_TR	(sec) : 	 INV1 = 0.0062	INV2 = 0.0062	# Repetition time in PAR header
-# - N_excitations/slices :       159 # provided by Wietske from Examcard. NB it's not 256
-
+# - flip angles (deg) :  	       INV1 = 7.0	INV2 = 5.0	(flip column in PAR)
+# - inversion_TR (sec) :         5.5        # provided by Wietske  from Examcard
+# - excitation_TR	(sec) : 	     INV1 = 0.0062	INV2 = 0.0062	(Repetition time in PAR header)
+# - N_excitations/slices :       159 # provided by Wietske  from Examcard
 
 def do_reconstruct_T1(anat):
 
@@ -106,8 +114,8 @@ def do_reconstruct_T1(anat):
       correct_B1 = False,
       B1_map = None,
       scale_phase = False,
-      save_data = True, overwrite = False, output_dir = layering_dir,
-      file_name = 'recon'
+      save_data = True, overwrite = OVERWRITE_FLAG,
+      output_dir = layering_dir, file_name = 'recon'
   )
 
   create_log(anat)
@@ -115,57 +123,64 @@ def do_reconstruct_T1(anat):
 
 
 
-# Skull Stripping
+# Skull stripping
+# The intensity based skull stripping of the inv2 doesn't work very well, so we
+# prepare it with an N4biasfieldcorrection
+
 def do_skullstrip(anat):
-
-  # run the initial intensity-based stripping
-  anat['intensity_strip'] = nighres.brain.intensity_based_skullstripping(
-      main_image = anat['raw']['inv2'],
-      noise_model = 'exponential',
-      skip_zero_values = True,
-      iterate = True,
-      dilate_mask = 0,
-      save_data = True, overwrite = False, output_dir = layering_dir,
-      file_name = 'istrip'
-  )
-
-
-  # do an additional fslmaths step since ants is very strict about geometry
-  fslmaths(anat['raw']['inv2']).mul(anat['intensity_strip']['brain_mask']).bin().run(anat['intensity_strip']['brain_mask'])
-
-
-  # # Run the command in the terminal, limiting the numba of cores
-  # # Now at the beginning of the script
-  # os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = '5'
-
 
   # Check if the N4 file is already there, otherwise carry out bias field correction
   # Note that we have to create the dict item anyway, and that's why the next
   # command is not limited to the 'else'
-  if not os.path.isfile(anat['raw']['inv2'].replace('inv2','inv2_bc')):
+  inv2_N4bc_filepath = anat['raw']['inv2'].replace('inv2','inv2_N4bc')
 
-    command_N4 = 'time N4BiasFieldCorrection -d 3 -i {} -x {} -o {} -v'.format(
+  if not os.path.isfile(inv2_N4bc_filepath):
+
+    command_N4 = 'time N4BiasFieldCorrection -d 3 -i {} -o {} -v'.format(
                       anat['raw']['inv2'],
-                      anat['intensity_strip']['brain_mask'],
-                      anat['raw']['inv2'].replace('inv2','inv2_bc')
+                      inv2_N4bc_filepath
                   )
     os.system(command_N4)
 
-  anat['raw']['inv2_bc'] = anat['raw']['inv2'].replace('inv2','inv2_bc')
+  anat['raw']['inv2_N4bc'] = inv2_N4bc_filepath
 
 
-  # Run MP2RAGE skull stripping
-  anat['skullstrip'] = nighres.brain.mp2rage_skullstripping(
-      second_inversion = anat['raw']['inv2_bc'],
-      t1_weighted = anat['recon']['uni'],
-      t1_map = anat['recon']['t1'],
-      save_data = True, overwrite = False, output_dir = layering_dir,
-      file_name = 'strip'
+
+  # Carry out intensity-based skull stripping on the N4-corrected inv2_N4bc
+  anat['intensity_strip'] = nighres.brain.intensity_based_skullstripping(
+      main_image = anat['raw']['inv2_N4bc'],
+      extra_image = anat['recon']['t1'],
+      noise_model = 'exponential',
+      skip_zero_values = True,
+      iterate = True,
+      dilate_mask = 3,
+      topology_lut_dir = None,
+      save_data = True, overwrite = OVERWRITE_FLAG,
+      output_dir = layering_dir, file_name = 'istrip'
   )
 
-  create_log(anat)
-  return anat
 
+  # I replaced the MP2RAGE skull stripping with the intensity-based
+  # skull stripping (see note on top) but I want to keep the same naming
+  # conventions, so I just create a 'skullstrip' dictionary - which in the
+  # original version output the results of MP2RAGE skull stripping - and
+  # map the location of the files created by the intensity-based stripping
+  anat['skullstrip'] = {}
+
+  anat['skullstrip']['brain_mask'] = anat['intensity_strip']['brain_mask']
+  anat['skullstrip']['inv2_masked'] = anat['intensity_strip']['main_masked']
+  anat['skullstrip']['t1map_masked'] = anat['intensity_strip']['extra_masked']
+
+  # calculate and save also the masked T1w, since I had it as an output from the
+  # MP2RAGE skull stripping
+  anat['skullstrip']['t1w_masked'] = anat['skullstrip']['inv2_masked'].replace('main.nii.gz','t1w.nii.gz')
+
+  if not os.path.isfile(anat['skullstrip']['t1w_masked']):
+    (
+        fslmaths(anat['recon']['uni'])
+        .mul(anat['intensity_strip']['brain_mask'])
+        .run(anat['skullstrip']['t1w_masked'])
+    )
 
 
 
@@ -178,8 +193,8 @@ def do_filtering(anat):
       skullstrip_mask = anat['skullstrip']['brain_mask'],
       background_distance = 3.0,
       output_type = 'dura_region',
-      save_data = True, overwrite = False, output_dir = layering_dir,
-      file_name = 'dura'
+      save_data = True, overwrite = OVERWRITE_FLAG,
+      output_dir = layering_dir, file_name = 'dura'
   )
 
 
@@ -189,8 +204,8 @@ def do_filtering(anat):
       structure_intensity = 'bright',
       output_type = 'probability',
       use_strict_min_max_filter = True,
-      save_data = True, overwrite = False, output_dir = layering_dir,
-      file_name = 'ridge'
+      save_data = True, overwrite = OVERWRITE_FLAG,
+      output_dir = layering_dir, file_name = 'ridge'
   )
 
 
@@ -199,8 +214,8 @@ def do_filtering(anat):
       dura_img = anat['dura']['result'],
       pvcsf_img = anat['ridge']['result'],
       arteries_img = None,
-      save_data = True, overwrite = False, output_dir = layering_dir,
-      file_name = 'filter_stack'
+      save_data = True, overwrite = OVERWRITE_FLAG,
+      output_dir = layering_dir, file_name = 'filter_stack'
   )
 
   create_log(anat)
@@ -217,7 +232,6 @@ def do_MGDM(anat):
   atlas_filename = os.path.join(ATLAS_DIR, atlas_name)
 
 
-
   # MGDM segmentation
   anat['MGDM'] = nighres.brain.mgdm_segmentation(
       contrast_image1 = anat['skullstrip']['t1map_masked'], contrast_type1 = 'T1map7T',
@@ -232,8 +246,8 @@ def do_MGDM(anat):
       compute_posterior = False,
       posterior_scale = 10.0,
       diffuse_probabilities = False,
-      save_data = True, overwrite = False, output_dir = layering_dir,
-      file_name = 'mgdm'
+      save_data = True, overwrite = OVERWRITE_FLAG,
+      output_dir = layering_dir, file_name = 'mgdm'
   )
 
   create_log(anat)
@@ -252,12 +266,13 @@ def do_region_extraction(anat):
       extracted_region='left_cerebrum',
       atlas_file = None,
       partial_volume_distance = 1.0,
-      save_data = True, output_dir = layering_dir,
-      file_name = 'LH_cortex'
+      save_data = True, overwrite = OVERWRITE_FLAG,
+      output_dir = layering_dir, file_name = 'LH_cortex'
   )
 
   create_log(anat)
   return anat
+
 
 
 
@@ -278,12 +293,14 @@ def do_cruise(anat):
       wm_dropoff_dist = 1.0,
       topology='wcs',
       topology_lut_dir=None,
-      save_data = True, output_dir = layering_dir, overwrite = False,
-      file_name = "LH_cruise"
+      save_data = True, overwrite = OVERWRITE_FLAG,
+      output_dir = layering_dir, file_name = "LH_cruise"
   )
 
   create_log(anat)
   return anat
+
+
 
 
 
@@ -298,8 +315,8 @@ def do_layering(anat):
       method = 'volume-preserving',
       layer_dir = 'outward',
       curv_scale = 3,
-      save_data = True, output_dir = layering_dir, overwrite = False,
-      file_name = "LH_layering"
+      save_data = True, overwrite = OVERWRITE_FLAG,
+      output_dir = layering_dir, file_name = "LH_layering"
   )
 
   create_log(anat)
@@ -308,7 +325,16 @@ def do_layering(anat):
 
 
 
-# --------------  Launch everything  ------------------------------------------
+
+
+# --------------  Launch the whole process  -----------------------------------
+
+
+
+# Reset the logfile
+if os.path.isfile(logfile):
+  os.remove(logfile)
+
 # Create the dictionary with the raw data
 anat = fetch_data(regdata_dir, rawdata_dir)
 
@@ -343,9 +369,50 @@ do_cruise(anat)
 do_layering(anat)
 
 
+# Generate QC images
+title_skullstrip = 'subj {:02d} skullstrip'.format(sub)
+ants.plot(
+    image = anat['raw']['inv2'],
+    overlay = anat['skullstrip']['brain_mask'], overlay_cmap='autumn', overlay_alpha=0.3,
+    axis=2, figsize=6, nslices=20, ncol=5,
+    title = title_skullstrip,
+    filename = QCdir + '/images/' + title_skullstrip.replace(" ","_") + '.png',
+    dpi = 72
+)
 
 
+title_cortex_estimation = 'subj {:02d} cortex estimation'.format(sub)
+ants.plot(
+    image = anat['skullstrip']['t1w_masked'],
+    overlay = anat['cruise']['cortex'], overlay_cmap='Set1', overlay_alpha=0.5,
+    axis=2, figsize=6, nslices=15, ncol=5,
+    title = title_cortex_estimation,
+    filename = QCdir + '/images/' + title_cortex_estimation.replace(" ","_") + '.png',
+    dpi = 72
+)
 
+
+title_cortical_depth = 'subj {:02d} cortical depth'.format(sub)
+ants.plot(
+    image = anat['skullstrip']['t1w_masked'],
+    overlay = anat['layering']['depth'], overlay_cmap='jet', overlay_alpha=1,
+    axis=2, figsize=6, nslices=15, ncol=5, crop=True,
+    title = title_cortical_depth,
+    filename = QCdir + '/images/' + title_cortical_depth.replace(" ","_") + '.png', dpi = 72
+)
+
+print(" ")
+print('There are QC images for {} and {}'.format(title_cortex_estimation, title_cortical_depth))
+
+
+# Produce the HTML page with the QC (requires pandoc to be installed on the machine with apt get)
+# Produce the HTML page with the QC (requires pandoc to be installed on the machine with apt get)
+if os.path.isfile('{}/layering.md'.format(QCdir)):
+  os.system('rm {}/layering.*'.format(QCdir))
+
+os.system('for i in `find {}/images -name *.png | sort`; do echo !\[image\]\($i\) >> {}/layering.md; done'.format(QCdir,QCdir))
+
+os.system('pandoc --self-contained -f markdown {}/layering.md > {}/layering.html'.format(QCdir,QCdir))
 
 
 
