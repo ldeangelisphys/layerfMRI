@@ -3,8 +3,7 @@ title: "2D_histogram"
 output:
   html_document:
     df_print: paged
-    toc: true
-    toc_float: true
+  pdf_document: default
 ---
 
 # Analysis of layer-specific fMRI in MNI space
@@ -13,6 +12,7 @@ To test the layer-specificity of the activity found with the GLM in MNI space, I
 The GLM analyses were carried out with the data in MNI space, while the cortical depth maps are estimated in the full T1w space. Therefore the first thing to do is to ANTs the cortical depth maps in MNI space.
 
 I will use the icbm152_2009_brain from the python `nilearn.dataset`, which I already saved in `/usr/local/fsl/data/standard/`. I will try anyway retrieve it using reticulate since the image might not be there in the future or if the analysis is launched on a different machine.
+
 
 
 # Define general parameters
@@ -174,10 +174,10 @@ The process of parallelization requires four steps:
 
 **NB**: in this case, caching the results to avoid re-evaluating the list would have been very beneficial. However the registration parameters are saved in the `/tmp` directory, so they might not be available during subsequent runs of the notebook. Therefore caching is turned off.
 
+
 ETA is about 5 minutes.
 
 ```{r message=FALSE, cache=FALSE}
-
 # life saver from John Muschelli: it allows to deal with the problem of the invalid pointer
 library(extrantsr)
 doANTsReg <- extrantsr::within_visit_registration
@@ -203,16 +203,25 @@ print(
 
 # (2) Define the function to be iterated
 do_registration_fn <- function(sub) {
-  
-  subID = sprintf("sub_%02d",sub)
+subID = sprintf("sub_%02d",sub)
   T1brain <- full[[subID]][["full_T1w_brain"]]
   
-  reg <- doANTsReg(
-    fixed = MNI_brain,
-    moving = T1brain,
+  # reg <- doANTsReg(
+  #   fixed = MNI_brain,
+  #   moving = T1brain,
+  #   typeofTransform = 'SyN',
+  #   verbose = FALSE,
+  #   outfiles = NULL
+  # )
+  
+
+  # I need to use the extrantsr::registration since the within_visit_registration
+  # deletes the warps, and there is no way to let it keep it (crazy!)
+  reg <- registration(
+    template.file = MNI_brain,
+    filename = T1brain,
     typeofTransform = 'SyN',
-    verbose = FALSE,
-    outfiles = NULL
+    verbose = FALSE
   )
   
   return(reg)
@@ -253,6 +262,74 @@ plot(
 ) %>% invisible()
 
 
+```
+
+
+
+
+
+# Apply the transformation to the layer and depth images
+```{r fig.height=10, fig.width=15}
+
+chosen_interpolation <- "Linear"
+
+library(stringr)
+
+for (sub in names(full)) {
+  
+  depth_MNI_filename <- str_replace(
+    full[[sub]]$depth, 
+    "depth.nii.gz","depth_MNI.nii.gz"
+  )
+  
+  full[[sub]][["depth_MNI"]] <- depth_MNI_filename
+
+  depth_MNI <- antsApplyTransforms(
+    fixed = MNI_brain, 
+    moving = full[[sub]][["depth"]] %>% as.character(),
+    transformlist = reglist[[sub]][["fwdtransforms"]],
+    interpolator = chosen_interpolation
+  )
+  
+  antsImageWrite(depth_MNI, depth_MNI_filename)
+  
+  full[[sub]][["depth_MNI"]] %>% print()
+}
+
+
+
+# export the regdata variable to be used in bash in order to do fslmerge and calculate the median image
+Sys.setenv(REGDATA = regdata)
+
+```
+
+
+
+# Merge images and create median image in bash
+```{bash engine.opts='-l'}
+
+
+eachimg=`imglob $REGDATA/sub_*/ses_01/anat/layering/LH_layering_layering-depth_MNI.nii.gz`
+
+fslmerge -t all_depth_MNI.nii.gz ${eachimg}
+fslmaths all_depth_MNI.nii.gz -Tmedian all_depth_MNI_median.nii.gz 
+echo created all_depth_MNI_median.nii.gz
+
+```
+
+
+
+# Visualize the goddamn thing
+```{r fig.height=10, fig.width=15}
+
+mediandepth_filename <- sprintf("%s/all_depth_MNI_median.nii.gz",getwd())
+
+plot(
+  MNI_brain,
+  antsImageRead(mediandepth_filename),
+  nslices = 24, ncol = 6, useRaster = TRUE,
+  window.overlay = c(0,1), colorbar = TRUE
+) %>% invisible()
 
 ```
 
@@ -263,6 +340,54 @@ plot(
 
 
 
+# OLE -- Apply the transformation to another image -- OLE
+
+```{r fig.height=10, fig.width=15}
+
+# library(extrantsr)
+# doANTsReg <- extrantsr::within_visit_registration
+# 
+# T1brain <- full$sub_02$full_T1w_brain
+# 
+# 
+# reg <- doANTsReg(
+#   fixed = MNI_brain, moving = T1brain,
+#   typeofTransform = "Affine", interpolator = "Linear"
+# )
+# 
+# depthMNI <- antsApplyTransforms(
+#   fixed = MNI_brain, moving = full$sub_02$depth %>% as.character(),
+#   transformlist = reg$fwdtransforms,
+#   interpolator = "Linear"
+# )
+# 
+# 
+# layerMNI <- ants_apply_transforms(
+#   fixed = MNI_brain, moving = full$sub_02$layers %>% as.character(),
+#   transformlist = reg
+# )
+# 
+# 
+# # # native space
+# # plot(
+# #   antsImageRead(full$sub_02$full_T1w_brain %>% as.character()),
+# #   antsImageRead(full$sub_02$depth %>% as.character()),
+# #   nslices = 24, ncol = 6, useRaster = TRUE
+# # ) %>% invisible()
+# 
+# 
+# # MNI space
+# plot(
+#   reg$outfile %>% oro2ants(),
+#   depthMNI %>% oro2ants(),
+#   nslices = 24, ncol = 6, useRaster = TRUE
+# ) %>% invisible()
+
+
+
+
+
+```
 
 
 
