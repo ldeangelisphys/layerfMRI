@@ -24,7 +24,7 @@ defaultW <- getOption("warn")
 options(warn = -1) 
 
 
-bd <- "/data00/layerfMRI/Github_repo/layerfMRI/analyses/2D_histogram"
+bd <- "/data00/layerfMRI/Github_repo/layerfMRI/analyses/2D_histogram_MNI"
 datadir <- paste0(bd,"/data4histograms")
 
 MNI_file <- paste0(datadir,"/icbm152_2009_brain.nii.gz") 
@@ -354,11 +354,11 @@ observe({
       alpha = 1,
       nslices = 16, ncol = 4,
       crop = TRUE, quality = 1,
-      outname = paste0(getwd(),"/slice.png")
+      outname = paste0(bd,"/slice.png")
     )
 
     list(
-      src = paste0(getwd(),"/slice.png")
+      src = paste0(bd,"/slice.png")
     )
   }, deleteFile = TRUE)
 
