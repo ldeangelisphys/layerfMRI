@@ -25,23 +25,25 @@ echo
 # Generate the average (mean and median) images
 regdata_dir=/data00/layerfMRI/regdata
 
+target_dir=${PWD}/data4histograms
+
 for contrast in depth layers; do
   contrast_file=LH_layering_layering-${contrast}_MNIspace.nii.gz
   imlist=`imglob ${regdata_dir}/sub_*/ses_01/anat/layering/${contrast_file}`
 
   echo ${contrast}
   echo merging all the ${contrast} files in a 4D
-  fslmerge -t ${PWD}/all_${contrast}.nii.gz ${imlist}
+  fslmerge -t ${target_dir}/all_${contrast}.nii.gz ${imlist}
 
   echo calculating the mean image
-  fslmaths ${PWD}/all_${contrast}.nii.gz \
+  fslmaths ${target_dir}/all_${contrast}.nii.gz \
            -Tmean \
-           ${PWD}/mean_${contrast}.nii.gz
+           ${target_dir}/mean_${contrast}.nii.gz
 
   echo calculating the median image
-  fslmaths ${PWD}/all_${contrast}.nii.gz \
+  fslmaths ${target_dir}/all_${contrast}.nii.gz \
            -Tmedian \
-           ${PWD}/median_${contrast}.nii.gz
+           ${target_dir}/median_${contrast}.nii.gz
   echo
 
 done

@@ -1,0 +1,402 @@
+---
+title: "2D_histogram"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+# Analysis of layer-specific fMRI in MNI space
+To test the layer-specificity of the activity found with the GLM in MNI space, I will build a 2D histogram representing the density of Z-stat as a function of cortical depth.
+
+The GLM analyses were carried out with the data in MNI space, while the cortical depth maps are estimated in the full T1w space. Therefore the first thing to do is to ANTs the cortical depth maps in MNI space.
+
+I will use the icbm152_2009_brain from the python `nilearn.dataset`, which I already saved in `/usr/local/fsl/data/standard/`. I will try anyway retrieve it using reticulate since the image might not be there in the future or if the analysis is launched on a different machine.
+
+
+
+# Define general parameters
+```{r, message=FALSE}
+library(glue)
+library(dplyr)
+
+disk <- "/data00"
+regdata <- glue("{disk}/layerfMRI/regdata")
+
+list_subjects <- scan(file = glue("{disk}/layerfMRI/list_subjects") )
+
+```
+
+
+# Fetch full - i.e. T1_brain - for each subject
+```{r}
+
+pprint <- function(list) {
+  jsonlite::toJSON(list, pretty = TRUE)
+}
+
+# create the empty list to store all keys/value (i.e. image/path) associations
+full <- list()
+
+# fill the list
+for (sub in list_subjects) {
+  subID <- sprintf("sub_%02d",sub) 
+  full[[subID]] <- list()
+  
+  # load T1 files in the anat directory
+  for (img in c("full_T1w","full_T1w_brain")) {
+    img_file <- glue("{regdata}/{subID}/ses_01/anat/{img}.nii.gz")
+    if (file.exists(img_file)) {
+      full[[subID]][[img]] <- img_file
+    }
+  }
+  
+  # load cortical layering files
+  for (img in c("depth","layers")) {
+    img_file <- glue("{regdata}/{subID}/ses_01/anat/layering/LH_layering_layering-{img}.nii.gz")
+    if (file.exists(img_file)) {
+      full[[subID]][[img]] <- img_file
+    }
+  }
+}
+
+# print the first sub to check the output
+pprint(full$sub_02)
+
+# # Note how it changes to get the [] or [[]]
+# for (i in names(full)){
+#   print(full[i])
+# }
+#   
+# for (i in names(full)){
+#   print(full[[i]])
+# }
+
+
+# # All of the following work
+# full[["sub_02"]][["full_T1w"]]
+# full$sub_02$full_T1w
+# full$sub_02[["full_T1w"]]
+
+
+```
+
+
+# Establish reticulate environment and import MNI from `nilearn`
+```{r message=FALSE}
+library(reticulate)
+use_condaenv(condaenv = "layerfMRI", required = TRUE)
+```
+
+
+```{python}
+
+import ants
+from nilearn.datasets import fetch_icbm152_2009
+MNI_nilearn = fetch_icbm152_2009()
+
+print(MNI_nilearn.keys())
+
+MNI = MNI_nilearn['t1']
+MNI_brain = ants.image_read(MNI_nilearn['t1']) * ants.image_read(MNI_nilearn['mask'])
+
+
+```
+
+# Import the MNI and MNI_brain in R 
+```{r message=FALSE, fig.height=10, fig.width=15}
+library(ANTsR)
+library(oro.nifti)
+library(neurobase)
+
+# import the python variables containing the MNI and MNI_brain images in nilearn
+MNI <- antsImageRead(py$MNI_nilearn$t1) 
+MNI_brain <- antsImageRead(py$MNI_nilearn$t1) * antsImageRead(py$MNI_nilearn$mask) 
+
+plot(
+  MNI, MNI_brain,
+  color.overlay = "red",
+  alpha = 0.5,
+  axis = 3,
+  nslices = 24, ncol = 6
+) %>% invisible
+
+
+```
+
+
+
+
+
+# ANTs register `MNI_brain <- full` 
+Not run because all the registration are done in parallel - See next chunk
+```{r fig.height=10, fig.width=15}
+
+# T1brain <- antsImageRead(full$sub_02$full_T1w_brain %>% as.character())
+# 
+# # # limit the numba of cores for each subject
+# nThreads <- Sys.getenv("ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS")
+# glue("Using ",{nThreads}," threads per sub")
+# 
+# 
+# reg <- antsRegistration(
+#   fixed = MNI_brain,
+#   moving = T1brain,
+#   typeofTransform = "SyN",
+#   verbose = FALSE
+# )
+# 
+# 
+# plot(
+#   MNI, reg$warpedmovout, axis = 1
+# ) %>% invisible()
+
+```
+
+
+
+
+
+
+# Do all the ANTsR registrations `MNI_brain <- full` in parallel
+
+To carry out the registrations in parallel, we need to create a cluster, and use `%dopar%` within a `foreach` loop.
+Standard ANTsR functions cannot be called in this way since ANTsR uses nonvalid pointers. Fortunately John Muschelli developed wrappers for ANTsR in the package `extrantsr`, and I will be using that. [Here](https://github.com/ANTsX/ANTsR/issues/272) is the post which saved me from madness.
+
+Specifically, I define a function `doANTsReg(sub)` which wraps `extrantsr::within_visit_registration`. 
+
+The process of parallelization requires four steps: 
+
+1. **Preparing the cluster** by defining the number of cores to use
+2. **Define the function to be iterated**, which calls `doANTsReg(sub)`
+3. **Carrying our the registration in parallel**, using `foreach` and `%dopar%`. This loops around the subject ID's in `list_subject` and returns a list with no names, with the whole list output by `doANTsReg(sub)` for each sub
+4. **Assigning the names to the output list** according to `list_subjects`
+
+**NB**: in this case, caching the results to avoid re-evaluating the list would have been very beneficial. However the registration parameters are saved in the `/tmp` directory, so they might not be available during subsequent runs of the notebook. Therefore caching is turned off.
+
+
+ETA is about 5 minutes.
+
+```{r message=FALSE, cache=FALSE}
+# life saver from John Muschelli: it allows to deal with the problem of the invalid pointer
+library(extrantsr)
+doANTsReg <- extrantsr::within_visit_registration
+
+
+library(ANTsR)
+library(tictoc)
+library(parallel)
+library(foreach)
+library(doParallel)
+
+# (1) Prepare the cluster
+recruitedCores <- detectCores() %/% 5  # I use 1/5 of the available cores
+registerDoParallel(recruitedCores)
+Sys.setenv(ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS = 1)  # also in ~/.Renviron
+numbaThreads <- Sys.getenv("ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS")
+print(
+  sprintf(
+  "Using %01d out %01d of cores with %s threads per sub", recruitedCores, detectCores(),numbaThreads
+  )
+)
+
+
+# (2) Define the function to be iterated
+do_registration_fn <- function(sub) {
+subID = sprintf("sub_%02d",sub)
+  T1brain <- full[[subID]][["full_T1w_brain"]]
+  
+  # reg <- doANTsReg(
+  #   fixed = MNI_brain,
+  #   moving = T1brain,
+  #   typeofTransform = 'SyN',
+  #   verbose = FALSE,
+  #   outfiles = NULL
+  # )
+  
+
+  # I need to use the extrantsr::registration since the within_visit_registration
+  # deletes the warps, and there is no way to let it keep it (crazy!)
+  reg <- registration(
+    template.file = MNI_brain,
+    filename = T1brain,
+    typeofTransform = 'SyN',
+    verbose = FALSE
+  )
+  
+  return(reg)
+}
+
+
+# (3) do the registrations in parallel
+reglist <- foreach(
+  sub = list_subjects,
+  .verbose = FALSE,
+  .packages = c('ITKR', 'ANTsRCore', 'ANTsR')
+) %dopar% {
+  do_registration_fn(sub)
+}
+
+
+# (4) Give the names (which will be the subject IDs)
+names(reglist) <- sprintf("sub_%02d", list_subjects)
+
+
+# inspect the final list
+str(reglist, max.level = 1)
+
+
+# inspect one subject
+double_ortho(reglist$sub_02$outfile, MNI_brain)
+
+ortho2(
+  reglist$sub_03$outfile,
+  MNI_brain %>% iMath("Canny", 3,3,3)
+)
+
+
+plot(
+  reglist$sub_03$outfile %>% oro2ants(), 
+  MNI_brain %>% iMath("Canny", 3,1,1) %>% smoothImage(0.3) %>% thresholdImage(0.1,1),
+  color.overlay="red", axis = 2
+) %>% invisible()
+
+
+```
+
+
+
+
+
+# Apply the transformation to the layer and depth images
+```{r fig.height=10, fig.width=15}
+
+chosen_interpolation <- "Linear"
+
+library(stringr)
+
+for (sub in names(full)) {
+  
+  depth_MNI_filename <- str_replace(
+    full[[sub]]$depth, 
+    "depth.nii.gz","depth_MNI.nii.gz"
+  )
+  
+  full[[sub]][["depth_MNI"]] <- depth_MNI_filename
+
+  depth_MNI <- antsApplyTransforms(
+    fixed = MNI_brain, 
+    moving = full[[sub]][["depth"]] %>% as.character(),
+    transformlist = reglist[[sub]][["fwdtransforms"]],
+    interpolator = chosen_interpolation
+  )
+  
+  antsImageWrite(depth_MNI, depth_MNI_filename)
+  
+  full[[sub]][["depth_MNI"]] %>% print()
+}
+
+
+
+# export the regdata variable to be used in bash in order to do fslmerge and calculate the median image
+Sys.setenv(REGDATA = regdata)
+
+```
+
+
+
+# Merge images and create median image in bash
+```{bash engine.opts='-l'}
+
+
+eachimg=`imglob $REGDATA/sub_*/ses_01/anat/layering/LH_layering_layering-depth_MNI.nii.gz`
+
+fslmerge -t all_depth_MNI.nii.gz ${eachimg}
+fslmaths all_depth_MNI.nii.gz -Tmedian all_depth_MNI_median.nii.gz 
+echo created all_depth_MNI_median.nii.gz
+
+```
+
+
+
+# Visualize the goddamn thing
+```{r fig.height=10, fig.width=15}
+
+mediandepth_filename <- sprintf("%s/all_depth_MNI_median.nii.gz",getwd())
+
+plot(
+  MNI_brain,
+  antsImageRead(mediandepth_filename),
+  nslices = 24, ncol = 6, useRaster = TRUE,
+  window.overlay = c(0,1), colorbar = TRUE
+) %>% invisible()
+
+```
+
+
+
+
+
+
+
+
+# OLE -- Apply the transformation to another image -- OLE
+
+```{r fig.height=10, fig.width=15}
+
+# library(extrantsr)
+# doANTsReg <- extrantsr::within_visit_registration
+# 
+# T1brain <- full$sub_02$full_T1w_brain
+# 
+# 
+# reg <- doANTsReg(
+#   fixed = MNI_brain, moving = T1brain,
+#   typeofTransform = "Affine", interpolator = "Linear"
+# )
+# 
+# depthMNI <- antsApplyTransforms(
+#   fixed = MNI_brain, moving = full$sub_02$depth %>% as.character(),
+#   transformlist = reg$fwdtransforms,
+#   interpolator = "Linear"
+# )
+# 
+# 
+# layerMNI <- ants_apply_transforms(
+#   fixed = MNI_brain, moving = full$sub_02$layers %>% as.character(),
+#   transformlist = reg
+# )
+# 
+# 
+# # # native space
+# # plot(
+# #   antsImageRead(full$sub_02$full_T1w_brain %>% as.character()),
+# #   antsImageRead(full$sub_02$depth %>% as.character()),
+# #   nslices = 24, ncol = 6, useRaster = TRUE
+# # ) %>% invisible()
+# 
+# 
+# # MNI space
+# plot(
+#   reg$outfile %>% oro2ants(),
+#   depthMNI %>% oro2ants(),
+#   nslices = 24, ncol = 6, useRaster = TRUE
+# ) %>% invisible()
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,261 @@
+---
+title: "elements 2D histograms"
+output: html_notebook
+runtime: shiny
+---
+
+```{r, librerie, message=FALSE, echo=FALSE}
+library(shiny)
+library(plotly)
+library(oro.nifti)
+library(neurobase)
+library(papayaWidget)
+library(magrittr)
+
+bd <- "/data00/layerfMRI/Github_repo/layerfMRI/analyses/2D_histogram"
+datadir <- paste0(bd,"/data4histograms")
+ROIsdir <- paste0(bd,"/ROIs")
+
+MNI <- paste0(datadir,"/icbm152_2009_brain.nii.gz") %>% oro.nifti::readNIfTI()
+
+Zmotion <- paste0(datadir,"/MOTION_thresh_zstat1.nii.gz") %>% oro.nifti::readNIfTI()
+Zscrambled <- paste0(datadir,"/SCRAMBLED_thresh_zstat1.nii.gz") %>% oro.nifti::readNIfTI()
+
+depth <- paste0(datadir,"/median_depth.nii.gz") %>% oro.nifti::readNIfTI()
+layers <- paste0(datadir,"/median_layers.nii.gz") %>% oro.nifti::readNIfTI()
+
+```
+
+
+
+# One dimensional histogram as a first quick check
+```{r, 1D histogram, echo=FALSE}
+
+# # First attempt (not interactive) with bars
+# plot_ly(alpha = 0.6) %>%
+#   add_histogram(x = depth[idx_motion]) %>%
+#   add_histogram(x = depth[idx_scrambled]) %>%
+#   layout(barmode = "overlay")
+
+
+# Zthr <-  2.3
+
+plot_1Dhist <- function(Zthr) {
+
+  idx_motion <- which(Zmotion > Zthr)
+  idx_scrambled <- which(Zscrambled > Zthr)
+  
+  M_density <- density(depth[idx_motion])
+  S_density <- density(depth[idx_scrambled])
+
+  p <- plot_ly() %>% 
+    add_trace(
+      x = M_density$x, y = M_density$y, 
+      type = 'scatter', mode = 'lines', name = 'Motion', fill = 'tozeroy'    
+    ) %>% 
+    add_trace(
+      x = S_density$x, y = S_density$y, 
+      type = 'scatter', mode = 'lines', name = 'Scrambled', fill = 'tozeroy'
+    )
+  
+  return(p)
+  
+}
+
+
+# ------------ UI -------------
+renderPlotly({
+  plot_1Dhist(input$Zthr)  
+})
+
+sliderInput("Zthr", label = "Zthr", min = 2.3, max = 8, value = 3.1)
+
+
+```
+
+
+
+
+# 2D histogram
+
+The easiest and quickest way to create a 2D histogram is to pass, for every voxel (above a certain Z threshold) (1) its Z-value and (2) its cortical depth value. This will allow creating a scatterplot from which the 2D histogram can be estimated in plotly using the `add_histogram2dcontour` trace.
+
+If instead you wish to fit a bivariate distribution, follow [this link](https://www.datacamp.com/community/tutorials/bivariate-heatmaps)
+
+
+```{r 2D histograms, echo=FALSE}
+
+# Zthr <-  2.3
+# Zmax <- 8
+# chosenZstat <- Zmotion
+# layeringmap <- depth   # layers or depth
+
+# # layeringmap is layers or depth
+
+plot_2Dhist <- function(Zthr, Zmax, chosenZstat, title) {
+
+  idx <- which(chosenZstat > Zthr & chosenZstat < Zmax)
+  x = depth[idx]
+  y = chosenZstat[idx]
+  
+  p <- plot_ly(
+    x = depth[idx],
+    y = chosenZstat[idx]
+  ) %>% 
+    add_markers(color = x, colors = "Reds", alpha = 0) %>%
+    add_trace(
+      type = 'histogram2dcontour',
+      colorscale = "Viridis",
+      contours = list(showlabels=TRUE)
+    ) %>% 
+    layout(
+      title = title,
+      xaxis = list(
+        title = 'cortical depth'
+      ),
+      yaxis = list(
+        title = 'Z-stat'
+      )
+    )
+  
+  return(p)
+
+}
+
+
+# ------------ UI -------------
+renderPlotly({
+  plot_2Dhist(
+    Zthr = input$Zthr2D, Zmax = 8,
+    chosenZstat = Zmotion, title = 'Motion'
+  )
+})
+
+sliderInput("Zthr2D", label = "Zthr", min = 2.3, max = 8, value = 3.1)
+
+renderPlotly({
+  plot_2Dhist(
+    Zthr = input$Zthr2D, Zmax = 8,
+    chosenZstat = Zscrambled, title = 'Scrambled'
+  )
+})
+
+
+
+```
+
+
+
+# kernel density estimate with `MASS:kde2`
+```{r, kernel density estimate}
+library(MASS)
+
+thr <- 5
+
+idx <- which(Zmotion > thr & Zmotion < 8)
+dM <- kde2d(Zmotion[idx], depth[idx], n = 100)
+renderPlot(contour(dM)) 
+
+
+idx <- which(Zscrambled > thr & Zscrambled < 8)
+dS <- kde2d(Zscrambled[idx], depth[idx], n = 100)
+renderPlot(contour(dS))
+
+
+```
+
+
+
+
+
+
+
+# Brain viewer heatmap
+```{r, heatmap brain viewer, echo=FALSE}
+
+
+# # ---------- functions -------------
+# plot_Zstat <- function(slice, chosenZstat, Zthr) {
+# 
+#   Zstat <- chosenZstat
+# 
+#   Zstat[Zstat < Zthr] <- NA
+#   Zstat[Zstat >= Zthr] <- 1
+#   
+#   MNI[MNI < 50] <- NA
+# 
+#   p <- plot_ly(width = 280, height = 300) %>%
+#     add_trace(
+#       z = MNI[ , ,input$slice], transpose = TRUE,
+#       type = "heatmap",
+#       colorscale = "Greys", showscale = FALSE, opacity = 1
+#     ) %>%
+#     add_trace(
+#       z = Zstat[ , ,input$slice], transpose = TRUE,
+#       type = "heatmap",
+#       colorscale = "Reds", showscale = FALSE, opacity = 1
+#     )
+# 
+# }
+# 
+# # ------------------ UI ---------------------------
+# 
+# output$plotSlice <-  renderPlotly({
+#   plot_Zstat(input$slice, chosenZstat = Zmotion, Zthr = input$Zthr)
+# })
+# 
+# sliderInput("slice", label = "slice", min = 50, max = 150, value = 100)
+# 
+# plotlyOutput("plotSlice")
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Papaya viewer
+Maybe not the best: it is a bit slow to load the images. On the other hand the threshold of images to display could probably be passed reactively <- no it doesn't work. Ok no papaya viewer, we go with heatmaps
+```{r, echo=FALSE}
+
+# sliderInput("Zthr", label = "Z threshold", min = 1.9, max = 5, value = 2.3)
+# 
+# radioButtons(
+#   inputId = "ZstatChosen", label = "Choose task",
+#   choices = list("Motion" = Zmotion, "Scrambled" = Zscrambled)
+# )
+# 
+# papayaOutput(outputId = 'viewer', height = "600px")
+# 
+# output$viewer <- renderPapaya({
+#   papaya(
+#     img = c(MNI,input$ZstatChosen),
+#     options = list(
+#       papayaOptions(min = 50, max = 100),
+#       papayaOptions(min = input$Zstat)
+#     )
+#   )
+# })
+
+
+```
+
+
+
+

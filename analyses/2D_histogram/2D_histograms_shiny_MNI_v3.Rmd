@@ -1,0 +1,402 @@
+---
+title: "layer specific activity"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+
+```{r, message=FALSE, echo=FALSE}
+library(flexdashboard)
+library(shiny)
+library(plotly)
+library(oro.nifti)
+library(neurobase)
+library(ANTsR)
+library(extrantsr)
+library(dplyr)
+source("libfunc.R")
+
+
+defaultW <- getOption("warn") 
+options(warn = -1) 
+
+
+bd <- "/data00/layerfMRI/Github_repo/layerfMRI/analyses/2D_histogram"
+datadir <- paste0(bd,"/data4histograms")
+
+MNI_file <- paste0(datadir,"/icbm152_2009_brain.nii.gz") 
+MNI <- MNI_file %>% oro.nifti::readNIfTI()
+
+MNI_masked_file <- paste0(datadir,"/icbm152_2009_brain_MASKED.nii.gz")
+
+Zmotion_file <- paste0(datadir,"/MOTION_thresh_zstat1.nii.gz") 
+Zmotion <- Zmotion_file %>% oro.nifti::readNIfTI()
+
+Zscrambled_file <- paste0(datadir,"/SCRAMBLED_thresh_zstat1.nii.gz") 
+Zscrambled <- Zscrambled_file %>% oro.nifti::readNIfTI()
+
+depth <- paste0(datadir,"/median_depth.nii.gz") %>% oro.nifti::readNIfTI()
+layers <- paste0(datadir,"/median_layers.nii.gz") %>% oro.nifti::readNIfTI()
+
+```
+
+
+
+Column {data-width=400}
+-------------------------------------
+    
+### 1D histogram for Motion and Scrambled {data-height=400}
+    
+```{r, message=FALSE}
+
+output$plot1Dhist <- renderPlotly({
+
+  Zthr <- input$Zthr
+
+  idx_motion <- which(Zmotion > Zthr)
+  idx_scrambled <- which(Zscrambled > Zthr)
+  
+  if (input$histType == "kd") {
+    
+    # kernel density plot
+    M_density <- density(depth[idx_motion])
+    S_density <- density(depth[idx_scrambled])
+
+    plot_ly(height = 400, width = 450) %>%
+      config(displayModeBar = FALSE) %>% 
+      add_trace(
+        x = M_density$x, y = M_density$y,
+        type = 'scatter', mode = 'lines', name = 'Motion', fill = 'tozeroy'
+      ) %>%
+      add_trace(
+        x = S_density$x, y = S_density$y,
+        type = 'scatter', mode = 'lines', name = 'Scrambled', fill = 'tozeroy'
+      ) %>%
+      layout(
+        title = title,
+        xaxis = list(
+          title = 'cortical depth',
+          autorange=F, range=c(0,1)
+        ),
+        yaxis = list(
+          title = 'kernel density'
+        )
+      )
+  } else {
+  
+    # basic histogram
+    plot_ly(
+      alpha = 0.7, nbinsx = 50,
+      height = 400, width = 450
+    ) %>% 
+      config(displayModeBar = FALSE) %>% 
+      add_histogram(depth[idx_motion], name = 'Motion') %>% 
+      add_histogram(depth[idx_scrambled], name = 'Scrambled') %>% 
+      layout(barmode = "overlay") %>% 
+      layout(
+        xaxis = list(
+          title = "cortical depth",
+          autorange=F, range=c(0,1)
+        ),
+        yaxis = list(
+          title = "numba voxels"
+        )
+      )
+  }
+  
+})
+
+
+# # highcharter with densities
+# hchart(
+#   density(depth[idx_motion]), type = "area", 
+#   color = "salmon", name = "Motion"
+#   ) %>%
+#   hc_add_series(
+#     density(depth[idx_scrambled]), type = "area",
+#     color = "skyblue", name = "Scrambled"
+#     ) %>% 
+#   hc_xAxis(title = list(text = "cortical depth"))
+
+
+# -------- UI --------------
+
+radioButtons(
+  "histType", label = "",
+  choices = list("histogram" =  "histogram", "kernel density" = "kd"),
+  inline = TRUE
+)
+
+plotlyOutput("plot1Dhist")
+
+# htmltools::div(style = "display:inline-block", plotlyOutput("plot1Dhist"))
+
+
+
+```
+   
+   
+### 2D histogram depth-by-Zstat {data-height=700}
+    
+```{r, message=FALSE}
+
+plot_2Dhist <- function(Zthr, Zmax, chosenZstat, title) {
+
+  idx <- which(chosenZstat > Zthr & chosenZstat < Zmax)
+  x = depth[idx]
+  y = chosenZstat[idx]
+
+  p <- plot_ly(
+    x = depth[idx],
+    y = chosenZstat[idx],
+    height = 350, width = 450 
+  ) %>%
+    add_markers(color = x, colors = "Reds", alpha = 0) %>%
+    add_trace(
+      type = 'histogram2dcontour',
+      colorscale = "Viridis",
+      contours = list(showlabels=TRUE)
+    ) %>%
+    layout(
+      title = title,
+      xaxis = list(
+        title = 'cortical depth'
+      ),
+      yaxis = list(
+        title = 'Z-stat'
+      )
+    )
+
+  return(p)
+
+}
+
+
+output$plotMotion2D <- renderPlotly({
+  plot_2Dhist(
+    Zthr = input$Zthr, Zmax = 8,
+    chosenZstat = Zmotion, title = 'Motion'
+  )
+})
+
+
+output$plotScrambled2D <- renderPlotly({
+  plot_2Dhist(
+    Zthr = input$Zthr, Zmax = 8,
+    chosenZstat = Zscrambled, title = 'Scrambled'
+  )
+})
+
+
+
+# ------------ UI -------------
+
+# see here:
+# https://community.plotly.com/t/plotly-shiny-reactive-height-of-plots/1503/3
+
+htmltools::div(style = "display:inline-block", plotlyOutput("plotMotion2D"))
+
+sliderInput("Zthr", label = "Zthr", min = 2.3, max = 8, value = 3.1, width = "100%")
+
+htmltools::div(style = "display:inline-block", plotlyOutput("plotScrambled2D"))
+
+
+```
+   
+   
+Column {data-width=600}
+-------------------------------------
+   
+### Table for each task {data-height=300}
+
+```{r}
+
+
+# getTable is a function inside libfunc.R
+getTable <- function(Zcontrast) {
+  
+  Zcontrast_name <- deparse(substitute(Zcontrast))
+  table_filename <- paste0(datadir,"/",Zcontrast_name,".csv")
+  
+  if(file.exists(table_filename)) {
+     tbl2display <- read.csv(table_filename)
+  } else {
+     tbl2display <- atlastable(Zscrambled, depth, datadir)
+  }
+  
+  return(tbl2display)
+}
+
+
+radioButtons(
+  "radio", label = "",
+  choices = list("Motion" = "M", "Scrambled" = "S"),
+  inline = TRUE
+)
+
+
+output$table <- renderTable({
+  if (input$radio == "M") {
+    getTable(Zmotion)
+  } else {
+    getTable(Zscrambled)
+  }
+})
+
+
+# ---------- UI -------------
+
+tableOutput("table")
+
+
+```   
+ 
+
+### Barplot of cortical depth per Juelich region {data-height=300}
+```{r, message=FALSE}
+library(highcharter)
+library(tidyr)
+
+Zmotion_atlas <- getTable(Zmotion)
+Zscrambled_atlas <- getTable(Zscrambled)
+
+df_mean <- full_join(Zmotion_atlas, Zscrambled_atlas, by="name") %>%
+  select(name, M_depth = meanDepth.x, S_depth = meanDepth.y) %>% 
+  tidyr::gather(task, meanDepth, M_depth, S_depth, factor_key = TRUE)
+
+df_std <- full_join(Zmotion_atlas, Zscrambled_atlas, by="name") %>%
+  select(name, M_depth_std = stdDepth.x, S_depth_std = stdDepth.y) %>% 
+  tidyr::gather(task, stdDepth, M_depth_std, S_depth_std, factor_key = TRUE)
+
+df_sderr <- full_join(Zmotion_atlas, Zscrambled_atlas, by="name") %>%
+  select(name, M_depth_sderr = sderrDepth.x, S_depth_sderr = sderrDepth.y) %>% 
+  tidyr::gather(task, sderrDepth, M_depth_sderr, S_depth_sderr, factor_key = TRUE)
+
+
+# build the df for the barplot
+df <- df_mean
+
+df$std <- df_std$stdDepth
+df$sderr <- df_sderr$sderrDepth
+
+
+
+output$plot_hc <- renderHighchart({
+  
+  h <- df %>%
+    hchart(
+      'column', 
+      hcaes(x = name, y = meanDepth, group = task),
+      animation=FALSE
+    ) %>%
+    hc_yAxis(max = 1) %>% 
+    hc_colors(c("salmon","skyblue")) %>%
+    hc_add_series(
+      df, 'errorbar',
+      hcaes(
+        x = name,
+        low = meanDepth - !!sym(input$errorbar),
+        high = meanDepth + !!sym(input$errorbar),
+        group = task
+      ),
+      animation = F,
+      centerInCategory = TRUE, groupPadding = .68, whiskerLength = 10
+    )
+  
+})
+
+
+# -------- UI ------------
+
+radioButtons(
+  "errorbar", label = "",
+  choices = list("std deviation" =  "std", "std error" = "sderr"),
+  inline = TRUE
+)
+
+highchartOutput("plot_hc")
+
+
+
+```
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+### Slices at Z threshold {data-height=400}
+    
+```{r, message=FALSE}
+
+observe({
+
+  req(input$Zthr)
+  req(input$chosenStat)
+
+  Zstat <- antsImageRead(input$chosenStat)
+  Zstat[Zstat >= input$Zthr] = input$Zthr
+
+  output$brainimg <- renderImage({
+
+    plot(
+      antsImageRead(MNI_masked_file),
+      Zstat,
+      color.overlay = "red",
+      axis = 1,
+      window.img = c(50,150),
+      window.overlay = c(input$Zthr -1 , input$Zthr + 1),
+      alpha = 1,
+      nslices = 16, ncol = 4,
+      crop = TRUE, quality = 1,
+      outname = paste0(getwd(),"/slice.png")
+    )
+
+    list(
+      src = paste0(getwd(),"/slice.png")
+    )
+  }, deleteFile = TRUE)
+
+})
+
+
+# --------------- UI -------------------
+
+radioButtons("chosenStat", "",
+             c("Motion" = Zmotion_file,"Scrambled" = Zscrambled_file),
+             inline = TRUE)
+
+imageOutput("brainimg")
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

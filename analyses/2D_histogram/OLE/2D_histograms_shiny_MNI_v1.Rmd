@@ -1,0 +1,225 @@
+---
+title: "layer specific activity"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+
+```{r, message=FALSE, echo=FALSE}
+library(flexdashboard)
+library(shiny)
+library(plotly)
+library(oro.nifti)
+library(neurobase)
+library(ANTsR)
+library(papayaWidget)
+library(magrittr)
+library(extrantsr)
+
+defaultW <- getOption("warn") 
+options(warn = -1) 
+
+
+bd <- "/data00/layerfMRI/Github_repo/layerfMRI/analyses/2D_histogram"
+datadir <- paste0(bd,"/data4histograms")
+ROIsdir <- paste0(bd,"/ROIs")
+
+MNI_file <- paste0(datadir,"/icbm152_2009_brain.nii.gz") 
+MNI <- MNI_file %>% oro.nifti::readNIfTI()
+
+MNI_masked_file <- paste0(datadir,"/icbm152_2009_brain_MASKED.nii.gz")
+
+Zmotion_file <- paste0(datadir,"/MOTION_thresh_zstat1.nii.gz") 
+Zmotion <- Zmotion_file %>% oro.nifti::readNIfTI()
+
+Zscrambled_file <- paste0(datadir,"/SCRAMBLED_thresh_zstat1.nii.gz") 
+Zscrambled <- Zscrambled_file %>% oro.nifti::readNIfTI()
+
+depth <- paste0(datadir,"/median_depth.nii.gz") %>% oro.nifti::readNIfTI()
+layers <- paste0(datadir,"/median_layers.nii.gz") %>% oro.nifti::readNIfTI()
+
+```
+
+
+
+Column {data-width=400}
+-------------------------------------
+    
+### 1D histogram for Motion and Scrambled {data-height=300}
+    
+```{r, message=FALSE}
+
+renderPlotly({
+
+  Zthr <- input$Zthr
+
+  idx_motion <- which(Zmotion > Zthr)
+  idx_scrambled <- which(Zscrambled > Zthr)
+
+  M_density <- density(depth[idx_motion])
+  S_density <- density(depth[idx_scrambled])
+
+  plot_ly() %>%
+    add_trace(
+      x = M_density$x, y = M_density$y,
+      type = 'scatter', mode = 'lines', name = 'Motion', fill = 'tozeroy'
+    ) %>%
+    add_trace(
+      x = S_density$x, y = S_density$y,
+      type = 'scatter', mode = 'lines', name = 'Scrambled', fill = 'tozeroy'
+    )
+
+})
+
+```
+   
+   
+### 2D histogram depth-by-Zstat {data-height=700}
+    
+```{r, message=FALSE}
+
+plot_2Dhist <- function(Zthr, Zmax, chosenZstat, title) {
+
+  idx <- which(chosenZstat > Zthr & chosenZstat < Zmax)
+  x = depth[idx]
+  y = chosenZstat[idx]
+
+  p <- plot_ly(
+    x = depth[idx],
+    y = chosenZstat[idx],
+    height = 350, width = 450 
+  ) %>%
+    add_markers(color = x, colors = "Reds", alpha = 0) %>%
+    add_trace(
+      type = 'histogram2dcontour',
+      colorscale = "Viridis",
+      contours = list(showlabels=TRUE)
+    ) %>%
+    layout(
+      title = title,
+      xaxis = list(
+        title = 'cortical depth'
+      ),
+      yaxis = list(
+        title = 'Z-stat'
+      )
+    )
+
+  return(p)
+
+}
+
+
+output$plotMotion2D <- renderPlotly({
+  plot_2Dhist(
+    Zthr = input$Zthr, Zmax = 8,
+    chosenZstat = Zmotion, title = 'Motion'
+  )
+})
+
+
+output$plotScrambled2D <- renderPlotly({
+  plot_2Dhist(
+    Zthr = input$Zthr, Zmax = 8,
+    chosenZstat = Zscrambled, title = 'Scrambled'
+  )
+})
+
+
+
+# ------------ UI -------------
+
+# see here:
+# https://community.plotly.com/t/plotly-shiny-reactive-height-of-plots/1503/3
+
+htmltools::div(style = "display:inline-block", plotlyOutput("plotMotion2D"))
+
+sliderInput("Zthr", label = "Zthr", min = 2.3, max = 8, value = 3.1, width = "100%")
+
+htmltools::div(style = "display:inline-block", plotlyOutput("plotScrambled2D"))
+
+
+```
+   
+   
+Column {data-width=600}
+-------------------------------------
+   
+### Image loaders {data-height=200}
+
+```{r}
+```   
+ 
+### Slices {data-height=800}
+    
+```{r, message=FALSE}
+
+observe({
+
+  req(input$Zthr)
+  req(input$chosenStat)
+
+  Zstat <- antsImageRead(input$chosenStat)
+  Zstat[Zstat >= input$Zthr] = input$Zthr
+
+  output$brainimg <- renderImage({
+
+    plot(
+      antsImageRead(MNI_masked_file),
+      Zstat,
+      color.overlay = "red",
+      axis = 1,
+      window.img = c(50,150),
+      window.overlay = c(input$Zthr -1 , input$Zthr + 1),
+      alpha = 1,
+      nslices = 36, ncol = 4,
+      crop = TRUE, quality = 1,
+      outname = paste0(getwd(),"/slice.png")
+    )
+
+    list(
+      src = paste0(getwd(),"/slice.png")
+    )
+  }, deleteFile = TRUE)
+
+})
+
+
+# --------------- UI -------------------
+
+radioButtons("chosenStat", "",
+             c("Motion" = Zmotion_file,"Scrambled" = Zscrambled_file),
+             inline = TRUE)
+
+imageOutput("brainimg")
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
