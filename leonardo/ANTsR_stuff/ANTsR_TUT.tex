@@ -1,0 +1,517 @@
+\documentclass[]{tufte-handout}
+
+% ams
+\usepackage{amssymb,amsmath}
+
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \makeatletter
+  \@ifpackageloaded{fontspec}{}{\usepackage{fontspec}}
+  \makeatother
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+  \makeatletter
+  \@ifpackageloaded{soul}{
+     \renewcommand\allcapsspacing[1]{{\addfontfeature{LetterSpace=15}#1}}
+     \renewcommand\smallcapsspacing[1]{{\addfontfeature{LetterSpace=10}#1}}
+   }{}
+  \makeatother
+
+\fi
+
+% graphix
+\usepackage{graphicx}
+\setkeys{Gin}{width=\linewidth,totalheight=\textheight,keepaspectratio}
+
+% booktabs
+\usepackage{booktabs}
+
+% url
+\usepackage{url}
+
+% hyperref
+\usepackage{hyperref}
+
+% units.
+\usepackage{units}
+
+
+\setcounter{secnumdepth}{-1}
+
+% citations
+
+
+% pandoc syntax highlighting
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\newenvironment{Shaded}{}{}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+
+% longtable
+
+% multiplecol
+\usepackage{multicol}
+
+% strikeout
+\usepackage[normalem]{ulem}
+
+% morefloats
+\usepackage{morefloats}
+
+
+% tightlist macro required by pandoc >= 1.14
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% title / author / date
+\title{ANTsR TUT}
+\author{Leonardo Cerliani}
+\date{09 January, 2021}
+
+
+\begin{document}
+
+\maketitle
+
+
+
+
+\hypertarget{before-you-start}{%
+\section{Before you start}\label{before-you-start}}
+
+This tutorial for ANTsR is based on the Rmd
+\href{https://github.com/stnava/ANTsTutorial/blob/master/registration/antsRegistrationIntro.Rmd}{notebook
+by Brian Avants on antsRegistration in R}.
+
+The Rmd version was evaluated riding on the Storm, but it should work
+everywhere.
+
+\hypertarget{read-images}{%
+\section{Read images}\label{read-images}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(ANTsR)}
+\KeywordTok{library}\NormalTok{(ggplot2)}
+
+\CommentTok{# Read images}
+\NormalTok{r16 =}\StringTok{ }\KeywordTok{antsImageRead}\NormalTok{( }\KeywordTok{getANTsRData}\NormalTok{( }\StringTok{"r16"}\NormalTok{ ) )}
+\NormalTok{r64 =}\StringTok{ }\KeywordTok{antsImageRead}\NormalTok{( }\KeywordTok{getANTsRData}\NormalTok{( }\StringTok{"r64"}\NormalTok{ ) )}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{visualization}{%
+\section{Visualization}\label{visualization}}
+
+\hypertarget{define-functions-for-plotting}{%
+\subsection{Define functions for
+plotting}\label{define-functions-for-plotting}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Only one image}
+\NormalTok{antsplot.single <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(image)\{}
+  \KeywordTok{invisible}\NormalTok{(}
+    \KeywordTok{plot}\NormalTok{(}
+\NormalTok{      image,}
+      \DataTypeTok{doCropping =}\NormalTok{ F}
+\NormalTok{    )  }
+\NormalTok{  )}
+\NormalTok{\}}
+
+
+\CommentTok{# Simple overlay with alpha}
+\NormalTok{antsplot.olay <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(bg, olay, }\DataTypeTok{alpha=}\FloatTok{0.5}\NormalTok{)\{}
+  \KeywordTok{invisible}\NormalTok{(}
+    \KeywordTok{plot}\NormalTok{(}
+\NormalTok{      bg, olay,}
+      \DataTypeTok{color.overlay=}\StringTok{'red'}\NormalTok{,}
+      \DataTypeTok{doCropping =}\NormalTok{ F,}
+      \DataTypeTok{alpha=}\NormalTok{alpha,}
+      \DataTypeTok{window.overlay =} \KeywordTok{quantile}\NormalTok{(olay, }\KeywordTok{c}\NormalTok{(}\FloatTok{0.72}\NormalTok{,}\DecValTok{1}\NormalTok{))}
+\NormalTok{    )  }
+\NormalTok{  )}
+\NormalTok{\}}
+
+
+\CommentTok{# Overlay canny borders}
+\NormalTok{antsplot.canny <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(bg, olay, }\DataTypeTok{alpha=}\DecValTok{1}\NormalTok{)\{}
+\NormalTok{  canned_olay =}\StringTok{ }\KeywordTok{iMath}\NormalTok{(olay, }\StringTok{"Canny"}\NormalTok{, }\DecValTok{3}\NormalTok{,}\DecValTok{3}\NormalTok{,}\DecValTok{3}\NormalTok{)}
+  \KeywordTok{invisible}\NormalTok{(}
+    \KeywordTok{plot}\NormalTok{(}
+\NormalTok{      bg, canned_olay,}
+      \DataTypeTok{color.overlay=}\StringTok{'red'}\NormalTok{,}
+      \DataTypeTok{doCropping =}\NormalTok{ F,}
+      \DataTypeTok{alpha=}\NormalTok{alpha}
+\NormalTok{    )  }
+\NormalTok{  )}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{plot-single-image}{%
+\subsection{Plot single image}\label{plot-single-image}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{antsplot.single}\NormalTok{(r16)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning in fun(libname, pkgname): couldn't connect to display ":0"
+\end{verbatim}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-3-1}
+
+\hypertarget{plot-overlay-with-transparency}{%
+\subsection{Plot overlay with
+transparency}\label{plot-overlay-with-transparency}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{antsplot.olay}\NormalTok{(r16,r64)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-4-1}
+
+\hypertarget{plot-borders-of-overlay}{%
+\subsection{Plot borders of overlay}\label{plot-borders-of-overlay}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{antsplot.canny}\NormalTok{(r16,r64)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-5-1}
+
+\hypertarget{estimate-registration}{%
+\section{Estimate Registration}\label{estimate-registration}}
+
+See \texttt{?antsRegistration()} for different typesofTransform
+
+\hypertarget{translation}{%
+\subsection{Translation}\label{translation}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{trans_reg =}\StringTok{ }\KeywordTok{antsRegistration}\NormalTok{(}
+  \DataTypeTok{fixed=}\NormalTok{r16, }
+  \DataTypeTok{moving=}\NormalTok{r64, }
+  \DataTypeTok{typeofTransform =} \StringTok{'Translation'}
+\NormalTok{)}
+
+\KeywordTok{readAntsrTransform}\NormalTok{(trans_reg}\OperatorTok{$}\NormalTok{fwdtransforms)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## antsrTransform
+##   Dimensions    : 2 
+##   Precision     : float 
+##   Type          : AffineTransform
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{antsplot.canny}\NormalTok{(r16, trans_reg}\OperatorTok{$}\NormalTok{warpedmovout)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-6-1}
+
+\hypertarget{rigid-registration}{%
+\subsection{Rigid registration}\label{rigid-registration}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{rigid_reg =}\StringTok{ }\KeywordTok{antsRegistration}\NormalTok{(}
+  \DataTypeTok{fixed=}\NormalTok{r16, }
+  \DataTypeTok{moving=}\NormalTok{r64, }
+  \DataTypeTok{typeofTransform =} \StringTok{'Rigid'}
+\NormalTok{)}
+
+
+\KeywordTok{antsplot.canny}\NormalTok{(r16, rigid_reg}\OperatorTok{$}\NormalTok{warpedmovout)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-7-1}
+
+\hypertarget{affine-registration}{%
+\subsection{Affine registration}\label{affine-registration}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{affine_reg =}\StringTok{ }\KeywordTok{antsRegistration}\NormalTok{(}
+  \DataTypeTok{fixed=}\NormalTok{r16, }
+  \DataTypeTok{moving=}\NormalTok{r64, }
+  \DataTypeTok{typeofTransform =} \StringTok{'Affine'}\NormalTok{, }
+  \DataTypeTok{verbose =}\NormalTok{ F}
+\NormalTok{)}
+
+\KeywordTok{antsplot.canny}\NormalTok{(r16, affine_reg}\OperatorTok{$}\NormalTok{warpedmovout)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-8-1}
+
+\hypertarget{syn-registration}{%
+\subsection{SyN registration}\label{syn-registration}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{syn_reg =}\StringTok{ }\KeywordTok{antsRegistration}\NormalTok{(}
+  \DataTypeTok{fixed =}\NormalTok{ r16,}
+  \DataTypeTok{moving =}\NormalTok{ r64,}
+  \DataTypeTok{typeofTransform =} \StringTok{'SyN'}
+\NormalTok{)}
+
+\KeywordTok{antsplot.canny}\NormalTok{(r16, syn_reg}\OperatorTok{$}\NormalTok{warpedmovout)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-9-1}
+
+\hypertarget{syncc-registration}{%
+\subsection{SyNCC registration}\label{syncc-registration}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{synCC_reg =}\StringTok{ }\KeywordTok{antsRegistration}\NormalTok{(}
+  \DataTypeTok{fixed =}\NormalTok{ r16,}
+  \DataTypeTok{moving =}\NormalTok{ r64,}
+  \DataTypeTok{typeofTransform =} \StringTok{'SyNCC'}
+\NormalTok{)}
+
+\KeywordTok{antsplot.canny}\NormalTok{(r16, synCC_reg}\OperatorTok{$}\NormalTok{warpedmovout)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-10-1}
+
+\hypertarget{mutual-information-metric}{%
+\section{Mutual Information metric}\label{mutual-information-metric}}
+
+To estimate the goodness of different kinds of registration we can plot
+the MI metric against the number of parameters
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{MI <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}
+  \KeywordTok{antsImageMutualInformation}\NormalTok{( r16, r64), }
+  \KeywordTok{antsImageMutualInformation}\NormalTok{( r16, trans_reg}\OperatorTok{$}\NormalTok{warpedmovout), }
+  \KeywordTok{antsImageMutualInformation}\NormalTok{( r16, rigid_reg}\OperatorTok{$}\NormalTok{warpedmovout),}
+  \KeywordTok{antsImageMutualInformation}\NormalTok{( r16, affine_reg}\OperatorTok{$}\NormalTok{warpedmovout),}
+  \KeywordTok{antsImageMutualInformation}\NormalTok{( r16, syn_reg}\OperatorTok{$}\NormalTok{warpedmovout),}
+  \KeywordTok{antsImageMutualInformation}\NormalTok{( r16, synCC_reg}\OperatorTok{$}\NormalTok{warpedmovout)}
+\NormalTok{)}
+
+\NormalTok{nparameters =}\StringTok{ }\KeywordTok{c}\NormalTok{( }\DecValTok{0}\NormalTok{, }\DecValTok{2}\NormalTok{, }\DecValTok{4}\NormalTok{, }\DecValTok{8}\NormalTok{, }\DecValTok{16}\NormalTok{, }\DecValTok{32}\NormalTok{ )}
+\KeywordTok{plot}\NormalTok{( nparameters, MI, }\DataTypeTok{type=}\StringTok{'l'}\NormalTok{, }\DataTypeTok{main=}\StringTok{'Similarity vs number of parameters'}\NormalTok{ )}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-11-1}
+
+\hypertarget{jacobian-determinant-image}{%
+\section{Jacobian determinant image}\label{jacobian-determinant-image}}
+
+From Brian Avants' notebook on antsRegistration:
+
+``What does ``differentiable map with differentiable inverse'' mean? The
+diffeomorphism is like a road between the two images - we can go back
+and forth along it.
+
+It also means that if we compose the mapping from A to B with the
+mapping from B to A, we get the identity.
+
+We can check this by looking at the result of the composition of SyN's
+forward and inverse maps."
+
+\hypertarget{forward-warpfield}{%
+\subsection{Forward warpfield}\label{forward-warpfield}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{grid_fw =}\StringTok{ }\KeywordTok{createWarpedGrid}\NormalTok{( r16, }
+                            \DataTypeTok{fixedReferenceImage =}\NormalTok{ r16, }
+                            \DataTypeTok{transform =}\NormalTok{ syn_reg}\OperatorTok{$}\NormalTok{fwdtransforms[}\DecValTok{1}\NormalTok{] }
+\NormalTok{                          )}
+
+\KeywordTok{invisible}\NormalTok{(}\KeywordTok{plot}\NormalTok{( grid_fw ))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-12-1}
+
+\hypertarget{inverse-warpfield}{%
+\subsection{Inverse warpfield}\label{inverse-warpfield}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{grid_backwd =}\StringTok{ }\KeywordTok{createWarpedGrid}\NormalTok{( r16, }
+                                 \DataTypeTok{fixedReferenceImage =}\NormalTok{ r16, }
+                                 \DataTypeTok{transform =}\NormalTok{ syn_reg}\OperatorTok{$}\NormalTok{invtransforms[}\DecValTok{2}\NormalTok{] }
+\NormalTok{                              )}
+\KeywordTok{invisible}\NormalTok{(}\KeywordTok{plot}\NormalTok{( grid_backwd ))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-13-1}
+
+\hypertarget{composition-of-forward-and-inverse}{%
+\subsection{Composition of forward and
+inverse}\label{composition-of-forward-and-inverse}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{emptygrid =}\StringTok{ }\KeywordTok{createWarpedGrid}\NormalTok{( r16, }\DataTypeTok{fixedReferenceImage =}\NormalTok{ r16 )}
+
+\NormalTok{invidmap =}\StringTok{ }\KeywordTok{antsApplyTransforms}\NormalTok{( r16, emptygrid, }
+   \KeywordTok{c}\NormalTok{( syn_reg}\OperatorTok{$}\NormalTok{invtransforms, syn_reg}\OperatorTok{$}\NormalTok{fwdtransforms ), }
+   \DataTypeTok{whichtoinvert =} \KeywordTok{c}\NormalTok{( T,F,F,F ))  }\CommentTok{# tricky stuff here}
+
+\KeywordTok{invisible}\NormalTok{(}\KeywordTok{plot}\NormalTok{( invidmap ))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-14-1}
+
+``This ``inverse identity'' constraint is built into SyN such that we
+enforce consistency in the digital domain.
+
+What this means is - any ``shape change'' is encoded losslessly into the
+deformation field.
+
+\textbf{Non-diffeomorphic} maps may lose information or may be
+completely uninterpretable, statistically.
+
+\textbf{One way to check this is to investigate the jacobian. They
+should be positive which indicates that the topology of the image space
+is preserved ( no folding and no holes or tears are created ).}"
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{syn_reg_jac =}\StringTok{ }\KeywordTok{createJacobianDeterminantImage}\NormalTok{( r16, }
+\NormalTok{                                              syn_reg}\OperatorTok{$}\NormalTok{fwdtransforms[}\DecValTok{1}\NormalTok{], }
+                                              \DataTypeTok{geom =} \OtherTok{TRUE}\NormalTok{,}
+                                              \DataTypeTok{doLog =}\NormalTok{ T)}
+
+\NormalTok{synCC_reg_jac =}\StringTok{ }\KeywordTok{createJacobianDeterminantImage}\NormalTok{( r16, }
+\NormalTok{                                                synCC_reg}\OperatorTok{$}\NormalTok{fwdtransforms[}\DecValTok{1}\NormalTok{], }
+                                                \DataTypeTok{geom =} \OtherTok{TRUE}\NormalTok{,}
+                                                \DataTypeTok{doLog =}\NormalTok{ T)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{is-there-a-difference-between-the-two-jacobians-paired-t-test.}{%
+\section{Is there a difference between the two jacobians? Paired
+t-test.}\label{is-there-a-difference-between-the-two-jacobians-paired-t-test.}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{mask =}\StringTok{ }\KeywordTok{getMask}\NormalTok{( r16 ) }\OperatorTok{%>%}\StringTok{ }\KeywordTok{morphology}\NormalTok{(}\StringTok{"dilate"}\NormalTok{,}\DecValTok{3}\NormalTok{)}
+\KeywordTok{print}\NormalTok{( }\KeywordTok{t.test}\NormalTok{( syn_reg_jac[ mask }\OperatorTok{==}\StringTok{ }\DecValTok{1}\NormalTok{ ], synCC_reg_jac[ mask }\OperatorTok{==}\StringTok{ }\DecValTok{1}\NormalTok{], }\DataTypeTok{paired=}\OtherTok{TRUE}\NormalTok{  ) )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Paired t-test
+## 
+## data:  syn_reg_jac[mask == 1] and synCC_reg_jac[mask == 1]
+## t = 25.882, df = 19684, p-value < 2.2e-16
+## alternative hypothesis: true difference in means is not equal to 0
+## 95 percent confidence interval:
+##  0.06089004 0.07086822
+## sample estimates:
+## mean of the differences 
+##              0.06587913
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{( ggplot2 )}
+
+\NormalTok{n =}\StringTok{ }\KeywordTok{sum}\NormalTok{( mask }\OperatorTok{==}\StringTok{ }\DecValTok{1}\NormalTok{)}
+
+\CommentTok{# SyN uses MI, SyNCC uses CC}
+\NormalTok{mydf =}\StringTok{ }\KeywordTok{data.frame}\NormalTok{( }
+  \DataTypeTok{registration =} \KeywordTok{c}\NormalTok{( }\KeywordTok{rep}\NormalTok{( }\StringTok{"cc"}\NormalTok{, n ) , }\KeywordTok{rep}\NormalTok{(}\StringTok{"mi"}\NormalTok{, n ) ),}
+  \DataTypeTok{jacobian =} \KeywordTok{c}\NormalTok{( synCC_reg_jac[ mask }\OperatorTok{==}\StringTok{ }\DecValTok{1}\NormalTok{ ], syn_reg_jac[ mask }\OperatorTok{==}\StringTok{ }\DecValTok{1}\NormalTok{] ) )}
+
+\KeywordTok{ggplot}\NormalTok{( mydf, }\KeywordTok{aes}\NormalTok{(jacobian, }\DataTypeTok{fill=}\NormalTok{registration )) }\OperatorTok{+}\StringTok{ }\KeywordTok{geom_density}\NormalTok{(}\DataTypeTok{alpha =} \FloatTok{0.2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-17-1}
+
+\hypertarget{you-can-also-visualize-the-jacobian-determinant-image}{%
+\subsection{You can also visualize the jacobian determinant
+image}\label{you-can-also-visualize-the-jacobian-determinant-image}}
+
+\hypertarget{jac-of-syn}{%
+\subsubsection{jac of SyN}\label{jac-of-syn}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{antsplot.single}\NormalTok{(syn_reg_jac)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-18-1}
+
+\hypertarget{jac-of-syncc}{%
+\subsubsection{jac of SyNCC}\label{jac-of-syncc}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{antsplot.single}\NormalTok{(synCC_reg_jac)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{ANTsR_TUT_files/figure-latex/unnamed-chunk-19-1}
+
+
+
+\end{document}

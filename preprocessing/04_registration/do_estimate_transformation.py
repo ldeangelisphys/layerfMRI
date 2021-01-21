@@ -112,10 +112,36 @@ def pprint(dict):
   print(json.dumps(dict, indent=4))
 
 
+
+# --------------- Auxiliary Registration-specific functions  ------------------
+# In the output of ants.registration, the order of warp and affine is reversed
+# in fwdtransforms and invtransforms:
+#
+# fwdtransforms : [warp, affine]
+# invtransforms : [affine, warp]
+#
+# In order to cp the tmp file to the final destination, it is therefore too
+# risky to use only the idx [0,1] or [1,0] respectively.
+# This function loops on both 'fwdtransforms' or 'invtransforms' strings
+# and finds which element of each string contains 'Warp' or 'Affine'.
+# In this way the correct pointer to either the Warp or Affine tmp file
+# is identified and can be correctly copied to the final sub_[N]/reg destination
+#
+# The function is used inside MNI_full, part_full and fmri_part registrations
+
+def find_Warp_Affine(fwd_inv):
+  warp = [warp for warp in fwd_inv if 'Warp' in warp][0]
+  aff = [aff for aff in fwd_inv if 'Affine' in aff][0]
+  return warp,aff
+
+
+
 # ----------------------------  Registration functions  -----------------------
 
-# MNI <-- full  (SyN)
+# MNI <-- full (SyN)
 def do_MNI_full(MNI, full, save_nii=False):
+
+  # requires find_Warp_Affine(fwd_inv)
 
   MNI_full = ants.registration(
       fixed = MNI,
@@ -123,6 +149,7 @@ def do_MNI_full(MNI, full, save_nii=False):
       type_of_transform = 'SyN'
   )
 
+  print('completed MNI_full')
 
   if save_nii:
     ants.image_write(MNI_full['warpedmovout'], bd + 'sub_{:02d}/ses_01/anat/MNI_full_SyN.nii.gz'.format(sub))
@@ -140,12 +167,33 @@ def do_MNI_full(MNI, full, save_nii=False):
     title='MNI <-- full'
   )
 
+
+  # Save the transformation files full_part
+  TO_FROM = "MNI_full"
+  txdir = bd + 'sub_{:02d}/reg/{}'.format(sub,TO_FROM)
+  os.makedirs(txdir, exist_ok=True)
+
+  for direction in ['fwdtransforms','invtransforms']:
+    print(direction)
+    warp, aff = find_Warp_Affine(eval(TO_FROM)[direction])
+
+    warp_target = '{}_Warp.nii.gz'.format(direction)
+    shutil.copy(warp, txdir + '/' + warp_target)
+
+    aff_target = '{}_Affine.mat'.format(direction)
+    shutil.copy(aff, txdir + '/' + aff_target)
+
+    print(' {} --> {}/{} \n {} --> {}/{}'.format(warp, TO_FROM, warp_target, aff, TO_FROM, aff_target))
+    print(' ')
+
   return MNI_full
 
 
 
-# full <-- part (SyN)
+# full <-- part[session] (SyN)
 def do_full_part(session, full, part, save_nii=False):
+
+  # requires find_Warp_Affine(fwd_inv)
 
   # Full and part are already similarly aligned, however since they have
   # different FOV, the initial translation carried out by all kinds of
@@ -166,6 +214,7 @@ def do_full_part(session, full, part, save_nii=False):
       initial_transform = tx_identity['fwdtransforms'][0]
   )
 
+  print('completed full_part session {}'.format(session))
 
   if save_nii:
     ants.image_write(full_part['warpedmovout'], bd + 'sub_{:02d}/{}/anat/full_part.nii.gz'.format(sub,session))
@@ -181,12 +230,34 @@ def do_full_part(session, full, part, save_nii=False):
       title='full <-- part  {}'.format(session), dpi=72
   )
 
+
+  # Save the transformation files full_part
+  TO_FROM = "full_part"
+  txdir = bd + 'sub_{:02d}/reg/{}'.format(sub,TO_FROM)
+  os.makedirs(txdir, exist_ok=True)
+
+  for direction in ['fwdtransforms','invtransforms']:
+    print(direction)
+    warp, aff = find_Warp_Affine(eval(TO_FROM)[direction])
+
+    warp_target = '{}_{}_Warp.nii.gz'.format(session,direction)
+    shutil.copy(warp, txdir + '/' + warp_target)
+
+    aff_target = '{}_{}_Affine.mat'.format(session,direction)
+    shutil.copy(aff, txdir + '/' + aff_target)
+
+    print(' {} --> {}/{} \n {} --> {}/{}'.format(warp, TO_FROM, warp_target, aff, TO_FROM, aff_target))
+    print(' ')
+
+
   return full_part
 
 
 
 # part[session] <-- fmri[session][taskrun]  (SyNBoldAff)
 def do_part_fmri(session, taskrun, part, fmri, save_nii=False):
+
+  # requires find_Warp_Affine(fwd_inv)
 
   # do bias correction of fmri before registration to part
   fmri_bc = ants.n3_bias_field_correction(fmri)
@@ -196,6 +267,8 @@ def do_part_fmri(session, taskrun, part, fmri, save_nii=False):
     moving = fmri_bc,
     type_of_transform="SyNBoldAff"
   )
+
+  print('completed full_part session {} taskrun {}'.format(session,taskrun))
 
   if save_nii:
     ants.image_write(part_fmri['warpedmovout'], bd + 'sub_{:02d}/{}/func/part_fmri_{}.nii.gz'.format(sub,session,taskrun))
@@ -212,6 +285,24 @@ def do_part_fmri(session, taskrun, part, fmri, save_nii=False):
       filename = bd + 'sub_{:02d}/QC/registration/images/fig003_sub_{:02d}_part_fmri_{}.png'.format(sub,sub,taskrun),
       title='part <-- fmri  {}  {}'.format(session, taskrun)
   )
+
+  # Save the transformation files full_part
+  TO_FROM = "part_fmri"
+  txdir = bd + 'sub_{:02d}/reg/{}'.format(sub,TO_FROM)
+  os.makedirs(txdir, exist_ok=True)
+
+  for direction in ['fwdtransforms','invtransforms']:
+    print(direction)
+    warp, aff = find_Warp_Affine(eval(TO_FROM)[direction])
+
+    warp_target = '{}_{}_Warp.nii.gz'.format(taskrun,direction)
+    shutil.copy(warp, txdir + '/' + warp_target)
+
+    aff_target = '{}_{}_Affine.mat'.format(taskrun,direction)
+    shutil.copy(aff, txdir + '/' + aff_target)
+
+    print(' {} --> {}/{} \n {} --> {}/{}'.format(warp, TO_FROM, warp_target, aff, TO_FROM, aff_target))
+    print(' ')
 
   # # olay
   # ants.plot(

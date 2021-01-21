@@ -152,7 +152,7 @@ plot_2Dhist <- function(Zthr, Zmax, chosenZstat, title) {
   p <- plot_ly(
     x = depth[idx],
     y = chosenZstat[idx],
-    height = 350, width = 450 
+    height = 350, width = 450
   ) %>%
     add_markers(color = x, colors = "Reds", alpha = 0) %>%
     add_trace(

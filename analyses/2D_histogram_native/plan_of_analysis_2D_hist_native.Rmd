@@ -1,0 +1,219 @@
+---
+title: "2D histogram in native space - plan of analysis"
+output: 
+  html_document:
+      toc: true
+      toc_float: true
+---
+
+## Base directory
+`/data00/layerfMRI/Github_repo/layerfMRI/analyses/2D_histogram_native`
+
+
+## Preliminary simulation of layer specificity at the group level
+In the previous analysis, we estimated the 2D histogram / kernel density of the average depth map vs. the zstat from the group level analysis from the data in MNI space.
+
+The spatial locations in the brain were as predicted, however there was no apparent layer specificity. 
+
+Importantly, most activity was concentrated around half the cortical depth, which is suspicious: it looks as if the transformation in MNI space _de facto_ annihilates the layer specificity.\
+This is understandable since the depth maps are not - and should not - be perfectly overlapped across subjects in MNI space.
+
+To test (confirm) that indeed the MNI transformation does not preserve layer-specific information, we can carry out a simple experiment:
+
+- take the depth maps of all participants (9) in MNI space
+- threshold between 0.2-0.4 and 0.6-0.8
+- carry out a fixed effect GLM in feat
+- produce the depth-by-zstat kde2d
+
+If (unlikely) the layer-specific information is preserved, you should see two blobs of very high stats around 0.3 and 0.7. If not - and especially if you see a blob around 0.5 - it means that the information has been lost
+
+
+## Running Rmd from the terminal passing parameters
+Apparently this is possible. See [here](https://stackoverflow.com/questions/49904943/run-rmarkdown-with-arguments-on-the-command-line)
+
+Adding the my_arg object as a parameter is the way to go:
+
+`Rscript -e "rmarkdown::render('example.Rmd',params=list(args = my_arg))"`
+
+And then add the parameter to your Rmd file:
+
+```
+---
+title: "running Rmd from the terminal"
+output:
+  pdf_document: default
+params:
+  args: myarg
+---
+```
+
+Documentation on parameterized reports here: https://rmarkdown.rstudio.com/developer_parameterized_reports.html
+
+
+
+## Running `feat` in native space
+In `/data00/layerfMRI/analyses/PPI` there are already all the scripts to run the analysis for the data in MNI space. The rawdata is likely taken from `/data01` so it wil not create additional copies.
+
+We should create a directory `/data00/layerfMRI/analyses/PPI_native` and copy/modify only the scripts needed to run the first level analysis.
+
+Then we take the `mrgncy_original_fsf_1subjrun/sub_02_task_1_run_1.fsf` and we replace the MNI with the fmri file in native space.
+
+**NB: we need also to delete the PPI predictors** - at least for the moment - since those would require transforming the PPI ROI into the single subject space, which at the moment would take too much time and is not the main scope.
+
+At this point we create a new `000_template_design.FSF` (having removed the PPI part) and we can launch - after proper modifications - the `000_run_[PPI/fmri]_1st_level.sh` script to finally get the native-space results in `000_subj_level_feat`
+
+NB: still not sure whether for the 2D analysis I should consider the **un**thresholded z-stat or the COPEs, since I will effectively run a mixed-model analysis across runs on the 2D histograms
+
+Having done the native-space fmri analysis, we have one `sub_12_task_3_run_1.feat` for each sub/run in the `000_subj_level_feat` directory.
+
+**NB Very important:** a `sub_02_ses_01_task_1_run_1.feat` directory already exists in `/data01`. It's the one I used for preprocessing. Maybe we can just update that with the stats, without having to use space in `/data00`.
+
+
+Finally, we can copy the two COPES/zstat (one for `Motion`, the other for `Scrambled`) into a new directory inside the `bd`:
+`native_copes_depth`
+
+
+## Take depth maps in native space
+
+Estimate the warp `fmri <- part_anat <- full_anat` in python ANTs and run it on the depth map created in `nighres`.
+
+Store the result in `native_copes_depth`. At this point, this directory should look like this:
+```
+native_copes_depth
+|- sub_02_task_1_run_1_MOTION_cope.nii.gz
+|- sub_02_task_1_run_1_MOTION_zstat.nii.gz
+|- sub_02_task_1_run_1_SCRAMBLED_cope.nii.gz
+|- sub_02_task_1_run_1_SCRAMBLED_zstat.nii.gz
+|- sub_02_task_1_run_1_depth.nii.gz
+```
+
+## Creating run4D of copes/depth
+The following shows that all the fmri images of each subj/run have the same x,y,z dimensions:
+
+```{bash engine.opts='-l', results='hide', eval=FALSE}
+rawdir=/data01/layerfMRI/rawdata_RPI
+
+for dim in 1 2 3; do
+  for i in `find ${rawdir} -name "*run*.nii.gz"`; do 
+    fslinfo ${i} | grep ^dim$dim
+  done
+done
+
+```
+
+This is very good since it means we can store both copes and depth as a 4D matrix (not even image!)
+
+To combine 3D matrices into run4D, we can use `abind`
+```{r}
+library(abind)
+
+nii1 <- RNifti::readNifti("icbm152_2009_brain.nii.gz")
+nii2 <- RNifti::readNifti("icbm152_2009_brain.nii.gz")
+
+nii4D <- abind(nii1, nii2, along = 4)
+
+print(dim(nii1))
+print(dim(nii4D))
+
+```
+
+
+At this point we have the following variables for each sub:
+```
+zstat4D
+copes4D
+depth4D
+```
+where each "3D slice" correspond to one run.
+
+Now I can plot them with a `plotly::add_histogram2dcontour()`.
+
+Remember to add a dropdown to choose the specific run
+
+**NB:** the function which creates the montage needs to be [rewritten in a faster](https://leonardocerliani.github.io/ersito/fast_NIFTI_R.html) form.
+
+
+## Stats on the 2D kde
+
+The `plotly::add_histogram2dcontour()` function carries out - I assume - a 2D kernel density estimation. The idea is to carry out a group-level stat (preceded by a fixed effect within subjects) on these 2D kde maps
+
+The 2D kde can be easily estimated with `MASS:kde2d` as detailed [here]([bivariate distribution](https://www.datacamp.com/community/tutorials/bivariate-heatmaps))
+
+This is a very unorthodox procedure for neuroimaging data, as usually the group-level stats are estimated in a template space.
+However we saw that taking the COPEs to the template space doesn't preserve the inforation about layer specificity.
+
+Carrying out the analysis in the space of the 2D histogram is a valid choice since it will focus on the information of interest: the presence of high zstat in specific cortical layers.\
+Of course the spatial specificity goes down the drain - for the moment. But we can then recover it by identifying the location of the voxels in specific depth-by-zstat
+
+The 2D kde can be exported as NIFTI, and from there it is easy to generate a 3rd-level analysis (fixed effect + group level random effect). 
+
+We can first try out some things in R:
+
+### Massive univariate one sample ttest
+```{r, message=F}
+library(magrittr)
+
+# 10K one-sample ttests and numba of false positives
+side <- 100
+N = 1000
+
+arr <- array(rnorm(side^2*N), dim = c(side, side, N))
+p <- apply(arr, c(1,2), function(x) t.test(x)$p.value)
+
+# numba of false positives
+length(which(p < 0.05)) / side^2
+```
+
+
+### 2D kernel density estimate
+The code above shows how to estimate the 2D kernel density starting from two vectors - which in this case would be `depth` and `zstat`.
+```{r, message=F}
+# sample from a 2D distribution
+library(mvtnorm)
+N = 100
+xy <- rmvnorm(n=N, mean=c(0,0), sigma=diag(2))
+
+library(MASS)
+xy_density <- kde2d(xy[,1], xy[,2], n=1000)
+
+# image(xy_density)
+contour(xy_density)
+
+
+
+
+# sample 2D (function)
+library(mvtnorm)
+library(MASS)
+
+gauss2D <- function(N=100, mu=c(0,0), sigma=diag(2), grid=1000) {
+  xy <- rmvnorm(n=N, mean=c(0,0), sigma=sigma)
+  xy_density <- kde2d(xy[,1], xy[,2], n=grid)
+  return(xy_density)
+}
+
+# gauss2D(N=100) %>% contour()
+gauss2D(N=100) %>% image(useRaster = T)
+
+```
+
+
+### GRF
+The above methods are all massive univariate, which assume that we are effectively doing with **matrices**.
+One other possibility is to model the average (mean/median) histogram as a [Gaussian Random Field](https://imaging.mrc-cbu.cam.ac.uk/imaging/PrinciplesRandomFields). This would allow to leverage on one of the oldest MCP methods in neuroimaging.
+
+```{r, message=F}
+# grf from geoR
+library(geoR)
+field <- grf(100^2, grid = "reg", cov.pars=c(1,1))
+
+# contour(field)
+image(field, col=gray(seq(1, .1, l=30)))
+
+
+
+
+
+```
+
+
