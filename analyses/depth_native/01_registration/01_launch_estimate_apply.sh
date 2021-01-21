@@ -15,9 +15,14 @@ echo
 
 # subjects 1 4 7 have missing data
 subject_numba_file=/data00/layerfMRI/list_subjects
+
 subjects=$(<${subject_numba_file})
 
-printf "%s\n" "${subjects[@]}" | xargs -n 1 -P 12 -I{} echo python do_estimate_native_full_MNI.py --sub={}
+# estimate native <-- full <-- MNI transformation
+printf "%s\n" "${subjects[@]}" | xargs -n 1 -P 12 -I{} python do_estimate_native_full_MNI.py --sub={}
+
+# apply transformation to depth and atlas
+printf "%s\n" "${subjects[@]}" | xargs -n 1 -P 12 -I{} python do_apply_native_full_MNI.py --sub={}
 
 echo
 echo
