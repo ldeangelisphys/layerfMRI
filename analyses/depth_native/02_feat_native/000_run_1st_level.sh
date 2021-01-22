@@ -3,17 +3,22 @@
 # -------------------- USER-DEFINED OPTIONS ---------------------------------
 
 
-analysis_folder=PPI
+analysis_folder=02_feat_native
 
 numba_cores=10
 
 
 # -------------------- END of USER-DEFINED OPTIONS --------------------------
 
-datadir=/data00/layerfMRI/regdata
-ppidir=/data00/layerfMRI/analyses/${analysis_folder}
-design_template=${ppidir}/000_template_design_${analysis_folder}.FSF
-fsf_folder=${ppidir}/000_subj_level_feat
+datadir=/data00/layerfMRI/regdata/
+
+gitdir=/data00/layerfMRI/Github_repo/layerfMRI/
+
+glmdir=${gitdir}/analyses/depth_native/${analysis_folder}
+
+design_template=${glmdir}/000_template_design.FSF
+
+fsf_folder=${glmdir}/000_subj_level_feat
 
 
 # create anew a folder to store the fsf for each subj/task/run
@@ -23,8 +28,9 @@ fi
 mkdir ${fsf_folder}
 
 
-# subj 8 is fucked up, and 13 either has problems or will be come back later
-listsub_fMRI=(2 3 5 6 9 10 11 12 14)
+# create array with sub numba from the official list
+listsub_file=/data00/layerfMRI/list_subjects
+listsub_fMRI=$(<${listsub_file})
 
 
 for insub in ${listsub_fMRI[@]}; do
@@ -36,9 +42,11 @@ for insub in ${listsub_fMRI[@]}; do
     for task in 1 2 3 4; do
       for run in 1 2; do
 
-        nii4d=${datadir}/sub_${sub}/ses_${ses}/func/task_${task}_run_${run}_4D_MNI.nii.gz
+        nii4d=${datadir}/sub_${sub}/ses_${ses}/func/task_${task}_run_${run}_4D.nii.gz
 
         if [ -f ${nii4d} ]; then
+
+          echo ${nii4d}
 
           dim1=`fslinfo ${nii4d} | grep ^dim1 | awk '{print $2}'`
           dim2=`fslinfo ${nii4d} | grep ^dim2 | awk '{print $2}'`
@@ -52,10 +60,9 @@ for insub in ${listsub_fMRI[@]}; do
           sed -e "s@OUTPUTFEATDIR@${fsf_folder}/sub_${sub}_task_${task}_run_${run}.feat@g" \
               -e "s@NUMBATIMEPOINTS@${dim4}@g" \
               -e "s@TOTALNUMBAVOXELS@${totalVoxels}@g" \
-              -e "s@NII4DMNI@${nii4d}@g" \
-              -e "s@EVM@${ppidir}/EV_predictors/sub_${sub}_EV_task_${task}_run_${run}_M.txt@g" \
-              -e "s@EVS@${ppidir}/EV_predictors/sub_${sub}_EV_task_${task}_run_${run}_S.txt@g" \
-              -e "s@EVPPI@${ppidir}/PPI_predictors/sub_${sub}_task_${task}_run_${run}_4D_MNI_ROI_timecourse.txt@g" \
+              -e "s@NII4D@${nii4d}@g" \
+              -e "s@EVMOTION@${glmdir}/EV_predictors/sub_${sub}_EV_task_${task}_run_${run}_M.txt@g" \
+              -e "s@EVSCRAMBLED@${glmdir}/EV_predictors/sub_${sub}_EV_task_${task}_run_${run}_S.txt@g" \
                  ${design_template} >> ${fsf_sub}
 
           echo ${fsf_sub}
@@ -73,6 +80,7 @@ done
 # store all the fsf to run in an array
 feat2run=($(find ${fsf_folder} -name *.fsf | sort))
 
+
 # Create a function that will actually run the feat and export it
 do_subj_level_feat() {
   one_fsf=$1
@@ -83,7 +91,7 @@ do_subj_level_feat() {
 export -f do_subj_level_feat
 
 
-# Create a function that will actually run the feat
+# Run all feat .fsf in parallel
 printf '%s\n' "${feat2run[@]}" | xargs -n 1 -P ${numba_cores} -I {} bash -c 'do_subj_level_feat {}'
 
 

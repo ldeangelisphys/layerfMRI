@@ -1,0 +1,72 @@
+---
+title: "feat_native_procedure"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```
+gitdir = /data00/layerfMRI/Github_repo/layerfMRI/
+bd = gitdir + /analyses/depth_native/02_feat_native/
+```
+
+## EV preparation
+Lorenzo scanned all the log files and placed the result in `log.summary.csv`. This table is parses with `do_EV_native_preparation.py` to derive one EV in fsl format for each `sub/session/task/run/movietype`.
+
+The EVs are saved in the `EV_predictors` directory. Since the process had already been run initially for the PPI analysis, to be sure I also wrote a little script that carried out a check to verify that the EVs written now and then are identical.
+
+```{bash}
+
+python do_EV_native_preparation.py | tail -n 9
+
+$PWD/compare_EV.sh | tail
+
+```
+
+
+## Preparation of the FEAT analysis
+
+To carry out the FEAT for all subs and run, we will build a template using the sub 2 task 1 run 1. This will be then dynamically modified in `sed` for every sub/run.
+Finally feat will be run in parallel on all the .fsf files.
+
+### Template fsf
+First we manually create an empty directory `000_subj_level_feat`.
+```
+mkdir 000_subj_level_feat
+```
+Then we need to work in the Feat gui in x2go to create a sample fsf that we will save in `mrgncy_original_fsf_1subjrun` as `sub_02_task_1_run_1.fsf`.
+
+It is important to correctly specify the following parameters in the gui:
+
+- output dir : `bd + /000_subj_level_feat/ +  /sub_02_task_1_run_1.feat/`
+- EV Motion : `bd + EV_predictors/sub_02_EV_task_1_run_1_M.txt`
+- EV Scrambled : `bd + EV_predictors/sub_02_EV_task_1_run_1_S.txt`
+- fmri data : `/data00/layerfMRI/regdata/sub_02/ses_01/func/task_1_run_1_4D`
+
+Note that the fmri data comes from the original directory. There is no need to duplicate it here.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
