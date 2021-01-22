@@ -1,0 +1,66 @@
+---
+title: "Depth violin native space"
+output: 
+  html_document:
+      toc: true
+      toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+Transforming each subject into MNI space compromises layer-specific information, both for the interpolation and because the cortical ribbon of different participants does not - and should not - perfectly overlay in MNI space.
+
+However, these issues are brought about if we want to carry out a voxelwise analysis in MNI space, which is not really the main focus here. What we actually care about is:
+
+1. the distribution of Zstat with respect to depth (2D kde)
+2. for each of the regions of interest (ROI)
+
+Having realized this, most problems dissipate, since these quantities are much more accessible - and with higher precision - in the native space.
+
+What we want to obtain is something like a violin plot of the distribution of Zstat in each ROI, for the two conditions.\
+Most importantly, this will allow to carry out statistics at the group level _using the data in native space_.
+
+
+## Preparing the data
+Suppose we have only one ROI, e.g. PF. We aim at gathering:
+
+- the mean depth of all above-threshold voxels in that ROI
+- the average COPE at different depths - _not_ the histogram
+
+When we have this, we can do two group-level analysis: one for the mean depth, one for the mean cope at different depths
+
+
+## Structure and implementation of the group-level analysis
+There are 4 tasks and 2 runs per task, so in total 8 runs per subject.
+Let's suppose we have 5 ROIs.
+
+We will carry out the analysis in `FSL feat`, which allows us to have a first fixed effect within-subject COPE, and a second, higher-level random effect analysis (or also fixed effect, given the number of participants).\
+Note that I suspect that the fixed level COPE is just the mean (across runs), therefore it could be estimated directly in R.
+
+Since we use feat, we need to transfer the COPEs into NIFTI images.
+
+**NB**: in order to select the voxels whose average COPE will go to the within and between subject analysis, we need to establish a sig threshold at the level of the single run analysis. **We will use two thresholds for selecting voxels: Z=2.3 and Z=3.1**
+
+Assuming that we can do the fixed-effect COPE estimation in R, for all the voxels which are above threshold:
+
+- **mean depth analysis**: every subject is a vector of 5 elements, each one with the mean depth for each ROI for all the sig voxels
+
+- **average COPE at different depths**: every subject is a matrix of N-by-5, where N is the number of bins for the depth, and 5 is again the number of ROIS. The N-th cell is filled with the average COPE for all the sig voxels at that depth.  
+
+
+## Transformations
+This is the most complex part to engineer. We need to estimate the transformation:
+
+- from full anat to single run fmri for the cortical depth maps: this is the `fmri <- part_anat <- full_anat` estimation 
+
+- from MNI to single fmri for the Juelich ROIs: note that this will be the inverse of the `MNI <- full_anat <- part_anat <- fmri` estimate, which need selective inversions!
+
+
+
+
+
+
+
