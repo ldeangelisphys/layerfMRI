@@ -1,0 +1,98 @@
+---
+title: "depth_native_functions"
+output: html_document
+---
+
+
+```{r}
+
+library(stringr)
+library(dplyr)
+
+# ------------------------- STANDARD ------------------------------------------
+
+df <- list.files("data_native", recursive = T) %>% as.data.frame()
+names(df) <- "fname"
+
+# sub column
+df <- df %>% 
+  rowwise() %>% 
+  mutate(sub = str_split(fname,"/")[[1]][1])
+
+# contrast column
+df <- df %>% 
+  rowwise() %>% 
+  mutate(contrast = str_split(fname,"/")[[1]][2])
+
+
+# taskrun column
+df <- df %>% 
+  rowwise() %>% 
+  mutate(taskrun = str_split(fname,"/")[[1]][3] %>% str_extract("task_[1-4]\\_run_[1-2]"))
+
+
+# zstat column
+df <- df %>% 
+  rowwise() %>% 
+  mutate(zstat = str_split(fname,"/")[[1]][4] %>% str_extract("zstat[1-4]"))
+
+
+# ------------------------- CONCISE ------------------------------------------
+
+gitdir <- "/data00/layerfMRI/Github_repo/"
+bd <- paste0(gitdir,"layerfMRI/analyses/depth_native/")
+
+df <- list.files("data_native", recursive = T) %>% as.data.frame()
+names(df) <- "fname"
+
+df <- df %>% 
+  rowwise() %>% 
+  mutate(sub = str_split(fname,"/")[[1]][1]) %>%          # sub column
+  mutate(contrast = str_split(fname,"/")[[1]][2]) %>%     # contrast column
+  mutate(
+    taskrun = str_split(fname,"/")[[1]][3] %>%            # taskrun column 
+      str_extract("task_[1-4]\\_run_[1-2]")
+  ) %>%
+  mutate(
+    zstat = str_split(fname,"/")[[1]][4] %>%              # zstat column 
+      str_extract("zstat[1-4]")
+  ) %>%
+  mutate(path = paste0(bd,"/data_native/",fname))
+
+df
+
+
+# ------------------------- BEAUTIFUL ------------------------------------------
+
+
+library(stringr)
+library(tidyr)
+library(dplyr)
+
+gitdir <- "/data00/layerfMRI/Github_repo/"
+bd <- paste0(gitdir,"layerfMRI/analyses/depth_native/")
+
+
+df <- list.files("data_native", recursive = T) %>% as.data.frame()
+names(df) <- "fname"
+
+
+df <- df %>% 
+  rowwise() %>% 
+  tidyr::separate(
+    fname, c("sub","contrast","taskrun","zstat"), 
+    sep = "/", 
+    fill = "right", 
+    remove = FALSE
+  ) %>% 
+  mutate(taskrun = str_extract(taskrun,"task_[1-4]\\_run_[1-2]")) %>% 
+  mutate(zstat = str_extract(zstat,"zstat[1-4]")) %>% 
+  mutate(pathname = paste0(bd,"/data_native/",fname)) %>% 
+  select(-fname)
+
+
+View(df)
+
+```
+
+

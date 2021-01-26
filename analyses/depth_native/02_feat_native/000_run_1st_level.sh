@@ -20,6 +20,9 @@ design_template=${glmdir}/000_template_design.FSF
 
 fsf_folder=${glmdir}/000_subj_level_feat
 
+# Used for limiting the stats thresholding to the cortex
+depthmap_dir=${gitdir}/analyses/depth_native/data_native/
+
 
 # create anew a folder to store the fsf for each subj/task/run
 if [ -d ${fsf_folder} ]; then
@@ -63,6 +66,7 @@ for insub in ${listsub_fMRI[@]}; do
               -e "s@NII4D@${nii4d}@g" \
               -e "s@EVMOTION@${glmdir}/EV_predictors/sub_${sub}_EV_task_${task}_run_${run}_M.txt@g" \
               -e "s@EVSCRAMBLED@${glmdir}/EV_predictors/sub_${sub}_EV_task_${task}_run_${run}_S.txt@g" \
+              -e "s@DEPTHMAP@${depthmap_dir}/sub_${sub}/depth/sub_${sub}_depth_task_${task}_run_${run}.nii.gz@g" \
                  ${design_template} >> ${fsf_sub}
 
           echo ${fsf_sub}
@@ -93,9 +97,6 @@ export -f do_subj_level_feat
 
 # Run all feat .fsf in parallel
 printf '%s\n' "${feat2run[@]}" | xargs -n 1 -P ${numba_cores} -I {} bash -c 'do_subj_level_feat {}'
-
-
-
 
 
 

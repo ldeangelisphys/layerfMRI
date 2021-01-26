@@ -1,6 +1,9 @@
 ---
-title: "feat_native_procedure"
-output: html_notebook
+title: "feat_native procedure"
+output: 
+  html_document:
+      toc: true
+      toc_float: true
 ---
 
 ```{r setup, include=FALSE}
@@ -8,53 +11,160 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
-```
-gitdir = /data00/layerfMRI/Github_repo/layerfMRI/
+
+
+```{}
+gitdir = "/data00/layerfMRI/Github_repo/layerfMRI/"
 bd = gitdir + /analyses/depth_native/02_feat_native/
 ```
 
+\
+
 ## EV preparation
-Lorenzo scanned all the log files and placed the result in `log.summary.csv`. This table is parses with `do_EV_native_preparation.py` to derive one EV in fsl format for each `sub/session/task/run/movietype`.
-
-The EVs are saved in the `EV_predictors` directory. Since the process had already been run initially for the PPI analysis, to be sure I also wrote a little script that carried out a check to verify that the EVs written now and then are identical.
-
-```{bash}
-
-python do_EV_native_preparation.py | tail -n 9
-
-$PWD/compare_EV.sh | tail
+The summary of all log files is in `log.summary.csv` (prepared by Lorenzo). This table is parsed with `do_EV_native_preparation.py` to derive one EV in fsl format for each `sub/session/task/run/movietype`.
 
 ```
+python do_EV_native_preparation.py
+```
 
+The EVs are saved in the `EV_predictors` directory. Since the process had already been run initially for the PPI analysis, I also wrote a little script that carries out a check to verify that the EVs written now and then are identical.
 
-## Preparation of the FEAT analysis
+```
+$PWD/compare_EV.sh
+```
+\
 
-To carry out the FEAT for all subs and run, we will build a template using the sub 2 task 1 run 1. This will be then dynamically modified in `sed` for every sub/run.
+## Prepare FEAT .fsf onerun {.tabset}
+
+To carry out the FEAT for all subs and run, I build a template using the `sub_02_task_1_run_1`. This will be then dynamically modified in `sed` for every sub/run.
 Finally feat will be run in parallel on all the .fsf files.
 
-### Template fsf
-First we manually create an empty directory `000_subj_level_feat`.
+First I manually create an empty directory `000_subj_level_feat`.
 ```
 mkdir 000_subj_level_feat
 ```
-Then we need to work in the Feat gui in x2go to create a sample fsf that we will save in `mrgncy_original_fsf_1subjrun` as `sub_02_task_1_run_1.fsf`.
+Then we need to work in the Feat gui in x2go to create a sample fsf that we will save in `000_template_fsf_onesubrun` as `sub_02_task_1_run_1.fsf`.
 
+### Data
 It is important to correctly specify the following parameters in the gui:
 
 - output dir : `bd + /000_subj_level_feat/ +  /sub_02_task_1_run_1.feat/`
-- EV Motion : `bd + EV_predictors/sub_02_EV_task_1_run_1_M.txt`
-- EV Scrambled : `bd + EV_predictors/sub_02_EV_task_1_run_1_S.txt`
+
 - fmri data : `/data00/layerfMRI/regdata/sub_02/ses_01/func/task_1_run_1_4D`
+
+**NB**: the fmri data is `task_1_run_1_4D`. Be very careful _not_ to use the MNI counterpart.
 
 Note that the fmri data comes from the original directory. There is no need to duplicate it here.
 
+### Pre-stats
+Since we are using raw data, there is also a minimal preprocessing to carry out. Basically motion correction (MCFLIRT) and highpass filtering. Make sure you set:
+
+- Slice timing correction : None
+- BET brain extraction : unchecked
+- Spatial smooting FWHM (mm) : 0.0
 
 
+### Registration
+Uncheck everything: we don't want to run any registration (we suffered enough with ANTs for this)
 
 
+### Stats
+There are **two EVs**: one for **M(otion)**, the other for **S(crambled)** (and their temporal derivatives). They are linked to the following EV_predictors
+
+- EV Motion : `bd + EV_predictors/sub_02_EV_task_1_run_1_M.txt`
+- EV Scrambled : `bd + EV_predictors/sub_02_EV_task_1_run_1_S.txt`
+
+The Contrast matrix contains **4 contrasts**:
+
+Title         | EV1   | EV2
+------------- | ----- | ---
+MOTION        | 1     | 0
+SCRAMBLED     | 0     | 1
+M > S         | 1     | -1
+S > M         | -1    | 1
 
 
+### Post-stats
+We want to run the analyses - and resolve the MCP problem - _only within the cortex_. 
 
+To do this, we use the `sub/taskrun`-specific cortical depth maps we previously created, which are already stored in:
+
+```
+/data_native/sub_02/depth/sub_02_depth_task_1_run_1.nii.gz
+```
+So we point the pre-thresholding masking to this file.
+
+##
+\
+
+## Prepare FEAT template FSF
+We cp the single-subject fsf to a template_design.FSF 
+
+```
+cp 000_template_fsf_onesubrun/sub_02_task_1_run_1.fsf \
+   000_template_design.FSF
+```
+and replace the actual values in the first column with the placeholder in the second column:
+
+`sub_02_task_1_run_1.fsf`       |   `000_template_design.FSF`
+---------------------------     | ---------------------------
+`set fmri(outputdir)`           |   `"OUTPUTFEATDIR"`
+`set fmri(npts)`                |   `NUMBATIMEPOINTS`
+`set fmri(totalVoxels)`         |   `TOTALNUMBAVOXELS`
+`set feat_files(1)`             |   `"NII4D"`
+`set fmri(custom1)`             |   `"EVMOTION"`
+`set fmri(custom2)`             |   `"EVSCRAMBLED"`
+`set fmri(threshmask)`          |   `"DEPTHMAP"`
+
+**NB**: careful to the "double quotes" for files placeholders.
+
+\
+
+## Running feat
+The feat for each subj/taskrun is carried out by the `000_run_1st_level.sh` executable bash script. The script does the following:
+
+1. grab a list of subjects in `/data00/layerfMRI/list_subjects`
+
+2. grab the `000_template_design.FSF` and `sed`-replace the placeholders in it with the appropriate files/values for each sub/taskrun, then writes the fsf in the `000_subj_level_feat` folder
+
+3. create a bash array of all the .fsf files in `000_subj_level_feat` and a function to run one feat
+
+4. run all the feat .fsf in parallel - 10 at a time because of RAM limitations.
+
+**ETA is ~ 3hrs**
+
+
+\
+
+## Copy Zstat to data_native
+Once all the first-level analyses have been carried out, it's time to copy the final zstats for each taskrun into the `/data_native` folder. This is achieved by:
+
+```
+do_cp_Zstat_2_data_native.sh
+```
+
+The final structure (of the Zstat) for one subject in `/data_native` will be like the following:
+
+```
+sub_02
+└── Zstat
+    ├── task_1_run_1
+    │   ├── zstat1.nii.gz
+    │   ├── zstat2.nii.gz
+    │   ├── zstat3.nii.gz
+    │   └── zstat4.nii.gz
+    ├── task_1_run_2
+    │   ├── zstat1.nii.gz
+    │   ├── zstat2.nii.gz
+    │   ├── zstat3.nii.gz
+    │   └── zstat4.nii.gz
+    ...
+    └── task_4_run_2
+        ├── zstat1.nii.gz
+        ├── zstat2.nii.gz
+        ├── zstat3.nii.gz
+        └── zstat4.nii.gz
+```
 
 
 

@@ -172,7 +172,7 @@ set fmri(constcol) 0
 set fmri(poststats_yn) 1
 
 # Pre-threshold masking?
-set fmri(threshmask) ""
+set fmri(threshmask) "/data00/layerfMRI/Github_repo/layerfMRI/analyses/depth_native/data_native/sub_02/depth/sub_02_depth_task_1_run_1.nii.gz"
 
 # Thresholding
 # 0 : None

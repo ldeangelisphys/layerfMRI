@@ -18,7 +18,7 @@ However, these issues are brought about if we want to carry out a voxelwise anal
 1. the distribution of Zstat with respect to depth (2D kde)
 2. for each of the regions of interest (ROI)
 
-Having realized this, most problems dissipate, since these quantities are much more accessible - and with higher precision - in the native space.
+Having realized this, most problems dissipate when we switch to working in the native space, since these quantities are much more accessible - and with higher precision.
 
 What we want to obtain is something like a violin plot of the distribution of Zstat in each ROI, for the two conditions.\
 Most importantly, this will allow to carry out statistics at the group level _using the data in native space_.
