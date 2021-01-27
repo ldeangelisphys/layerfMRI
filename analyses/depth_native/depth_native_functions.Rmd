@@ -1,78 +1,28 @@
 ---
 title: "depth_native_functions"
-output: html_document
+output: 
+  html_document:
+    code_folding: hide
 ---
 
+## Create dictionary of data from `list.files` (for real!) {.tabset}
+The magic is provided by `tidyr::separate`
 
-```{r}
+```{r, message=F}
 
-# library(stringr)
-# library(dplyr)
-# 
-# # ------------------------- STANDARD ------------------------------------------
-# 
-# df <- list.files("data_native", recursive = T) %>% as.data.frame()
-# names(df) <- "fname"
-# 
-# # sub column
-# df <- df %>% 
-#   rowwise() %>% 
-#   mutate(sub = str_split(fname,"/")[[1]][1])
-# 
-# # contrast column
-# df <- df %>% 
-#   rowwise() %>% 
-#   mutate(contrast = str_split(fname,"/")[[1]][2])
-# 
-# 
-# # taskrun column
-# df <- df %>% 
-#   rowwise() %>% 
-#   mutate(taskrun = str_split(fname,"/")[[1]][3] %>% str_extract("task_[1-4]\\_run_[1-2]"))
-# 
-# 
-# # zstat column
-# df <- df %>% 
-#   rowwise() %>% 
-#   mutate(zstat = str_split(fname,"/")[[1]][4] %>% str_extract("thresh_zstat[1-4]"))
-# 
-# 
-# # ------------------------- CONCISE ------------------------------------------
-# 
-# gitdir <- "/data00/layerfMRI/Github_repo/"
-# bd <- paste0(gitdir,"layerfMRI/analyses/depth_native/")
-# 
-# df <- list.files("data_native", recursive = T) %>% as.data.frame()
-# names(df) <- "fname"
-# 
-# df <- df %>% 
-#   rowwise() %>% 
-#   mutate(sub = str_split(fname,"/")[[1]][1]) %>%          # sub column
-#   mutate(contrast = str_split(fname,"/")[[1]][2]) %>%     # contrast column
-#   mutate(
-#     taskrun = str_split(fname,"/")[[1]][3] %>%            # taskrun column 
-#       str_extract("task_[1-4]\\_run_[1-2]")
-#   ) %>%
-#   mutate(
-#     zstat = str_split(fname,"/")[[1]][4] %>%              # zstat column 
-#       str_extract("thresh_zstat[1-4]")
-#   ) %>%
-#   mutate(path = paste0(bd,"/data_native/",fname))
-# 
-# df
-# 
-# 
 # # ------------------------- BEAUTIFUL ------------------------------------------
-# 
-# 
+
 library(stringr)
 library(tidyr)
 library(dplyr)
+
+select <- dplyr::select
 
 gitdir <- "/data00/layerfMRI/Github_repo/"
 bd <- paste0(gitdir,"layerfMRI/analyses/depth_native/")
 
 
+# here df stands for dictionary of files
 df <- list.files("data_native", recursive = T) %>% as.data.frame()
 names(df) <- "fname"
 
@@ -86,54 +36,67 @@ df <- df %>%
   mutate(taskrun = str_extract(taskrun,"task_[1-4]\\_run_[1-2]")) %>%
   mutate(zstat = str_extract(zstat,"thresh_zstat[1-4]")) %>%
   mutate(pathname = paste0(bd,"/data_native/",fname)) %>%
-  select(-fname)
+  dplyr::select(-fname)
 
 
-# View(df)
+
+# just to show an example in the output
+library(kableExtra)
+
+df %>%
+  filter(
+    taskrun == "task_1_run_1"
+  ) %>% head(n=10) %>% kbl() %>% kable_paper("hover", full_width = F)
 
 
 ```
 
 
-
-
-# Load data into lists and find idx of voxels > Zthr
+## Select sub, Zthr and Zcontrast
 ```{r}
+SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
+Zcontrast <- "thresh_zstat1"
+Zthr <- 2.3
+```
+**Analysing `r SUBID` `r Zcontrast` with a Z thr set to `r Zthr`**
+
+
+
+## Create idx of suprathreshold voxels and extract Zvals
+
+1. Load all the 8 taskrun Zstat for one constrast (M/S) into a list
+2. Find idx of suprathreshold voxels
+3. Extract Zstat values for the 8 Zstat nii's at the idx location
+
+```{r, message=F}
 library(RNifti)
 
-# df %>% distinct(sub)
-
-SUBID = "sub_02"
-
 # select one contrast (Motion) for one subject (sub_02) in all runs
-df_ZM <- df %>% 
+ZM_filelist <- df %>% 
   filter(
     sub == SUBID, 
     contrast == "Zstat", 
-    zstat == "thresh_zstat1"
+    zstat == Zcontrast
   ) %>% 
   select(pathname)
 
 # get the idx of Zstats > 2.3
-Zthr <- 2.3
+
 
 # I extract the indices in two steps since I also need the Znii to extract the Zvals later.
 # A one-line implementation is commented below
-Znii <- sapply(df_ZM, readNifti)
-Zthr_idx <- sapply(Znii, function(x) {which(x > Zthr)})
+ZM_nii <- sapply(ZM_filelist, readNifti)
+ZMthr_idx <- sapply(ZM_nii, function(x) {which(x > Zthr)})
 
 # # in one step
-# Zthr_idx <- sapply(sapply(df_ZM, readNifti), function(x) {which(x > Zthr)})
+# ZMthr_idx <- sapply(sapply(ZM_filelist, readNifti), function(x) {which(x > Zthr)})
 
-# str(Zthr_idx)
-```
-
+# str(ZMthr_idx)
 
 
 # Extract Z values from Znii at the location of Zthr_idx
-```{r}
-Zvals <- mapply(
-  function(vols,idx) vols[idx], Znii, Zthr_idx
+ZM_vals <- mapply(
+  function(vols,idx) vols[idx], ZM_nii, ZMthr_idx
 )
 
 # str(Zvals)
@@ -141,51 +104,77 @@ Zvals <- mapply(
 
 
 
-# Extract cortical depth values from ZDepth at the location of Zthr_idx 
+## Extract cortical depth values at the location of Zthr_idx 
 ```{r}
-df_Depth <- df %>% 
-  filter(
-    sub == SUBID,
-    contrast == "depth"
-  ) %>% 
+
+D_filelist <- df %>% 
+  filter(sub == SUBID, contrast == "depth") %>% 
   select(pathname)
 
-Dnii <- sapply(df_Depth, readNifti)
+D_nii <- sapply(D_filelist, readNifti)
 
-Dvals <- mapply(
-  function(depth,idx) depth[idx], Dnii, Zthr_idx 
+D_vals <- mapply(
+  function(depth,idx) depth[idx], D_nii, ZMthr_idx 
 )
 
 # str(Dvals)
-
 ```
 
 
 
-# Calculate average histogram for depth
+## Calculate average histogram for depth
 ```{r}
 
+# define breaks to use the same number of bins for every sub (necessary for averaging)
 h_breaks <- seq(0, 1, 0.05)
-allhist_depth_counts <- sapply(Dvals, function(x) hist(x, breaks = h_breaks, plot = F)$counts ) %>% t()
+
+# create histograms and retain only the count
+allhist_depth_counts <- sapply(D_vals, function(x) hist(x, breaks = h_breaks, plot = F)$counts ) %>% t()
 
 # transform to probability
 allhist_depth_p <- apply(allhist_depth_counts, MARGIN = 1, function(x) x/sum(x)) %>% t()
 
+# average across taskrun
 avg_hist_depth_p <- apply(allhist_depth_p, MARGIN = 2, median)
 
+# plot (need to add some errorbars here)
 barplot(avg_hist_depth_p, space = 0)
 
 
 ```
 
 
+## Estimate 2D kernel density
+```{r, message=F}
+library(MASS)
+library(abind)  # n-dimensional extension of rbind and cbind
+
+kde_all <- mapply(
+  function(Z,D) kde2d(Z,D,n=100), ZM_vals, D_vals, SIMPLIFY = T
+)
+
+
+kde_mean <- list(
+  x = abind(kde_all[1, ], along = 2) %>% apply(MARGIN = 1, mean),
+  y = abind(kde_all[2, ], along = 2) %>% apply(MARGIN = 1, mean),
+  z = abind(kde_all[3, ], along = 3) %>% apply(MARGIN = c(1,2), mean)
+)
+
+
+contour(kde_mean)
+
+
+```
+**Results for `r SUBID` `r Zcontrast` with a Z thr set to `r Zthr`**
 
 
 
 
 
-# How mapply works
-```{r}
+
+```{r, echo=FALSE, include=F}
+
+# # How mapply works
 
 # # mapply(function(x,y))
 # 
@@ -216,6 +205,37 @@ barplot(avg_hist_depth_p, space = 0)
 ```
 
 
+```{r, message=F}
+
+# # ------ STANDARD creation of data/nifti dictionary -------------------------
+
+# library(stringr)
+# library(dplyr)
+
+
+# 
+# gitdir <- "/data00/layerfMRI/Github_repo/"
+# bd <- paste0(gitdir,"layerfMRI/analyses/depth_native/")
+# 
+# df <- list.files("data_native", recursive = T) %>% as.data.frame()
+# names(df) <- "fname"
+# 
+# df <- df %>% 
+#   rowwise() %>% 
+#   mutate(sub = str_split(fname,"/")[[1]][1]) %>%          # sub column
+#   mutate(contrast = str_split(fname,"/")[[1]][2]) %>%     # contrast column
+#   mutate(
+#     taskrun = str_split(fname,"/")[[1]][3] %>%            # taskrun column 
+#       str_extract("task_[1-4]\\_run_[1-2]")
+#   ) %>%
+#   mutate(
+#     zstat = str_split(fname,"/")[[1]][4] %>%              # zstat column 
+#       str_extract("thresh_zstat[1-4]")
+#   ) %>%
+#   mutate(path = paste0(bd,"/data_native/",fname))
+# 
+# df
+```
 
 
 
