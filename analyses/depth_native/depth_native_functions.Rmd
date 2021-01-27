@@ -6,65 +6,65 @@ output: html_document
 
 ```{r}
 
-library(stringr)
-library(dplyr)
-
-# ------------------------- STANDARD ------------------------------------------
-
-df <- list.files("data_native", recursive = T) %>% as.data.frame()
-names(df) <- "fname"
-
-# sub column
-df <- df %>% 
-  rowwise() %>% 
-  mutate(sub = str_split(fname,"/")[[1]][1])
-
-# contrast column
-df <- df %>% 
-  rowwise() %>% 
-  mutate(contrast = str_split(fname,"/")[[1]][2])
-
-
-# taskrun column
-df <- df %>% 
-  rowwise() %>% 
-  mutate(taskrun = str_split(fname,"/")[[1]][3] %>% str_extract("task_[1-4]\\_run_[1-2]"))
-
-
-# zstat column
-df <- df %>% 
-  rowwise() %>% 
-  mutate(zstat = str_split(fname,"/")[[1]][4] %>% str_extract("zstat[1-4]"))
-
-
-# ------------------------- CONCISE ------------------------------------------
-
-gitdir <- "/data00/layerfMRI/Github_repo/"
-bd <- paste0(gitdir,"layerfMRI/analyses/depth_native/")
-
-df <- list.files("data_native", recursive = T) %>% as.data.frame()
-names(df) <- "fname"
-
-df <- df %>% 
-  rowwise() %>% 
-  mutate(sub = str_split(fname,"/")[[1]][1]) %>%          # sub column
-  mutate(contrast = str_split(fname,"/")[[1]][2]) %>%     # contrast column
-  mutate(
-    taskrun = str_split(fname,"/")[[1]][3] %>%            # taskrun column 
-      str_extract("task_[1-4]\\_run_[1-2]")
-  ) %>%
-  mutate(
-    zstat = str_split(fname,"/")[[1]][4] %>%              # zstat column 
-      str_extract("zstat[1-4]")
-  ) %>%
-  mutate(path = paste0(bd,"/data_native/",fname))
-
-df
-
-
-# ------------------------- BEAUTIFUL ------------------------------------------
-
-
+# library(stringr)
+# library(dplyr)
+# 
+# # ------------------------- STANDARD ------------------------------------------
+# 
+# df <- list.files("data_native", recursive = T) %>% as.data.frame()
+# names(df) <- "fname"
+# 
+# # sub column
+# df <- df %>% 
+#   rowwise() %>% 
+#   mutate(sub = str_split(fname,"/")[[1]][1])
+# 
+# # contrast column
+# df <- df %>% 
+#   rowwise() %>% 
+#   mutate(contrast = str_split(fname,"/")[[1]][2])
+# 
+# 
+# # taskrun column
+# df <- df %>% 
+#   rowwise() %>% 
+#   mutate(taskrun = str_split(fname,"/")[[1]][3] %>% str_extract("task_[1-4]\\_run_[1-2]"))
+# 
+# 
+# # zstat column
+# df <- df %>% 
+#   rowwise() %>% 
+#   mutate(zstat = str_split(fname,"/")[[1]][4] %>% str_extract("thresh_zstat[1-4]"))
+# 
+# 
+# # ------------------------- CONCISE ------------------------------------------
+# 
+# gitdir <- "/data00/layerfMRI/Github_repo/"
+# bd <- paste0(gitdir,"layerfMRI/analyses/depth_native/")
+# 
+# df <- list.files("data_native", recursive = T) %>% as.data.frame()
+# names(df) <- "fname"
+# 
+# df <- df %>% 
+#   rowwise() %>% 
+#   mutate(sub = str_split(fname,"/")[[1]][1]) %>%          # sub column
+#   mutate(contrast = str_split(fname,"/")[[1]][2]) %>%     # contrast column
+#   mutate(
+#     taskrun = str_split(fname,"/")[[1]][3] %>%            # taskrun column 
+#       str_extract("task_[1-4]\\_run_[1-2]")
+#   ) %>%
+#   mutate(
+#     zstat = str_split(fname,"/")[[1]][4] %>%              # zstat column 
+#       str_extract("thresh_zstat[1-4]")
+#   ) %>%
+#   mutate(path = paste0(bd,"/data_native/",fname))
+# 
+# df
+# 
+# 
+# # ------------------------- BEAUTIFUL ------------------------------------------
+# 
+# 
 library(stringr)
 library(tidyr)
 library(dplyr)
@@ -77,22 +77,152 @@ df <- list.files("data_native", recursive = T) %>% as.data.frame()
 names(df) <- "fname"
 
 
-df <- df %>% 
-  rowwise() %>% 
-  tidyr::separate(
-    fname, c("sub","contrast","taskrun","zstat"), 
-    sep = "/", 
-    fill = "right", 
-    remove = FALSE
-  ) %>% 
-  mutate(taskrun = str_extract(taskrun,"task_[1-4]\\_run_[1-2]")) %>% 
-  mutate(zstat = str_extract(zstat,"zstat[1-4]")) %>% 
-  mutate(pathname = paste0(bd,"/data_native/",fname)) %>% 
+df <- df %>%
+  rowwise() %>%
+  separate(
+    fname, c("sub","contrast","taskrun","zstat"),
+    sep = "/", fill = "right", remove = FALSE
+  ) %>%
+  mutate(taskrun = str_extract(taskrun,"task_[1-4]\\_run_[1-2]")) %>%
+  mutate(zstat = str_extract(zstat,"thresh_zstat[1-4]")) %>%
+  mutate(pathname = paste0(bd,"/data_native/",fname)) %>%
   select(-fname)
 
 
-View(df)
+# View(df)
+
 
 ```
+
+
+
+
+# Load data into lists and find idx of voxels > Zthr
+```{r}
+library(RNifti)
+
+# df %>% distinct(sub)
+
+SUBID = "sub_02"
+
+# select one contrast (Motion) for one subject (sub_02) in all runs
+df_ZM <- df %>% 
+  filter(
+    sub == SUBID, 
+    contrast == "Zstat", 
+    zstat == "thresh_zstat1"
+  ) %>% 
+  select(pathname)
+
+# get the idx of Zstats > 2.3
+Zthr <- 2.3
+
+# I extract the indices in two steps since I also need the Znii to extract the Zvals later.
+# A one-line implementation is commented below
+Znii <- sapply(df_ZM, readNifti)
+Zthr_idx <- sapply(Znii, function(x) {which(x > Zthr)})
+
+# # in one step
+# Zthr_idx <- sapply(sapply(df_ZM, readNifti), function(x) {which(x > Zthr)})
+
+# str(Zthr_idx)
+```
+
+
+
+# Extract Z values from Znii at the location of Zthr_idx
+```{r}
+Zvals <- mapply(
+  function(vols,idx) vols[idx], Znii, Zthr_idx
+)
+
+# str(Zvals)
+```
+
+
+
+# Extract cortical depth values from ZDepth at the location of Zthr_idx 
+```{r}
+df_Depth <- df %>% 
+  filter(
+    sub == SUBID,
+    contrast == "depth"
+  ) %>% 
+  select(pathname)
+
+Dnii <- sapply(df_Depth, readNifti)
+
+Dvals <- mapply(
+  function(depth,idx) depth[idx], Dnii, Zthr_idx 
+)
+
+# str(Dvals)
+
+```
+
+
+
+# Calculate average histogram for depth
+```{r}
+
+h_breaks <- seq(0, 1, 0.05)
+allhist_depth_counts <- sapply(Dvals, function(x) hist(x, breaks = h_breaks, plot = F)$counts ) %>% t()
+
+# transform to probability
+allhist_depth_p <- apply(allhist_depth_counts, MARGIN = 1, function(x) x/sum(x)) %>% t()
+
+avg_hist_depth_p <- apply(allhist_depth_p, MARGIN = 2, median)
+
+barplot(avg_hist_depth_p, space = 0)
+
+
+```
+
+
+
+
+
+
+
+# How mapply works
+```{r}
+
+# # mapply(function(x,y))
+# 
+# idx = list(
+#   c(1,2,3,4),
+#   c(4,5,6,7)
+# )
+# 
+# vols = list(
+#   array(11:19, dim = c(3,3)),
+#   array(21:29, dim = c(3,3))
+# )
+# 
+# 
+# list(
+#   val_1 = vols[[1]][idx[[1]]],
+#   val_2 = vols[[2]][idx[[2]]]
+# )
+# 
+# 
+# mapply(
+#   function(x,y) y[x], idx, vols
+# ) %>% t()
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
 
 

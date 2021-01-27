@@ -20,7 +20,7 @@ for i in ${subject_list[@]}; do
 
       taskrun=task_${task}_run_${run}
 
-      sourcedir=${sourcedir_stub}_${taskrun}.feat/stats/
+      sourcedir=${sourcedir_stub}_${taskrun}.feat/
 
       if [ -d ${sourcedir} ]; then
 
@@ -29,7 +29,7 @@ for i in ${subject_list[@]}; do
         # only if the specific taskrun exists, mkdir the targetdir and cp the zstat
         targetdir=${targetdir_stub}/${taskrun}
         mkdir ${targetdir} -p
-        cp ${sourcedir}/zstat*.nii.gz ${targetdir}/
+        cp ${sourcedir}/thresh_zstat*.nii.gz ${targetdir}/
 
       else
         echo $sourcedir "nun ce sta"
