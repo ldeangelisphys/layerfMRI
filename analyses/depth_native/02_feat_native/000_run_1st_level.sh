@@ -5,6 +5,8 @@
 
 analysis_folder=02_feat_native
 
+Zthr=2.3
+
 numba_cores=10
 
 
@@ -64,6 +66,7 @@ for insub in ${listsub_fMRI[@]}; do
               -e "s@NUMBATIMEPOINTS@${dim4}@g" \
               -e "s@TOTALNUMBAVOXELS@${totalVoxels}@g" \
               -e "s@NII4D@${nii4d}@g" \
+              -e "s@ZTHRESHOLD@${Zthr}@g" \
               -e "s@EVMOTION@${glmdir}/EV_predictors/sub_${sub}_EV_task_${task}_run_${run}_M.txt@g" \
               -e "s@EVSCRAMBLED@${glmdir}/EV_predictors/sub_${sub}_EV_task_${task}_run_${run}_S.txt@g" \
               -e "s@DEPTHMAP@${depthmap_dir}/sub_${sub}/depth/sub_${sub}_depth_task_${task}_run_${run}.nii.gz@g" \

@@ -112,6 +112,7 @@ and replace the actual values in the first column with the placeholder in the se
 `set fmri(npts)`                |   `NUMBATIMEPOINTS`
 `set fmri(totalVoxels)`         |   `TOTALNUMBAVOXELS`
 `set feat_files(1)`             |   `"NII4D"`
+`set fmri(z_thresh)`            |   `ZTHRESHOLD`
 `set fmri(custom1)`             |   `"EVMOTION"`
 `set fmri(custom2)`             |   `"EVSCRAMBLED"`
 `set fmri(threshmask)`          |   `"DEPTHMAP"`

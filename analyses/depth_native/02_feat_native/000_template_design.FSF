@@ -185,7 +185,7 @@ set fmri(thresh) 3
 set fmri(prob_thresh) 0.05
 
 # Z threshold
-set fmri(z_thresh) 3.1
+set fmri(z_thresh) ZTHRESHOLD
 
 # Z min/max for colour rendering
 # 0 : Use actual Z min/max
