@@ -183,11 +183,42 @@ JU_vals <- mapply(
 )
 
 
-# calculate histogram for D_vals[[1]] and JU_vals[[1]] 
-dv <- D_vals[[1]]
-jv <- JU_vals[[1]]
+# -------- Development for one taskrun - for all taskrun see next chunk -------
 
-  
+# # calculate histogram for D_vals[[1]] and JU_vals[[1]] 
+# dv <- D_vals[[1]]
+# jv <- JU_vals[[1]]
+# 
+#   
+# # Prepare histogram count estimation for each region in julabels:
+# # (1) transform julabels to a list to use sapply
+# # (2) set the breaks so that they are the same in every histogram
+# # (3) set a clusterSizeThr so that only clusters > certain size are considered
+# julabels_list <- spread(julabels, key = name, value = numba) %>% as.list()
+# h_breaks <- seq(0, 1, 0.05)
+# clusterSizeThr <- 100
+# 
+# # Estimate histograms for each Juelich ROI
+# ju_ROI_hcount <- sapply(julabels_list, function(ROInumba) {
+#   
+#   idxROI <- which(jv == ROInumba)
+#     
+#   if (length(idxROI) > clusterSizeThr) {
+#     hcounts <- hist(dv[idxROI], breaks = h_breaks, plot = F)$counts
+#   }
+# 
+# })
+# 
+# ju_ROI_hcount <- ju_ROI_hcount[!sapply(ju_ROI_hcount,is.null)]
+# 
+# ju_ROI_hcount
+
+```
+
+
+## Mapply on D_vals and JU_vals with nested sapply on julabel_list to get it for all the taskruns
+```{r}
+
 # Prepare histogram count estimation for each region in julabels:
 # (1) transform julabels to a list to use sapply
 # (2) set the breaks so that they are the same in every histogram
@@ -195,27 +226,6 @@ jv <- JU_vals[[1]]
 julabels_list <- spread(julabels, key = name, value = numba) %>% as.list()
 h_breaks <- seq(0, 1, 0.05)
 clusterSizeThr <- 100
-
-# Estimate histograms for each Juelich ROI
-ju_ROI_hcount <- sapply(julabels_list, function(ROInumba) {
-  
-  idxROI <- which(jv == ROInumba)
-    
-  if (length(idxROI) > clusterSizeThr) {
-    hcounts <- hist(dv[idxROI], breaks = h_breaks, plot = F)$counts
-  }
-
-})
-
-ju_ROI_hcount <- ju_ROI_hcount[!sapply(ju_ROI_hcount,is.null)]
-
-ju_ROI_hcount
-
-```
-
-
-## Mapply on D_vals and JU_vals with nested sapply on julabel_list to get it for all the taskruns
-```{r}
 
 tot <- mapply(function(jv, dv) {
   
@@ -234,9 +244,7 @@ tot <- mapply(function(jv, dv) {
 
 
 # now I need to find a way to average across taskruns
-
-
-tot %>% str()
+# tot %>% str()
 
 tot_df <- unlist(tot, recursive = F) %>% as.data.frame()
 
@@ -250,9 +258,11 @@ final_counts <- sapply(activeROIs,function(roi) {
 
 # in case you prefer probabilities
 final_counts <- final_counts %>% 
-  mutate_all(funs(./sum(.))) # %>% summarise(sum) # to check that sum = 1
+  mutate_all(~ ./sum(.)) # %>% summarise(sum) # to check that sum = 1
 
 # final_counts %>% kbl() %>% kable_paper("hover", full_width = F)
+
+
 
 
 ```
@@ -261,6 +271,9 @@ final_counts <- final_counts %>%
 ## Plot it!
 ```{r}
 
+library(ggplot2)
+
+# add one colum showing the depth
 final_counts$depth <- 1:nrow(final_counts)/nrow(final_counts) 
 
 final_counts %>% 
@@ -268,6 +281,7 @@ final_counts %>%
   ggplot(aes(x = depth, y = count, fill = depth)) +
   geom_bar(stat = "identity", width = 0.05) +
   scale_fill_viridis_c() +
+  ylim(0,0.15) +
   facet_wrap( ~ ROI)
   
 
@@ -297,9 +311,11 @@ final_counts %>%
 
 
 
-# Garbage collector
 
 ```{r, echo=FALSE, include=F}
+
+# -------------------------  Garbage collector  -------------------------------
+
 # ju_ROI_idx <- ju_ROI_idx[lapply(ju_ROI_idx,length) > clusterSizeThr]
 
 ```
