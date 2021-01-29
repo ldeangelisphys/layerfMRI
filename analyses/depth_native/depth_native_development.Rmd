@@ -80,6 +80,7 @@ Z_filelist <- df %>%
 Z_nii <- sapply(Z_filelist, readNifti)
 Zthr_idx <- sapply(Z_nii, function(x) {which(x > Zthr)})
 
+
 # # in one step
 # Zthr_idx <- sapply(sapply(Z_filelist, readNifti), function(x) {which(x > Zthr)})
 
@@ -153,7 +154,7 @@ kde_mean <- list(
 )
 
 
-contour(kde_mean)
+contour(kde_mean) 
 title(paste0(SUBID, " ", Zcontrast, " with Zthr = ", Zthr))
 
 
@@ -241,30 +242,58 @@ tot_df <- unlist(tot, recursive = F) %>% as.data.frame()
 
 activeROIs <- purrr::flatten(tot) %>% names() %>% unique()
 
-tot_df %>% str()
+# average count across taskruns
+final_counts <- sapply(activeROIs,function(roi) {
+  tot_df %>% select(contains(roi)) %>% rowMeans()
+}) %>% as.data.frame()
+   
 
+# in case you prefer probabilities
+final_counts <- final_counts %>% 
+  mutate_all(funs(./sum(.))) # %>% summarise(sum) # to check that sum = 1
 
-# for one it works
-tot_df %>% 
-  select(contains("GM_Brocas_area_BA44")) %>%
-  rowMeans()
-
-
-# now I need to make it work with sapply for all ROIs
-a <- sapply(activeROIs,function(roi) {
-  tot_df %>% select(contains(roi))
-})
-
-
-
+# final_counts %>% kbl() %>% kable_paper("hover", full_width = F)
 
 
 ```
 
 
+## Plot it!
 ```{r}
 
+final_counts$depth <- 1:nrow(final_counts)/nrow(final_counts) 
+
+final_counts %>% 
+  gather(contains("GM"), key = "ROI", value = "count") %>% 
+  ggplot(aes(x = depth, y = count, fill = depth)) +
+  geom_bar(stat = "identity", width = 0.05) +
+  scale_fill_viridis_c() +
+  facet_wrap( ~ ROI)
+  
+
+
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -274,11 +303,6 @@ a <- sapply(activeROIs,function(roi) {
 # ju_ROI_idx <- ju_ROI_idx[lapply(ju_ROI_idx,length) > clusterSizeThr]
 
 ```
-
-
-
-
-
 
 
 
