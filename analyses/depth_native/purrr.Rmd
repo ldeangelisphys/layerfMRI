@@ -1,0 +1,44 @@
+---
+title: "furrr"
+output: html_document
+---
+
+```{r}
+library(purrr)
+library(furrr)
+options(future.rng.onMisuse = "ignore")
+
+library(microbenchmark)
+
+plan(multisession, workers = 50)
+
+set.seed(124)
+
+arrSide <- 1e2
+createArray <- function() array(rnorm(arrSide^2), dim = c(arrSide,arrSide))
+
+# createArray()
+
+Narrs = 1e3
+
+# serial
+microbenchmark(
+  arrs <- map(1:Narrs, ~ createArray() )  
+, times = 10) 
+
+# arrs %>% length()
+
+# parallel
+microbenchmark(
+  arrs <- future_map(1:Narrs, ~ createArray() )  
+, times = 10)
+
+
+
+
+```
+
+```{r}
+
+```
+

@@ -262,7 +262,7 @@ final_counts <- final_counts %>%
 
 # final_counts %>% kbl() %>% kable_paper("hover", full_width = F)
 
-
+  
 
 
 ```
@@ -277,13 +277,24 @@ library(ggplot2)
 final_counts$depth <- 1:nrow(final_counts)/nrow(final_counts) 
 
 final_counts %>% 
-  gather(contains("GM"), key = "ROI", value = "count") %>% 
-  ggplot(aes(x = depth, y = count, fill = depth)) +
+  gather(contains("GM"), key = "ROI", value = "density") %>% 
+  ggplot(aes(x = depth, y = density, fill = depth)) +
   geom_bar(stat = "identity", width = 0.05) +
   scale_fill_viridis_c() +
   ylim(0,0.15) +
   facet_wrap( ~ ROI)
   
+
+
+final_counts %>% 
+  gather(contains("GM"), key = "ROI", value = "density") %>% 
+  ggplot(aes(x = depth, y = density, fill = depth)) +
+  geom_bar(stat = "identity", width = 0.05) +
+  geom_smooth(se = F) +
+  scale_fill_viridis_c() +
+  ylim(0,0.15) +
+  facet_wrap( ~ ROI)
+
 
 
 ```

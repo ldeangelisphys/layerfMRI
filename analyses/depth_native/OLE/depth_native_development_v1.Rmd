@@ -1,0 +1,383 @@
+---
+title: "depth_native_functions"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+## Create dictionary of data from `list.files` (for real!) {.tabset}
+The magic is provided by `tidyr::separate`
+
+```{r, message=F}
+
+# # ------------------------- BEAUTIFUL ------------------------------------------
+
+library(stringr)
+library(tidyr)
+library(dplyr)
+
+select <- dplyr::select
+
+gitdir <- "/data00/layerfMRI/Github_repo/"
+bd <- paste0(gitdir,"layerfMRI/analyses/depth_native/")
+
+
+# here df stands for dictionary of files
+df <- list.files("data_native", recursive = T) %>% as.data.frame()
+names(df) <- "fname"
+
+
+df <- df %>%
+  rowwise() %>%
+  separate(
+    fname, c("sub","contrast","taskrun","zstat"),
+    sep = "/", fill = "right", remove = FALSE
+  ) %>%
+  mutate(taskrun = str_extract(taskrun,"task_[1-4]\\_run_[1-2]")) %>%
+  mutate(zstat = str_extract(zstat,"thresh_zstat[1-4]")) %>%
+  mutate(pathname = paste0(bd,"/data_native/",fname)) %>%
+  dplyr::select(-fname)
+
+
+
+# just to show an example in the output
+library(kableExtra)
+
+df %>%
+  filter(
+    taskrun == "task_1_run_1"
+  ) %>% head(n=10) %>% kbl() %>% kable_paper("hover", full_width = F)
+
+
+```
+
+
+## Select sub, Zthr and Zcontrast
+```{r}
+SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
+Zcontrast <- "thresh_zstat1"
+Zthr <- 2.3
+```
+
+
+
+## Create idx of suprathreshold voxels and extract Zvals
+1. Load all the 8 taskrun Zstat for one constrast (M/S) into a list
+2. Find idx of suprathreshold voxels
+3. Extract Zstat values for the 8 Zstat nii's at the idx location
+
+```{r, message=F}
+library(RNifti)
+
+# select one contrast (Motion) for one subject (sub_02) in all runs
+Z_filelist <- df %>% 
+  filter(sub == SUBID, contrast == "Zstat", zstat == Zcontrast) %>% 
+  select(pathname)
+
+
+# I extract the indices in two steps since I also need the Znii to extract the Zvals later.
+# A one-line implementation is commented below
+Z_nii <- sapply(Z_filelist, readNifti)
+Zthr_idx <- sapply(Z_nii, function(x) {which(x > Zthr)})
+
+
+# # in one step
+# Zthr_idx <- sapply(sapply(Z_filelist, readNifti), function(x) {which(x > Zthr)})
+
+# str(Zthr_idx)
+
+
+# Extract Z values from Znii at the location of Zthr_idx
+Z_vals <- mapply(
+  function(vols,idx) vols[idx], Z_nii, Zthr_idx
+)
+
+# str(Zvals)
+```
+
+
+
+## Extract cortical depth values at the location of Zthr_idx 
+```{r}
+
+D_filelist <- df %>% 
+  filter(sub == SUBID, contrast == "depth") %>% 
+  select(pathname)
+
+D_nii <- sapply(D_filelist, readNifti)
+
+D_vals <- mapply(
+  function(depth,idx) depth[idx], D_nii, Zthr_idx 
+)
+
+# str(Dvals)
+```
+
+
+
+## Calculate average histogram for depth
+```{r}
+
+# define breaks to use the same number of bins for every sub (necessary for averaging)
+h_breaks <- seq(0, 1, 0.05)
+
+# create histograms for the Depth vol of each taskrun and retain only the count
+allhist_depth_counts <- sapply(D_vals, function(x) hist(x, breaks = h_breaks, plot = F)$counts ) %>% t()
+
+# transform count -> probability
+allhist_depth_p <- apply(allhist_depth_counts, MARGIN = 1, function(x) x/sum(x)) %>% t()
+
+# average histograms across taskruns
+avg_hist_depth_p <- apply(allhist_depth_p, MARGIN = 2, median)
+
+# plot (need to add some errorbars here)
+barplot(avg_hist_depth_p, space = 0)
+
+
+```
+
+
+## Estimate 2D kernel density
+```{r, message=F}
+library(MASS)
+library(abind)  # n-dimensional extension of rbind and cbind
+
+kde_all <- mapply(
+  function(Z,D) kde2d(Z,D,n=100), Z_vals, D_vals, SIMPLIFY = T
+)
+
+
+kde_mean <- list(
+  x = abind(kde_all[1, ], along = 2) %>% apply(MARGIN = 1, mean),
+  y = abind(kde_all[2, ], along = 2) %>% apply(MARGIN = 1, mean),
+  z = abind(kde_all[3, ], along = 3) %>% apply(MARGIN = c(1,2), mean)
+)
+
+
+contour(kde_mean) 
+title(paste0(SUBID, " ", Zcontrast, " with Zthr = ", Zthr))
+
+
+```
+
+
+
+## Depth histograms for different regions of the Juelich atlas
+
+```{r}
+
+julabels <- read.csv("labels_juelich.csv") %>% 
+  mutate(name = str_replace(name,"['-/]","")) %>%    # get rid of special chars
+  mutate(numba = index + 1) %>% 
+  select(-index)
+
+
+JU_filelist <- df %>% 
+  filter(sub == SUBID, contrast == "atlas") %>% 
+  select(pathname)
+
+JU_nii <- sapply(JU_filelist, readNifti)
+
+JU_vals <- mapply(
+  function(atlas,idx) atlas[idx], JU_nii, Zthr_idx 
+)
+
+
+# -------- Development for one taskrun - for all taskrun see next chunk -------
+
+# # calculate histogram for D_vals[[1]] and JU_vals[[1]] 
+# dv <- D_vals[[1]]
+# jv <- JU_vals[[1]]
+# 
+#   
+# # Prepare histogram count estimation for each region in julabels:
+# # (1) transform julabels to a list to use sapply
+# # (2) set the breaks so that they are the same in every histogram
+# # (3) set a clusterSizeThr so that only clusters > certain size are considered
+# julabels_list <- spread(julabels, key = name, value = numba) %>% as.list()
+# h_breaks <- seq(0, 1, 0.05)
+# clusterSizeThr <- 100
+# 
+# # Estimate histograms for each Juelich ROI
+# ju_ROI_hcount <- sapply(julabels_list, function(ROInumba) {
+#   
+#   idxROI <- which(jv == ROInumba)
+#     
+#   if (length(idxROI) > clusterSizeThr) {
+#     hcounts <- hist(dv[idxROI], breaks = h_breaks, plot = F)$counts
+#   }
+# 
+# })
+# 
+# ju_ROI_hcount <- ju_ROI_hcount[!sapply(ju_ROI_hcount,is.null)]
+# 
+# ju_ROI_hcount
+
+```
+
+
+## Mapply on D_vals and JU_vals with nested sapply on julabel_list to get it for all the taskruns
+```{r}
+
+# Prepare histogram count estimation for each region in julabels:
+# (1) transform julabels to a list to use sapply
+# (2) set the breaks so that they are the same in every histogram
+# (3) set a clusterSizeThr so that only clusters > certain size are considered
+julabels_list <- spread(julabels, key = name, value = numba) %>% as.list()
+h_breaks <- seq(0, 1, 0.05)
+clusterSizeThr <- 100
+
+tot <- mapply(function(jv, dv) {
+  
+  taskrun_count <- sapply(julabels_list, function(ROInumba) {
+    
+    idxROI <- which(jv == ROInumba)
+      
+    if (length(idxROI) > clusterSizeThr) {
+      hcounts <- hist(dv[idxROI], breaks = h_breaks, plot = F)$counts
+    }
+  })
+  
+  taskrun_count <- taskrun_count[!sapply(taskrun_count,is.null)]
+  
+}, JU_vals, D_vals)
+
+
+# now I need to find a way to average across taskruns
+# tot %>% str()
+
+tot_df <- unlist(tot, recursive = F) %>% as.data.frame()
+
+activeROIs <- purrr::flatten(tot) %>% names() %>% unique()
+
+# average count across taskruns
+final_counts <- sapply(activeROIs,function(roi) {
+  tot_df %>% select(contains(roi)) %>% rowMeans()
+}) %>% as.data.frame()
+   
+
+# in case you prefer probabilities
+final_counts <- final_counts %>% 
+  mutate_all(~ ./sum(.)) # %>% summarise(sum) # to check that sum = 1
+
+# final_counts %>% kbl() %>% kable_paper("hover", full_width = F)
+
+  
+
+
+```
+
+
+## Plot it!
+```{r}
+
+library(ggplot2)
+
+# add one colum showing the depth
+final_counts$depth <- 1:nrow(final_counts)/nrow(final_counts) 
+
+final_counts %>% 
+  gather(contains("GM"), key = "ROI", value = "density") %>% 
+  ggplot(aes(x = depth, y = density, fill = depth)) +
+  geom_bar(stat = "identity", width = 0.05) +
+  scale_fill_viridis_c() +
+  ylim(0,0.15) +
+  facet_wrap( ~ ROI)
+  
+
+
+final_counts %>% 
+  gather(contains("GM"), key = "ROI", value = "density") %>% 
+  ggplot(aes(x = depth, y = density, fill = depth)) +
+  geom_bar(stat = "identity", width = 0.05) +
+  geom_smooth(se = F) +
+  scale_fill_viridis_c() +
+  ylim(0,0.15) +
+  facet_wrap( ~ ROI)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r, echo=FALSE, include=F}
+
+# -------------------------  Garbage collector  -------------------------------
+
+# ju_ROI_idx <- ju_ROI_idx[lapply(ju_ROI_idx,length) > clusterSizeThr]
+
+```
+
+
+
+
+```{r, echo=FALSE, include=F}
+
+# # How mapply works
+
+# # mapply(function(x,y))
+# 
+# idx = list(
+#   c(1,2,3,4),
+#   c(4,5,6,7)
+# )
+# 
+# vols = list(
+#   array(11:19, dim = c(3,3)),
+#   array(21:29, dim = c(3,3))
+# )
+# 
+# 
+# list(
+#   val_1 = vols[[1]][idx[[1]]],
+#   val_2 = vols[[2]][idx[[2]]]
+# )
+# 
+# 
+# mapply(
+#   function(x,y) y[x], idx, vols
+# ) %>% t()
+
+
+
+
+```
+
+
+```{r, message=F, include=F}
+
+
+```
+
+
+
+
+
+
+
+
+
+
