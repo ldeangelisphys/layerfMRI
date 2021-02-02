@@ -10,10 +10,10 @@ output:
 ```{r, message=F}
 
 # All of the following will become selector widgets
-SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
+# SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
 Zcontrast <- "thresh_zstat1"
 Zthr <- 2.3
-clusterSizeThr <- 100  # to build a meaningful histogram 
+clusterSizeThr <- 50  # to build a meaningful histogram 
 h_breaks <- seq(0, 1, 0.05) # set hist breaks to a fixed range
 
 # -----------------------------------------------------------------------------
@@ -27,6 +27,7 @@ library(tidyr)
 library(dplyr)
 library(purrr)
 select <- dplyr::select
+library(ggplot2)
 library(tictoc)
 
 
@@ -64,6 +65,7 @@ create_dizio_files <- function(data_native_dir = "data_native") {
   
   return(df)
 }
+
 
 
 # ------------------------------  Code for Main -------------------------------
@@ -165,7 +167,7 @@ get_idx_and_vals <- function(Z_thr, Z_nii, D_nii, JU_nii) {
 ```{r}
 
 
-get_hist_stats_juelich_ROIs <- function(julabels, JU_vals, D_vals) {
+get_hist_stats_juelich_ROIs <- function(julabels, JU_vals, D_vals, thr_run_sig=6) {
 
   # Transform julabels to a list to use sapply
   julabels_list <- spread(julabels, key = name, value = numba) %>% as.list()
@@ -199,7 +201,7 @@ get_hist_stats_juelich_ROIs <- function(julabels, JU_vals, D_vals) {
   grouped <- grouped[!sapply(grouped,function(x) is.null(dim(x)) ) ]
   
   # (2) remove ROIs where a sig result occurs in less than 6/8 runs
-  min_numba_run_where_sig = 6
+  min_numba_run_where_sig = thr_run_sig
   grouped <- grouped[!sapply(grouped,function(x) dim(x)[1] < min_numba_run_where_sig)]
   
   
@@ -263,7 +265,7 @@ get_contrast_specific_results <- function(SUBID, Zcontrast) {
   # (1) Estimate the distribution of sig voxels at different depths for each ROI in the juelich atlas.
   # (2) Exclude ROIs where the numba of sig voxels is < clusterSizeThr in less than 6/8 runs
   # (3) Retain mean and standard error across runs
-  hist_stats <- get_hist_stats_juelich_ROIs(julabels, JU_vals, D_vals)
+  hist_stats <- get_hist_stats_juelich_ROIs(julabels, JU_vals, D_vals, thr_run_sig=4)
   
   return(hist_stats)
   
@@ -276,12 +278,24 @@ get_contrast_specific_results <- function(SUBID, Zcontrast) {
 ## Main process
 ```{r}
 
+# df %>% dplyr::select(sub) %>% unique()
+
+sub_ID = "sub_06"
+
 # Create dictionary of data from list.files()
 df <- create_dizio_files()
 
-Motion_results <- get_contrast_specific_results(SUBID = "sub_02", Zcontrast = "thresh_zstat1")
+# # show df tree
+# library(collapsibleTree)
+# tf <- df %>% dplyr::select(sub,contrast,taskrun,zstat)
+# collapsibleTree(tf, c("sub","contrast","taskrun","zstat"), collapsed = T)
 
-Scrambled_results <- get_contrast_specific_results(SUBID = "sub_02", Zcontrast = "thresh_zstat2")
+
+Motion_results <- get_contrast_specific_results(SUBID = sub_ID, Zcontrast = "thresh_zstat1")
+
+Scrambled_results <- get_contrast_specific_results(SUBID = sub_ID, Zcontrast = "thresh_zstat2")
+
+
 
 M_means <- Motion_results$means
 M_error <- Motion_results$error
@@ -289,14 +303,71 @@ M_error <- Motion_results$error
 S_means <- Scrambled_results$means
 S_error <- Scrambled_results$error
 
+
+# Prepare the results for plotting using the magic tidyverse:
+# (1) put the resulting df for all contrasts in one list
+# (2) add depth and contrast factor
+# (3) tidy (i.e. WIDE -> LONG)
+# (4) bind_rows all the df into one
+res_means <- list(M_means, S_means) %>% 
+  map(~ .x %>% mutate(depth = 1:nrow(.x)/nrow(.x)) ) %>% 
+  map2(. , c("Motion","Scrambled"),  ~ .x %>% mutate(contrast = .y)) %>% 
+  map(~ .x %>% gather(contains("GM"), key = "ROI", value = "density") ) %>% 
+  reduce(bind_rows)
+
+res_error <- list(M_error, S_error) %>% 
+  map(~ .x %>% mutate(depth = 1:nrow(.x)/nrow(.x)) ) %>% 
+  map2(. , c("Motion","Scrambled"),  ~ .x %>% mutate(contrast = .y)) %>% 
+  map(~ .x %>% gather(contains("GM"), key = "ROI", value = "error") ) %>% 
+  reduce(bind_rows)
+
+res <- inner_join(res_means, res_error, c("contrast","ROI","depth"))
+
+```
+
+
+## Plot with two contrasts and errorbars (1)
+```{r, fig.width=10, fig.height=6}
+library(ggthemes)
+
+res %>%
+  mutate(ROI = str_replace_all(ROI, "_", " ")) %>% 
+  ggplot( aes(x = depth, y = density, fill = contrast) ) +
+  geom_bar(stat = "identity", width = 0.05, position = position_identity(), alpha = 0.5) +
+  geom_linerange(aes(ymin = density - error, ymax = density + error, color=contrast, alpha = 0.7)) +
+  facet_wrap( ~ ROI, scales = "free", labeller = label_wrap_gen(width=22)) +
+  theme_minimal()
+
+
+
+```
+
+
+
+## Plot with two contrasts and errorbars (1)
+```{r, fig.width=10, fig.height=6, message=F}
+library(ggthemes)
+
+res %>%
+  mutate(ROI = str_replace_all(ROI, "_", " ")) %>% 
+  ggplot( aes(x = depth, y = density, color = contrast) ) +
+  geom_smooth(alpha = 0.5, se=F, n=20, na.rm = T, method = "loess") +
+  geom_linerange(aes(ymin = density - error, ymax = density + error, color=contrast, alpha = 0.7)) +
+  facet_wrap( ~ ROI, scales = "free", labeller = label_wrap_gen(width=22)) +
+  theme_minimal()
+
+
+
 ```
 
 
 
 
-## Plot M! (this has to go above the main process as a function)
+
+
+## Initial plot: one contrast with errorbars
 Great info about plotting errorbars [here](http://www.sthda.com/english/wiki/ggplot2-error-bars-quick-start-guide-r-software-and-data-visualization)
-```{r}
+```{r eval=FALSE, include=FALSE}
 
 library(ggplot2)
 
@@ -324,31 +395,6 @@ M %>%
 
 
 
-# Plot S
-```{r}
-library(ggplot2)
-
-S_means$depth <- 1:nrow(S_means)/nrow(S_means)
-S_error$depth <- 1:nrow(S_error)/nrow(S_error)
-
-S_means_LONG <- S_means %>% 
-  gather(contains("GM"), key = "ROI", value = "density")
-
-S_error_LONG <- S_error %>% 
-  gather(contains("GM"), key = "ROI", value = "error")
-
-S <- inner_join(S_means_LONG, S_error_LONG, by = c("depth", "ROI"))
-
-
-S %>% 
-  ggplot(aes(x = depth, y = density, fill = depth)) +
-  geom_bar(stat = "identity", width = 0.05) + 
-  scale_fill_viridis_c() +
-  ylim(0,0.15) +
-  facet_wrap( ~ ROI) +
-  geom_linerange(aes(ymin = density - error, ymax = density + error))
-
-
 
 
 ```
@@ -356,8 +402,7 @@ S %>%
 
 
 
-
-## Plot it! (OLE)
+## Initial plot (OLE)
 ```{r eval=FALSE, include=FALSE}
 
 library(ggplot2)
@@ -492,11 +537,6 @@ ERRs <- lapply(grouped, function(x) apply(x, MARGIN = 2, sterr)) %>% as.data.fra
 
 ```
 
-
-```{r, message=F, include=F}
-
-
-```
 
 
 
