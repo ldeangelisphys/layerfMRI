@@ -10,11 +10,12 @@ output:
 ```{r, message=F}
 
 # All of the following will become selector widgets
+
 # SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
-Zcontrast <- "thresh_zstat1"
-Zthr <- 2.3
-clusterSizeThr <- 50  # to build a meaningful histogram 
-h_breaks <- seq(0, 1, 0.05) # set hist breaks to a fixed range
+# Zcontrast <- "thresh_zstat1"
+# Zthr <- 2.3
+# clusterSizeThr <- 50  # to build a meaningful histogram 
+# h_breaks <- seq(0, 1, 0.05) # set hist breaks to a fixed range
 
 # -----------------------------------------------------------------------------
 
@@ -70,6 +71,14 @@ create_dizio_files <- function(data_native_dir = "data_native") {
 
 # ------------------------------  Code for Main -------------------------------
 # df <- create_dizio_files()
+
+
+
+df <- create_dizio_files()
+# show df tree
+library(collapsibleTree)
+dataset <- df %>% dplyr::select(sub,contrast,taskrun,zstat)
+collapsibleTree(dataset, c("sub","contrast","taskrun","zstat"), collapsed = T, zoomable = F)
 
 ```
 
@@ -159,7 +168,7 @@ get_idx_and_vals <- function(Z_thr, Z_nii, D_nii, JU_nii) {
 
 
 ## Hist for each Juelich region
-- The (outer) Mapply loops on pairs of [jv = JU_vals, dv = D_vals] for each taskrun
+- The (outer) Mapply loops on pairs of `[jv = JU_vals[i], dv = D_vals[i]]` for each i-th taskrun
 - The (inner) Sapply loops on juelich regions if the numba sig voxels is > clusterSizeThr
 - A final Sapply removes the juelich regions where the counts are NULL
 
@@ -167,7 +176,8 @@ get_idx_and_vals <- function(Z_thr, Z_nii, D_nii, JU_nii) {
 ```{r}
 
 
-get_hist_stats_juelich_ROIs <- function(julabels, JU_vals, D_vals, thr_run_sig=6) {
+get_hist_stats_juelich_ROIs <- function(julabels, JU_vals, D_vals, 
+                                        clusterSizeThr, h_breaks, thr_Nrun_sig) {
 
   # Transform julabels to a list to use sapply
   julabels_list <- spread(julabels, key = name, value = numba) %>% as.list()
@@ -201,8 +211,7 @@ get_hist_stats_juelich_ROIs <- function(julabels, JU_vals, D_vals, thr_run_sig=6
   grouped <- grouped[!sapply(grouped,function(x) is.null(dim(x)) ) ]
   
   # (2) remove ROIs where a sig result occurs in less than 6/8 runs
-  min_numba_run_where_sig = thr_run_sig
-  grouped <- grouped[!sapply(grouped,function(x) dim(x)[1] < min_numba_run_where_sig)]
+  grouped <- grouped[!sapply(grouped,function(x) dim(x)[1] < thr_Nrun_sig)]
   
   
   # transform to probabilities, i.e. divide the counts in each row by the sum across columns
@@ -231,19 +240,35 @@ get_hist_stats_juelich_ROIs <- function(julabels, JU_vals, D_vals, thr_run_sig=6
 
 # ------------------------------  Code for Main -------------------------------
 
-# hist_stats <- get_hist_stats_juelich_ROIs(julabels, JU_vals, D_vals)
+# thr_Nrun_sig=6, 
+# clusterSizeThr = 50, 
+# h_breaks = seq(0, 1, 0.05)
+
+# hist_stats <- get_hist_stats_juelich_ROIs(julabels, JU_vals, D_vals, clusterSizeThr, h_breaks, thr_Nrun_sig)
 
 
 ```
 
 
 ## Main function to get contrast-specific results
-This uses all the functions created above, and returns the mean + sterr of counts
-across taskrun for a specific contrast
-```{r}
+This uses all the functions created above, and returns the mean and sterr of counts
+across taskrun for a specific contrast.\
+I **need** to make this function since I need to get the histograms for _two_ contrasts at a time. Rewriting everything would be prone to mistakes and not elegant (i.e. easy to read/edit).
+
+```
+get_contrast_specific_results(Zcontrast)
+|
+├── load_niis(SUBID, Zcontrast)
+├── get_idx_and_vals(Z_thr, Z_nii, D_nii, JU_nii)
+└── get_hist_stats_juelich_ROIs(julabels, JU_vals, D_vals,
+                                clusterSizeThr, h_breaks, thr_Nrun_sig)
+
+```
+
+```{r, message=FALSE}
 
 # Main function, to be run for each contrast
-get_contrast_specific_results <- function(SUBID, Zcontrast) {
+get_contrast_specific_results <- function(Zcontrast) {
   
   # Load Z, D, JU niftis (24)
   niis <- load_niis(SUBID, Zcontrast)
@@ -265,11 +290,14 @@ get_contrast_specific_results <- function(SUBID, Zcontrast) {
   # (1) Estimate the distribution of sig voxels at different depths for each ROI in the juelich atlas.
   # (2) Exclude ROIs where the numba of sig voxels is < clusterSizeThr in less than 6/8 runs
   # (3) Retain mean and standard error across runs
-  hist_stats <- get_hist_stats_juelich_ROIs(julabels, JU_vals, D_vals, thr_run_sig=4)
+  hist_stats <- get_hist_stats_juelich_ROIs(julabels, JU_vals, D_vals,
+                                            clusterSizeThr, h_breaks, thr_Nrun_sig)
   
   return(hist_stats)
   
 }
+
+
 
 ```
 
@@ -280,28 +308,22 @@ get_contrast_specific_results <- function(SUBID, Zcontrast) {
 
 # df %>% dplyr::select(sub) %>% unique()
 
-sub_ID = "sub_06"
-
 # Create dictionary of data from list.files()
 df <- create_dizio_files()
 
-# # show df tree
-# library(collapsibleTree)
-# tf <- df %>% dplyr::select(sub,contrast,taskrun,zstat)
-# collapsibleTree(tf, c("sub","contrast","taskrun","zstat"), collapsed = T)
 
-
-Motion_results <- get_contrast_specific_results(SUBID = sub_ID, Zcontrast = "thresh_zstat1")
-
-Scrambled_results <- get_contrast_specific_results(SUBID = sub_ID, Zcontrast = "thresh_zstat2")
+SUBID = "sub_11"     # df %>% distinct(sub) to see all available sub
+Zthr <- 2.3
+clusterSizeThr <- 50        # to build a meaningful histogram 
+h_breaks <- seq(0, 1, 0.05) # set hist breaks to a fixed range
+thr_Nrun_sig <- 4           # min numba of runs in which there are N sig voxels above clusterSizeThr
 
 
 
-M_means <- Motion_results$means
-M_error <- Motion_results$error
+Motion_res <- get_contrast_specific_results(Zcontrast = "thresh_zstat1")
 
-S_means <- Scrambled_results$means
-S_error <- Scrambled_results$error
+Scrambled_res <- get_contrast_specific_results(Zcontrast = "thresh_zstat2")
+
 
 
 # Prepare the results for plotting using the magic tidyverse:
@@ -309,13 +331,13 @@ S_error <- Scrambled_results$error
 # (2) add depth and contrast factor
 # (3) tidy (i.e. WIDE -> LONG)
 # (4) bind_rows all the df into one
-res_means <- list(M_means, S_means) %>% 
+res_means <- list(Motion_res$means, Scrambled_res$means) %>% 
   map(~ .x %>% mutate(depth = 1:nrow(.x)/nrow(.x)) ) %>% 
   map2(. , c("Motion","Scrambled"),  ~ .x %>% mutate(contrast = .y)) %>% 
-  map(~ .x %>% gather(contains("GM"), key = "ROI", value = "density") ) %>% 
+  map(~ .x %>% gather(contains("GM"), key = "ROI", value = "proportion") ) %>% 
   reduce(bind_rows)
 
-res_error <- list(M_error, S_error) %>% 
+res_error <- list(Motion_res$error, Scrambled_res$error) %>% 
   map(~ .x %>% mutate(depth = 1:nrow(.x)/nrow(.x)) ) %>% 
   map2(. , c("Motion","Scrambled"),  ~ .x %>% mutate(contrast = .y)) %>% 
   map(~ .x %>% gather(contains("GM"), key = "ROI", value = "error") ) %>% 
@@ -326,15 +348,17 @@ res <- inner_join(res_means, res_error, c("contrast","ROI","depth"))
 ```
 
 
-## Plot with two contrasts and errorbars (1)
+## `r SUBID`
+
+## Barplot with two contrasts and errorbars
 ```{r, fig.width=10, fig.height=6}
 library(ggthemes)
 
 res %>%
   mutate(ROI = str_replace_all(ROI, "_", " ")) %>% 
-  ggplot( aes(x = depth, y = density, fill = contrast) ) +
+  ggplot( aes(x = depth, y = proportion, fill = contrast) ) +
   geom_bar(stat = "identity", width = 0.05, position = position_identity(), alpha = 0.5) +
-  geom_linerange(aes(ymin = density - error, ymax = density + error, color=contrast, alpha = 0.7)) +
+  geom_linerange(aes(ymin = proportion - error, ymax = proportion + error, color=contrast, alpha = 0.7)) +
   facet_wrap( ~ ROI, scales = "free", labeller = label_wrap_gen(width=22)) +
   theme_minimal()
 
@@ -344,15 +368,15 @@ res %>%
 
 
 
-## Plot with two contrasts and errorbars (1)
+## Smooth lines with two contrasts and errorbars
 ```{r, fig.width=10, fig.height=6, message=F}
 library(ggthemes)
 
 res %>%
   mutate(ROI = str_replace_all(ROI, "_", " ")) %>% 
-  ggplot( aes(x = depth, y = density, color = contrast) ) +
+  ggplot( aes(x = depth, y = proportion, color = contrast) ) +
   geom_smooth(alpha = 0.5, se=F, n=20, na.rm = T, method = "loess") +
-  geom_linerange(aes(ymin = density - error, ymax = density + error, color=contrast, alpha = 0.7)) +
+  geom_linerange(aes(ymin = proportion - error, ymax = proportion + error, color=contrast, alpha = 0.7)) +
   facet_wrap( ~ ROI, scales = "free", labeller = label_wrap_gen(width=22)) +
   theme_minimal()
 
@@ -360,182 +384,6 @@ res %>%
 
 ```
 
-
-
-
-
-
-## Initial plot: one contrast with errorbars
-Great info about plotting errorbars [here](http://www.sthda.com/english/wiki/ggplot2-error-bars-quick-start-guide-r-software-and-data-visualization)
-```{r eval=FALSE, include=FALSE}
-
-library(ggplot2)
-
-M_means$depth <- 1:nrow(M_means)/nrow(M_means)
-M_error$depth <- 1:nrow(M_error)/nrow(M_error)
-
-M_means_LONG <- M_means %>% 
-  gather(contains("GM"), key = "ROI", value = "density")
-
-M_error_LONG <- M_error %>% 
-  gather(contains("GM"), key = "ROI", value = "error")
-
-M <- inner_join(M_means_LONG, M_error_LONG, by = c("depth", "ROI"))
-
-
-M %>% 
-  ggplot(aes(x = depth, y = density, fill = depth)) +
-  geom_bar(stat = "identity", width = 0.05) + 
-  scale_fill_viridis_c() +
-  ylim(0,0.15) +
-  facet_wrap( ~ ROI) +
-  geom_linerange(aes(ymin = density - error, ymax = density + error))
-
-```
-
-
-
-
-
-```
-
-
-
-
-## Initial plot (OLE)
-```{r eval=FALSE, include=FALSE}
-
-library(ggplot2)
-
-# add one colum showing the depth
-final_counts$depth <- 1:nrow(final_counts)/nrow(final_counts) 
-
-final_counts %>% 
-  gather(contains("GM"), key = "ROI", value = "density") %>% 
-  ggplot(aes(x = depth, y = density, fill = depth)) +
-  geom_bar(stat = "identity", width = 0.05) +
-  scale_fill_viridis_c() +
-  ylim(0,0.15) +
-  facet_wrap( ~ ROI)
-  
-
-
-final_counts %>% 
-  gather(contains("GM"), key = "ROI", value = "density") %>% 
-  ggplot(aes(x = depth, y = density, fill = depth)) +
-  geom_bar(stat = "identity", width = 0.05) +
-  geom_smooth(se = F) +
-  scale_fill_viridis_c() +
-  ylim(0,0.15) +
-  facet_wrap( ~ ROI)
-
-
-
-```
-
-
-
-
-## Garbage
-
-```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-
-
-N = 10
-
-tot <- list(
-  A = rnorm(N), A = rnorm(N),
-  A = rnorm(N), A = rnorm(N),
-  A = rnorm(N), A = rnorm(N),
-  B = rnorm(N), B = rnorm(N),
-  B = rnorm(N), B = rnorm(N),
-  B = rnorm(N), B = rnorm(N),
-  C = rnorm(N),
-  C = rnorm(N)
-)
-
-
-# determine unique sig ROI names
-activeROIs <- tot %>% names() %>% unique()
-
-# group by ROI
-grouped <- map(activeROIs, ~ reduce(tot[names(tot) == .x], rbind) ) %>% setNames(activeROIs)
-
-# remove ROIs where a sig result occurs in less than 6/8 runs
-min_numba_run_where_sig = 6
-grouped <- grouped[!sapply(grouped,function(x) dim(x)[1] < min_numba_run_where_sig)]
-grouped
-
-sterr <- function(x) {sd(x)/sqrt(length(x))}
-
-MUs  <- lapply(grouped, function(x) apply(x, MARGIN = 2, mean)) %>% as.data.frame()
-ERRs <- lapply(grouped, function(x) apply(x, MARGIN = 2, sterr)) %>% as.data.frame()
-
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r, echo=FALSE, include=F}
-
-# -------------------------  Garbage collector  -------------------------------
-
-# ju_ROI_idx <- ju_ROI_idx[lapply(ju_ROI_idx,length) > clusterSizeThr]
-
-```
-
-
-
-
-```{r, echo=FALSE, include=F}
-
-# # How mapply works
-
-# # mapply(function(x,y))
-# 
-# idx = list(
-#   c(1,2,3,4),
-#   c(4,5,6,7)
-# )
-# 
-# vols = list(
-#   array(11:19, dim = c(3,3)),
-#   array(21:29, dim = c(3,3))
-# )
-# 
-# 
-# list(
-#   val_1 = vols[[1]][idx[[1]]],
-#   val_2 = vols[[2]][idx[[2]]]
-# )
-# 
-# 
-# mapply(
-#   function(x,y) y[x], idx, vols
-# ) %>% t()
-
-
-
-
-```
 
 
 
