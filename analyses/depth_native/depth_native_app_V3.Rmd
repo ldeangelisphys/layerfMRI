@@ -3,13 +3,16 @@ title: "depth_native functions"
 output: 
   html_document:
     code_folding: hide
+runtime: shiny
 ---
 
 
 ## Select sub, Zthr and Zcontrast
 ```{r, message=F}
 
-# All of the following will become selector widgets
+# All of the following will become selector widgets.
+# While they are commented here, they belong to the main process below, as 
+# now there are only function definition above that.
 
 # SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
 # Zcontrast <- "thresh_zstat1"
@@ -19,17 +22,21 @@ output:
 
 # -----------------------------------------------------------------------------
 
-# Immutable parameters
-gitdir <- "/data00/layerfMRI/Github_repo/"
-bd <- paste0(gitdir,"layerfMRI/analyses/depth_native/")
 
+library(shiny)
 library(stringr)
 library(tidyr)
 library(dplyr)
 library(purrr)
 select <- dplyr::select
 library(ggplot2)
+library(ggthemes)
 library(tictoc)
+
+
+# Immutable parameters
+gitdir <- "/data00/layerfMRI/Github_repo/"
+bd <- paste0(gitdir,"layerfMRI/analyses/depth_native/")
 
 
 julabels <- read.csv("labels_juelich.csv") %>% 
@@ -73,7 +80,7 @@ create_dizio_files <- function(data_native_dir = "data_native") {
 # df <- create_dizio_files()
 
 
-
+# Display the dataset tree
 df <- create_dizio_files()
 # show df tree
 library(collapsibleTree)
@@ -92,7 +99,7 @@ Load the nii for Zmaps (thresh_Zstat[1..4]), Depth and JUelich atlases, all in n
 - JU_nii : 8, one for each taskrun
 
 Then for each run/contrast
-1. threshold the Z_nii to Z_thr and create a Zthr_idx of suprathreshold voxels
+1. threshold the Z_nii to Zthr and create a Zthr_idx of suprathreshold voxels
 2. extract Z_vals, D_vals and JU_vals at the locations of Zthr_idx
 
 ```{r, message=F}
@@ -125,7 +132,7 @@ load_niis <- function(SUBID, Zcontrast) {
 }
 
 
-get_idx_and_vals <- function(Z_thr, Z_nii, D_nii, JU_nii) {
+get_idx_and_vals <- function(Zthr, Z_nii, D_nii, JU_nii) {
   
   # Create an index of sig voxels according to Zthr
   Zthr_idx <- sapply(Z_nii, function(x) {which(x > Zthr)})
@@ -154,7 +161,7 @@ get_idx_and_vals <- function(Z_thr, Z_nii, D_nii, JU_nii) {
 # D_nii  <- niis$D
 # JU_nii <- niis$JU
 # 
-# idx_and_vals <- get_idx_and_vals(Z_thr, Z_nii, D_nii, JU_nii)
+# idx_and_vals <- get_idx_and_vals(Zthr, Z_nii, D_nii, JU_nii)
 # 
 # Zthr_idx <- idx_and_vals$idx  
 # Z_vals   <- idx_and_vals$zvals 
@@ -259,7 +266,7 @@ I **need** to make this function since I need to get the histograms for _two_ co
 get_contrast_specific_results(Zcontrast)
 |
 ├── load_niis(SUBID, Zcontrast)
-├── get_idx_and_vals(Z_thr, Z_nii, D_nii, JU_nii)
+├── get_idx_and_vals(Zthr, Z_nii, D_nii, JU_nii)
 └── get_hist_stats_juelich_ROIs(julabels, JU_vals, D_vals,
                                 clusterSizeThr, h_breaks, thr_Nrun_sig)
 
@@ -268,7 +275,8 @@ get_contrast_specific_results(Zcontrast)
 ```{r, message=FALSE}
 
 # Main function, to be run for each contrast
-get_contrast_specific_results <- function(Zcontrast) {
+get_contrast_specific_results <- function(SUBID, Zcontrast, Zthr, julabels, 
+                                          JU_vals, D_vals, clusterSizeThr, h_breaks, thr_Nrun_sig) {
   
   # Load Z, D, JU niftis (24)
   niis <- load_niis(SUBID, Zcontrast)
@@ -279,7 +287,7 @@ get_contrast_specific_results <- function(Zcontrast) {
   
   
   # Extract values for sig voxels in Zstat, Depth and JUelich native maps
-  idx_and_vals <- get_idx_and_vals(Z_thr, Z_nii, D_nii, JU_nii)
+  idx_and_vals <- get_idx_and_vals(Zthr, Z_nii, D_nii, JU_nii)
   
   Zthr_idx <- idx_and_vals$idx  
   Z_vals   <- idx_and_vals$zvals 
@@ -302,65 +310,133 @@ get_contrast_specific_results <- function(Zcontrast) {
 ```
 
 
+## Prepare UI
+```{r, echo=F}
+
+df <- create_dizio_files()
+
+selectInput("chosen_sub", label = "Select participant", choices = df %>% distinct(sub))
+sliderInput("chosen_zthr", label = "Z threshold", min = 2.3, max = 3.5, value = 2.3)
+sliderInput("chosen_clusterSizeThr", label = "min cluster size", min = 50, max = 300, value = 50)
+sliderInput("chosen_nbins", "bins for sampling cortical depth", min = 10, max = 30, value = 20)
+sliderInput("chosen_thr_Nrun_sig", "min numba of run with min cluster size", min = 2, max = 8, value = 4)
+
+
+
+plotOutput("resPlot", width = "100%", height = "600px")  
+
+
+
+
+
+```
+
+
 
 ## Main process
-```{r}
+```{r, fig.width=10, fig.height=10}
 
 # df %>% dplyr::select(sub) %>% unique()
 
 # Create dictionary of data from list.files()
 df <- create_dizio_files()
 
+results <- reactive({
+  
+  req( c(input$chosen_sub, input$chosen_zthr, input$chosen_clusterSizeThr, 
+         input$chosen_nbins, input$chosen_thr_Nrun_sig ) )
+  
+  SUBID = input$chosen_sub     # df %>% distinct(sub) to see all available sub
+  
+  Zthr <- input$chosen_zthr
+  
+  clusterSizeThr <- input$chosen_clusterSizeThr        # to build a meaningful histogram
+  
+  binwidth <- 1/input$chosen_nbins
+  h_breaks <- seq(0, 1, binwidth)          # set hist breaks to a fixed range
+  
+  thr_Nrun_sig <- input$chosen_thr_Nrun_sig  # min numba of run with min cluster size
+  
+  
+  Motion_res <- get_contrast_specific_results(SUBID, Zcontrast = "thresh_zstat1", Zthr, julabels, 
+                                              JU_vals, D_vals, clusterSizeThr, h_breaks, thr_Nrun_sig)
 
-SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
-Zthr <- 2.3
-clusterSizeThr <- 50        # to build a meaningful histogram 
-h_breaks <- seq(0, 1, 0.05) # set hist breaks to a fixed range
-thr_Nrun_sig <- 4           # min numba of runs in which there are N sig voxels above clusterSizeThr
-
-
-
-Motion_res <- get_contrast_specific_results(Zcontrast = "thresh_zstat1")
-
-Scrambled_res <- get_contrast_specific_results(Zcontrast = "thresh_zstat2")
-
-
-
-# Prepare the results for plotting using the magic tidyverse:
-# (1) put the resulting df for all contrasts in one list
-# (2) add depth and contrast factor
-# (3) tidy (i.e. WIDE -> LONG)
-# (4) bind_rows all the df into one
-res_means <- list(Motion_res$means, Scrambled_res$means) %>% 
-  map(~ .x %>% mutate(depth = 1:nrow(.x)/nrow(.x)) ) %>% 
-  map2(. , c("Motion","Scrambled"),  ~ .x %>% mutate(contrast = .y)) %>% 
-  map(~ .x %>% gather(contains("GM"), key = "ROI", value = "proportion") ) %>% 
-  reduce(bind_rows)
-
-res_error <- list(Motion_res$error, Scrambled_res$error) %>% 
-  map(~ .x %>% mutate(depth = 1:nrow(.x)/nrow(.x)) ) %>% 
-  map2(. , c("Motion","Scrambled"),  ~ .x %>% mutate(contrast = .y)) %>% 
-  map(~ .x %>% gather(contains("GM"), key = "ROI", value = "error") ) %>% 
-  reduce(bind_rows)
-
-res <- inner_join(res_means, res_error, c("contrast","ROI","depth"))
-
-```
+  Scrambled_res <- get_contrast_specific_results(SUBID, Zcontrast = "thresh_zstat2", Zthr, julabels, 
+                                              JU_vals, D_vals, clusterSizeThr, h_breaks, thr_Nrun_sig)
+  
+  list(M = Motion_res, S = Scrambled_res)
+})
 
 
-## `r SUBID`
+observe({
+  
+  req(results())
+  req(input$chosen_nbins)
+  
+  binwidth <- 1/input$chosen_nbins
+  
+  Mot_res <- results()$M
+  Scr_res <- results()$S
+  
+  # Produce a plot only if there is still something sig at the given thresholds
+  numba_plots <- length(Mot_res$means) + length(Scr_res$means)
+  
+  if (numba_plots == 0) {nullvar = NULL} else {nullvar = "ce sta"}
+  req(nullvar)
+  
+  observeEvent(
+    nullvar,
+    {
+    # Prepare the results for plotting using the magic tidyverse:
+    # (1) put the resulting df for all contrasts in one list
+    # (2) add depth and contrast factor
+    # (3) tidy (i.e. WIDE -> LONG)
+    # (4) bind_rows all the df into one
+    res_means <- list(Mot_res$means, Scr_res$means) %>%
+      map(~ .x %>% mutate(depth = 1:nrow(.x)/nrow(.x)) ) %>%
+      map2(. , c("Motion","Scrambled"),  ~ .x %>% mutate(contrast = .y)) %>%
+      map(~ .x %>% gather(contains("GM"), key = "ROI", value = "proportion") ) %>%
+      reduce(bind_rows)
 
-## Barplot with two contrasts and errorbars
-```{r, fig.width=10, fig.height=6}
-library(ggthemes)
+    res_error <- list(Mot_res$error, Scr_res$error) %>%
+      map(~ .x %>% mutate(depth = 1:nrow(.x)/nrow(.x)) ) %>%
+      map2(. , c("Motion","Scrambled"),  ~ .x %>% mutate(contrast = .y)) %>%
+      map(~ .x %>% gather(contains("GM"), key = "ROI", value = "error") ) %>%
+      reduce(bind_rows)
 
-res %>%
-  mutate(ROI = str_replace_all(ROI, "_", " ")) %>% 
-  ggplot( aes(x = depth, y = proportion, fill = contrast) ) +
-  geom_bar(stat = "identity", width = 0.05, position = position_identity(), alpha = 0.5) +
-  geom_linerange(aes(ymin = proportion - error, ymax = proportion + error, color=contrast, alpha = 0.7)) +
-  facet_wrap( ~ ROI, scales = "free", labeller = label_wrap_gen(width=22)) +
-  theme_minimal()
+    res <- inner_join(res_means, res_error, c("contrast","ROI","depth"))
+    
+    # prepare and render the image to plot
+    fig <- res %>%
+      mutate(ROI = str_replace_all(ROI, "_", " ")) %>%
+      ggplot( aes(x = depth, y = proportion, fill = contrast) ) +
+      geom_bar(stat = "identity", width = binwidth, position = position_identity(), alpha = 0.5) +
+      geom_linerange(aes(ymin = proportion - error, ymax = proportion + error, color=contrast, alpha = 0.7)) +
+      facet_wrap( ~ ROI, scales = "free", labeller = label_wrap_gen(width=22)) +
+      theme_minimal()
+
+    
+    output$resPlot <- renderPlot(fig)
+    
+    }
+  )
+  
+  
+})
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -370,16 +446,16 @@ res %>%
 
 ## Smooth lines with two contrasts and errorbars
 ```{r, fig.width=10, fig.height=6, message=F}
-library(ggthemes)
-
-res %>%
-  mutate(ROI = str_replace_all(ROI, "_", " ")) %>% 
-  ggplot( aes(x = depth, y = proportion, color = contrast) ) +
-  geom_smooth(alpha = 0.5, se=F, n=20, na.rm = T, method = "loess") +
-  geom_linerange(aes(ymin = proportion - error, ymax = proportion + error, color=contrast, alpha = 0.7)) +
-  facet_wrap( ~ ROI, scales = "free", labeller = label_wrap_gen(width=22)) +
-  theme_minimal()
-
+# library(ggthemes)
+# 
+# res %>%
+#   mutate(ROI = str_replace_all(ROI, "_", " ")) %>% 
+#   ggplot( aes(x = depth, y = proportion, color = contrast) ) +
+#   geom_smooth(alpha = 0.5, se=F, n=20, na.rm = T, method = "loess") +
+#   geom_linerange(aes(ymin = proportion - error, ymax = proportion + error, color=contrast, alpha = 0.7)) +
+#   facet_wrap( ~ ROI, scales = "free", labeller = label_wrap_gen(width=22)) +
+#   theme_minimal()
+# 
 
 
 ```

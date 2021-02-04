@@ -1,0 +1,302 @@
+---
+title: "depth_native functions"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+# Totally different approach
+Previously I quantified the distribution of the **count** of suprathreshold voxels for each depth bin. 
+
+This is however likely _not_ the best option since the count does not reflect the magnitude of the parameter estimate for a given contrast.
+
+The best would be to use the COPEs directly, but in this case there would be huge problems with the variability across runs.
+
+In this notebook, I determine for each cortical bin the mean (and sderr) of the thresholded zstat for all the voxels in that cortical depth. Then I will use these estimates in a group-level analysis for each depth bin in each ROI across participants.
+
+The choice of using the thresholded zstat instead of the raw zstat is twofold:
+- first the thresholded zstat are already present only on the map of cortical depth, which is where I want to estimate my statistic
+- second, the thresholded zstat have already been corrected for MCP
+
+Of course I will also here have the problem that in some sub/ROIs there will be no voxels > Zthr.
+
+
+## Select sub, Zthr and Zcontrast
+```{r, message=F}
+
+# All of the following will become selector widgets
+
+SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
+Zcontrast <- "thresh_zstat2"
+Zthr <- 3.1
+clusterSizeThr <- 100  # to build a meaningful histogram
+nbin <- 20 # set hist breaks to a fixed range
+
+# -----------------------------------------------------------------------------
+
+# Immutable parameters
+gitdir <- "/data00/layerfMRI/Github_repo/"
+bd <- paste0(gitdir,"layerfMRI/analyses/depth_native/")
+
+library(stringr)
+library(tidyr)
+library(dplyr)
+library(purrr)
+select <- dplyr::select
+library(ggplot2)
+library(ggthemes)
+library(tictoc)
+
+
+julabels <- read.csv("labels_juelich.csv") %>% 
+  mutate(name = str_replace(name,"['-/]","")) %>%    # get rid of special chars
+  mutate(numba = index + 1) %>% 
+  select(-index)
+
+```
+
+
+
+
+## Create dictionary of data from `list.files`
+The magic is provided by `tidyr::separate`
+
+```{r message=FALSE}
+
+create_dizio_files <- function(data_native_dir = "data_native") {
+  
+  df <- list.files("data_native", recursive = T) %>% as.data.frame()
+  names(df) <- "fname"
+  
+  
+  df <- df %>%
+    rowwise() %>%
+    tidyr::separate(
+      fname, c("sub","contrast","taskrun","zstat"),
+      sep = "/", fill = "right", remove = FALSE
+    ) %>%
+    mutate(taskrun = str_extract(taskrun,"task_[1-4]\\_run_[1-2]")) %>%
+    mutate(zstat = str_extract(zstat,"thresh_zstat[1-4]")) %>%
+    mutate(pathname = paste0(bd,"/data_native/",fname)) %>%
+    dplyr::select(-fname)
+  
+  return(df)
+}
+
+
+
+# ------------------------------  Code for Main -------------------------------
+# df <- create_dizio_files()
+
+
+
+df <- create_dizio_files()
+# show df tree
+library(collapsibleTree)
+dataset <- df %>% dplyr::select(sub,contrast,taskrun,zstat)
+collapsibleTree(dataset, c("sub","contrast","taskrun","zstat"), collapsed = T, zoomable = F)
+
+```
+
+
+
+## Load Z, D, JU and extract values for Z sig voxels
+Load the nii for Zmaps (thresh_Zstat[1..4]), Depth and JUelich atlases, all in native space:
+
+- Z_nii  : 8 for each contrast (Motion, Scrambled, M>S, S>M)
+- D_nii  : 8, one for each taskrun
+- JU_nii : 8, one for each taskrun
+
+Then for each run/contrast
+1. threshold the Z_nii to Z_thr and create a Zthr_idx of suprathreshold voxels
+2. extract Z_vals, D_vals and JU_vals at the locations of Zthr_idx
+3. purrr Z, D, JU vals into a list of tibbles (8)
+4. retain for each taskrun/tibble only the Z and D vals where JU > 0 - i.e. 
+   inside JU ROIs
+   
+**NB**: the two functions are separate so that I don't need to reload the niis
+if I choose another Z threshold
+
+```{r, message=F}
+library(RNifti)
+
+load_niis <- function(SUBID, Zcontrast) {
+
+  # Load the Z_nii for a given contrast (8, one for each taskrun)
+  Z_nii <- df %>% 
+    filter(sub == SUBID, contrast == "Zstat", zstat == Zcontrast) %>% 
+    select(pathname) %>% sapply(readNifti)
+
+  # Load the D_nii (8 taskrun)
+  D_nii <- df %>% 
+    filter(sub == SUBID, contrast == "depth") %>% 
+    select(pathname) %>% sapply(readNifti)
+
+  # Load the JU_nii (8 taskrun)
+  JU_nii <- df %>% 
+    filter(sub == SUBID, contrast == "atlas") %>% 
+    select(pathname) %>% sapply(readNifti)
+  
+  niis <- list(Z = Z_nii, D = D_nii, JU = JU_nii)
+  
+  return(niis)
+}
+
+
+get_Z_D_JU_vals <- function(Z_thr, Z_nii, D_nii, JU_nii) {
+  
+  # Create an index of sig voxels according to Zthr
+  Zthr_idx <- sapply(Z_nii, function(x) {which(x > Zthr)})
+  
+  # Extract Z, D, JU values at the location of Zthr_idx
+  Z_vals <- mapply( function(vols,idx) vols[idx], Z_nii, Zthr_idx )
+  D_vals <- mapply( function(depth,idx) depth[idx], D_nii, Zthr_idx )
+  JU_vals <- mapply( function(atlas,idx) atlas[idx], JU_nii, Zthr_idx )
+ 
+  # Purrr everything into a list of tibbles and retain only D,Z values 
+  # inside JU ROIs
+  vals <- pmap(
+    list(Z_vals, D_vals, JU_vals), 
+    function(Z,D,JU) tibble(Z,D,JU) %>% filter(JU > 0)
+  )
+
+  
+  return(vals)
+}
+
+
+# ------------------------------  Code for Main -------------------------------
+
+niis <- load_niis(SUBID, Zcontrast)
+
+vals <- get_Z_D_JU_vals(Z_thr, niis$Z, niis$D, niis$JU)
+
+
+```
+
+
+
+
+# Get mean Z for each D bin in each JU region
+```{r}
+
+# # Set at the beginning
+# clusterSizeThr <- 100
+# nbin <- 10
+
+# # Development for one taskrun
+#
+# v <- vals[[1]]
+# 
+# 
+# vZD <- v %>% 
+#   group_by(JU) %>%              
+#   mutate(nvox = n()) %>%              # count numba vox in each JU ROI
+#   arrange(nvox, JU) %>%               # arrange nvox by nvox,JU to check
+#   filter(nvox > clusterSizeThr) %>%   # remove JU with nvox < clusterSizeThr 
+#   group_split() %>% 
+#   map(~ .x %>% mutate(D_bins = ntile(D, nbin) %>% as.factor) %>% arrange(D) ) %>% 
+#   map(~ .x %>% group_by(D_bins) ) %>% 
+#   map(~ .x %>% summarise(
+#     mean_Z = mean(Z),
+#     sd_Z = sd(Z),
+#     JU = mean(JU),
+#     .groups = "drop"
+#   )) %>% 
+#   bind_rows()
+# 
+# 
+# 
+# vZD %>% 
+#   ggplot( aes(x = as.numeric(D_bins), y = mean_Z, fill = as.numeric(D_bins)) ) +
+#   geom_bar(stat = "identity", width = 1) +
+#   coord_cartesian(ylim = c(1.9, Zthr + 2)) +
+#   facet_wrap(~ JU, scales = "free")
+
+
+
+
+get_meanZ <- function(df_vals_taskrun) {
+  
+  meanZ <- df_vals_taskrun %>% 
+  group_by(JU) %>%              
+  mutate(nvox = n()) %>%              # count numba vox in each JU ROI
+  arrange(nvox, JU) %>%               # arrange nvox by nvox,JU to check
+  filter(nvox > clusterSizeThr) %>%   # remove JU with nvox < clusterSizeThr 
+  group_split() %>% 
+  map(~ .x %>% mutate(D_bins = ntile(D, nbin) %>% as.factor) %>% arrange(D) ) %>% 
+  map(~ .x %>% group_by(D_bins) ) %>% 
+  map(~ .x %>% summarise(
+    mean_Z = mean(Z),
+    # sd_Z = sd(Z),
+    JU = mean(JU),
+    .groups = "drop"
+  )) %>% 
+  bind_rows()
+  
+  return(meanZ)
+}
+
+# madonna!
+many_meanZ <- map(vals, get_meanZ)
+
+# assign a taskrun column - for further averaging - and bind_rows all together
+allmeanZ <- pmap(
+  list(1:length(many_meanZ), many_meanZ),
+  function(numba, df_taskrun) df_taskrun %>% mutate(taskrun = numba) 
+) %>% bind_rows()
+
+
+# get the mean Z across taskrun
+# IMPORTANT: HERE YOU NEED TO IMPLEMENT THE THRESHOLD FOR NUMBA OF SIG TASKRUNS
+all_TR_meanZ <- allmeanZ %>% 
+  group_by(JU) %>% 
+  group_split() %>% 
+  map(~ .x %>% group_by(D_bins) ) %>% 
+  map(~ .x %>% summarise(
+    TR_mean_Z = mean(mean_Z),
+    sd_Z = sd(mean_Z),
+    JU = mean(JU),
+    .groups = "drop"
+  )) %>% bind_rows() %>% 
+  filter(!is.na(sd_Z))
+
+
+all_TR_meanZ %>% 
+  ggplot( aes(x = as.numeric(D_bins), y = TR_mean_Z, fill = as.numeric(D_bins)) ) +
+  geom_bar(stat = "identity", width = 1) +
+  geom_linerange( aes(ymin = TR_mean_Z - sd_Z, ymax = TR_mean_Z + sd_Z) ) +
+  coord_cartesian(ylim = c(Zthr - 1, Zthr + 2)) +
+  facet_wrap(~ JU, scales = "free")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
