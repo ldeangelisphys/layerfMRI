@@ -26,7 +26,7 @@ Of course I will also here have the problem that in some sub/ROIs there will be 
 ## Select sub and Zcontrast, and choose thresholds and number of D bins
 This part will go at the end once all the functions are defined
 
-```{r, message=F}
+```{r load-libs, message=F}
 
 
 
@@ -72,7 +72,7 @@ julabels <- read.csv("labels_juelich.csv") %>%
 ## Create dictionary of data from `list.files`
 The magic is provided by `tidyr::separate`
 
-```{r message=FALSE}
+```{r create-dizio-data, message=FALSE}
 
 create_dizio_files <- function(data_native_dir = "data_native") {
   
@@ -126,7 +126,7 @@ Then for each run/contrast
 **NB**: the two functions are separate so that I don't need to reload the niis
 if I choose another Z threshold
 
-```{r, message=F}
+```{r get-Z-D-JU-vals, message=F}
 
 load_niis <- function(SUBID, Zcontrast) {
 
@@ -175,9 +175,9 @@ get_Z_D_JU_vals <- function(zthr, Z_nii, D_nii, JU_nii) {
 
 # ------------------------------  Code for Main -------------------------------
 
-# Load Z, D, JU and extract values for Z sig voxels within JU ROIs
-niis <- load_niis(SUBID, Zcontrast)
-vals <- get_Z_D_JU_vals(zthr, niis$Z, niis$D, niis$JU)
+# # Load Z, D, JU and extract values for Z sig voxels within JU ROIs
+# niis <- load_niis(SUBID, Zcontrast)
+# vals <- get_Z_D_JU_vals(zthr, niis$Z, niis$D, niis$JU)
 
 
 ```
@@ -197,7 +197,7 @@ For each taskrun we will `map` the following procedure:
 7. calculate mean Z (and its sd) across all the values in each D ntile. **This is our desired metric of interest**. The final tibble of each ROI has N rows - one for each ntile/bin - and three columns for mean_Z, sd_Z, JU name.
 8. bind all the ROI-specific tibbles by rows. Therefore in the final tibble there will be N JU_ROIs * 10 rows
 
-```{r}
+```{r get-res-each-taskrun}
 
 get_meanZ <- function(vals, clusterSizeThr, nbin) {
   
@@ -233,15 +233,15 @@ get_meanZ <- function(vals, clusterSizeThr, nbin) {
 
 # ------------------------------  Code for Main -------------------------------
 
-# Get mean Z for each D bin in each JU region in each taskrun
-# 1. extract the metric of interest for each taskrun (madonna!)
-ALL_taskruns_meanZ <- map(vals, ~ get_meanZ(.x, clusterSizeThr, nbin))
-
-# 2. assign a taskrun column - for further averaging - and bind_rows all together
-ALL_taskruns_meanZ <- pmap(
-  list(1:length(ALL_taskruns_meanZ), ALL_taskruns_meanZ),
-  function(nth_taskrun, df_taskrun) df_taskrun %>% mutate(taskrun = nth_taskrun)
-) %>% bind_rows()
+# # Get mean Z for each D bin in each JU region in each taskrun
+# # 1. extract the metric of interest for each taskrun (madonna!)
+# ALL_taskruns_meanZ <- map(vals, ~ get_meanZ(.x, clusterSizeThr, nbin))
+# 
+# # 2. assign a taskrun column - for further averaging - and bind_rows all together
+# ALL_taskruns_meanZ <- pmap(
+#   list(1:length(ALL_taskruns_meanZ), ALL_taskruns_meanZ),
+#   function(nth_taskrun, df_taskrun) df_taskrun %>% mutate(taskrun = nth_taskrun)
+# ) %>% bind_rows()
 
 ```
 
@@ -254,7 +254,7 @@ ALL_taskruns_meanZ <- pmap(
 4. Calculate the mean and sd of mean_Z (<- this was the mean_Z in the single taskrun) across taskruns. **This is the quantity that will be taken to the group-level analysis**
 5. Finally, bind the results for all ROIs in a single tibble
 
-```{r}
+```{r avg-across-runs}
 
 get_MEAN_taskruns_meanZ <- function(ALL_taskruns_meanZ, thr_N_taskruns) {
 
@@ -285,15 +285,15 @@ get_MEAN_taskruns_meanZ <- function(ALL_taskruns_meanZ, thr_N_taskruns) {
 
 # ------------------------------  Code for Main -------------------------------
 
-# Average the mean Z in each D bin across taskruns
-MEAN_taskruns_meanZ <- get_MEAN_taskruns_meanZ(ALL_taskruns_meanZ, thr_N_taskruns)
+# # Average the mean Z in each D bin across taskruns
+# MEAN_taskruns_meanZ <- get_MEAN_taskruns_meanZ(ALL_taskruns_meanZ, thr_N_taskruns)
 
 ```
 
 
 ## Main function for each subject and each contrast
 
-```{r}
+```{r main-fn-one-sub}
 
 get_results <- function(SUBID, Zcontrast, zthr, clusterSizeThr, nbin, thr_N_taskruns) {
 
@@ -317,9 +317,6 @@ get_results <- function(SUBID, Zcontrast, zthr, clusterSizeThr, nbin, thr_N_task
   return(MEAN_taskruns_meanZ)
 }
 
-
-
-
 ```
 
 
@@ -327,15 +324,29 @@ get_results <- function(SUBID, Zcontrast, zthr, clusterSizeThr, nbin, thr_N_task
 
 ## Run for all subjects and all contrasts
 
-```{r}
+To run the group-level analysis, first set the general parameters:
+
+- zthr : Z threshold for voxels to be considered sig
+- clusterSizeThr : minimum cluster size
+- nbin : number of bins to sample Depth
+- thr_N_taskruns : for each JU ROI,  in how many taskruns (>2) should I find sig clusters, to consider it interesting?
+
+Then the following is run, from inner to outer map:
+1. run `get_results()` for one subs (inner `map2`)
+2. create a column with the contrast name (`map2(contrast_list, names(contrast_list))`)
+3. concatenate the Motion and Scrambled tibbles by rows
+4. run the estimation for all subs (outer `map`) and concatenate all subs by rows (note that we don't need the sub ID so it's left out)
+
+```{r group-analysis}
+
 df <- create_dizio_files()
 
 # SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
 # Zcontrast <- "thresh_zstat1"
 zthr <- 2.3  # use smallcap to indicate that it is a scalar
-clusterSizeThr <- 100  # to build a meaningful histogram
-nbin <- 20 # set hist breaks to a fixed range
-thr_N_taskruns <- 1 # in how many taskruns (>2) should I find sig clusters, to consider it interesting?
+clusterSizeThr <- 50  # to build a meaningful histogram
+nbin <- 10 # set hist breaks to a fixed range
+thr_N_taskruns <- 4 # in how many taskruns (>2) should I find sig clusters, to consider it interesting?
 
 
 contrast_list <- list(
@@ -345,45 +356,61 @@ contrast_list <- list(
 
 # NB: sub_14 is FU for thresh_zstat2: not even in one run there are sig voxels at ztr > 3.1
 
-# ~ 20 sec to go through ~ 300 nifti files. Not bad
-
-system.time(
+# ~ 20 sec to go through ~ 300 nifti files. Not bad.
 
 all <- map(
   df$sub %>% unique(),
-  function(onesub) map(
-    contrast_list, 
-    function(contrast) get_results(
-      SUBID = onesub, 
-      Zcontrast = contrast, 
-      zthr, clusterSizeThr, nbin, thr_N_taskruns
-    )
-  )
-)
+  function(onesub) map2(
+    contrast_list, names(contrast_list),
+    function(contrast,name) {
+      get_results(SUBID = onesub, contrast, 
+                  zthr, clusterSizeThr, nbin, 
+                  thr_N_taskruns) %>% 
+        mutate(contrast = name)
+    }
+  ) %>% reduce(bind_rows)
+) %>% reduce(bind_rows)
 
-)
 
-str(all)
+# all
+
 
 ```
 
 
+## Average the results across subjects and plot
 
+Consider only ROIs where a sig result was found in at least 6/9 sub
 
-
-
-## Plot the results
 ```{r}
 
-# plot the results
-MEAN_taskruns_meanZ %>%
-  ggplot( aes(x = as.numeric(D_bins), y = TR_mean_Z, fill = as.numeric(D_bins)) ) +
-  geom_bar(stat = "identity", width = 1) +
-  geom_linerange( aes(ymin = TR_mean_Z - sd_Z, ymax = TR_mean_Z + sd_Z) ) +
-  coord_cartesian(ylim = c(zthr - 1, zthr + 2)) +
-  facet_wrap(~ JU, scales = "free")
+thr_N_subs = 4
+
+group_avg <- all %>% 
+  select(-sd_Z) %>% 
+  group_by(contrast, JU, D_bins) %>% 
+  mutate(n_sub_sig = n()) %>% 
+  filter(n_sub_sig >= thr_N_subs) %>% 
+  summarise(
+    meanZ = mean(TR_mean_Z),
+    sdZ = sd(TR_mean_Z),
+    .groups = "drop"
+  )
+
+
+group_avg %>% 
+  inner_join(., julabels, by = c("JU"="numba")) %>% 
+  mutate(name = str_replace_all(name, "_", " ")) %>%
+  ggplot( aes(x = D_bins, y = meanZ, fill = contrast) ) + 
+  geom_bar(stat = "identity", width = 1, position = position_identity(), alpha = 0.5) +
+  geom_linerange( aes(ymin = meanZ - sdZ, ymax = meanZ + sdZ, color=contrast) ) +
+  coord_cartesian(ylim = c(zthr, zthr + 1)) +
+  facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22))
+
 
 ```
+
+
 
 
 
