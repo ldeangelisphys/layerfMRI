@@ -32,12 +32,12 @@ This part will go at the end once all the functions are defined
 
 # User-defined parameters, which will become selector widgets
 
-# SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
-# Zcontrast <- "thresh_zstat1"
-# zthr <- 3.1  # use smallcap to indicate that it is a scalar
-# clusterSizeThr <- 100  # to build a meaningful histogram
-# nbin <- 20 # set hist breaks to a fixed range
-# thr_N_taskruns <- 4 # in how many taskruns (>2) should I find sig clusters, to consider it interesting?
+SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
+Zcontrast <- "thresh_zstat1"
+zthr <- 2.3  # use smallcap to indicate that it is a scalar
+clusterSizeThr <- 100  # to build a meaningful histogram
+nbin <- 10 # set hist breaks to a fixed range
+thr_N_taskruns <- 4 # in how many taskruns (>2) should I find sig clusters, to consider it interesting?
 
 
 
@@ -175,9 +175,13 @@ get_Z_D_JU_vals <- function(zthr, Z_nii, D_nii, JU_nii) {
 
 # ------------------------------  Code for Main -------------------------------
 
-# # Load Z, D, JU and extract values for Z sig voxels within JU ROIs
-# niis <- load_niis(SUBID, Zcontrast)
-# vals <- get_Z_D_JU_vals(zthr, niis$Z, niis$D, niis$JU)
+SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
+Zcontrast <- "thresh_zstat1"
+zthr <- 2.3  # use smallcap to indicate that it is a scalar
+
+# Load Z, D, JU and extract values for Z sig voxels within JU ROIs
+niis <- load_niis(SUBID, Zcontrast)
+vals <- get_Z_D_JU_vals(zthr, niis$Z, niis$D, niis$JU)
 
 
 ```
@@ -233,15 +237,20 @@ get_meanZ <- function(vals, clusterSizeThr, nbin) {
 
 # ------------------------------  Code for Main -------------------------------
 
-# # Get mean Z for each D bin in each JU region in each taskrun
-# # 1. extract the metric of interest for each taskrun (madonna!)
-# ALL_taskruns_meanZ <- map(vals, ~ get_meanZ(.x, clusterSizeThr, nbin))
-# 
-# # 2. assign a taskrun column - for further averaging - and bind_rows all together
-# ALL_taskruns_meanZ <- pmap(
-#   list(1:length(ALL_taskruns_meanZ), ALL_taskruns_meanZ),
-#   function(nth_taskrun, df_taskrun) df_taskrun %>% mutate(taskrun = nth_taskrun)
-# ) %>% bind_rows()
+clusterSizeThr <- 100  # to build a meaningful histogram
+nbin <- 10 # set hist breaks to a fixed range
+
+# Get mean Z for each D bin in each JU region in each taskrun
+# 1. extract the metric of interest for each taskrun (madonna!)
+ALL_taskruns_meanZ <- map(vals, ~ get_meanZ(.x, clusterSizeThr, nbin))
+
+# 2. assign a taskrun column - for further averaging - and bind_rows all together
+ALL_taskruns_meanZ <- pmap(
+  list(1:length(ALL_taskruns_meanZ), ALL_taskruns_meanZ),
+  function(nth_taskrun, df_taskrun) df_taskrun %>% mutate(taskrun = nth_taskrun)
+) %>% bind_rows()
+
+
 
 ```
 
@@ -266,7 +275,7 @@ get_MEAN_taskruns_meanZ <- function(ALL_taskruns_meanZ, thr_N_taskruns) {
     map(~ .x %>% group_by(D_bins) ) %>%    # 3. group by D bin across taskruns for each ROI
     map(~ .x %>% summarise(                # 4. get the mean_Z for each D
       TR_mean_Z = mean(mean_Z),
-      sd_Z = sd(mean_Z),
+      # sd_Z = sd(mean_Z),
       JU = mean(JU),
       .groups = "drop"
     )) %>% bind_rows()
@@ -285,17 +294,22 @@ get_MEAN_taskruns_meanZ <- function(ALL_taskruns_meanZ, thr_N_taskruns) {
 
 # ------------------------------  Code for Main -------------------------------
 
-# # Average the mean Z in each D bin across taskruns
-# MEAN_taskruns_meanZ <- get_MEAN_taskruns_meanZ(ALL_taskruns_meanZ, thr_N_taskruns)
+thr_N_taskruns <- 2 # in how many taskruns ( >= 2) should I find sig clusters, to consider it interesting?
+
+# Average the mean Z in each D bin across taskruns
+MEAN_taskruns_meanZ <- get_MEAN_taskruns_meanZ(ALL_taskruns_meanZ, thr_N_taskruns)
 
 ```
 
+## Main function(s) to get the results in each subject
 
-## Main function for each subject and each contrast
+### (1) Defun to get the results for each contrast
 
-```{r main-fn-one-sub}
+Returns a dataframe with columns for `[D_bin, TR_mean_Z, JU]` for one subject and **one contrast** (see the result of the previous cell for an example).
 
-get_results <- function(SUBID, Zcontrast, zthr, clusterSizeThr, nbin, thr_N_taskruns) {
+```{r res-one-sub-one-contrast}
+
+get_res_contrast <- function(SUBID, Zcontrast, zthr, clusterSizeThr, nbin, thr_N_taskruns) {
 
   # 1. Load Z, D, JU and extract values for Z sig voxels within JU ROIs
   niis <- load_niis(SUBID, Zcontrast)
@@ -317,12 +331,138 @@ get_results <- function(SUBID, Zcontrast, zthr, clusterSizeThr, nbin, thr_N_task
   return(MEAN_taskruns_meanZ)
 }
 
+
+poppa <- get_res_contrast(SUBID, Zcontrast, zthr, clusterSizeThr, nbin, thr_N_taskruns)
+
+```
+
+
+### (2) Defun to get the result for both contrasts and join them in one dataframe
+
+Calculate the resulting dataframe `[D_bin, TR_mean_Z, JU]` - see cell above - for one subject in **both contrasts**, then `full_join` between contrasts.
+Now the dataframe is ready for group-level analysis
+
+```{r res-one-sub-joined-contrast}
+
+get_joined_res <- function(contrast_list, SUBID, Zcontrast, zthr, 
+                           clusterSizeThr, nbin, thr_N_taskruns) {
+  # calculate meanZ for each bin in each ROI -> output separate df for M and S
+  res_onesub <- map(
+    contrast_list, 
+    ~ get_res_contrast(SUBID, .x, zthr, clusterSizeThr, nbin, thr_N_taskruns)
+  )
+  
+  # join tables between contrasts: I use full join since this is the value that will be
+  # taken to the group level, even if there are no Zmean for one of the two contrasts
+  joined_res <- res_onesub %>% 
+    reduce(~ full_join(.x, .y, by=c("D_bins","JU")) )
+  
+  # rename the meanZ columns with contrast names, and rearrange column order
+  joined_res_named <- joined_res %>% 
+    rename_with(~ names(contrast_list), c("TR_mean_Z.x","TR_mean_Z.y")) %>% 
+    relocate(JU, .after=D_bins)
+  
+  return(joined_res_named)
+  
+}
+
+
+# ------------------------------  Code for Group-level ------------------------
+
+contrast_list <- list(
+  Motion = "thresh_zstat1",
+  Scrambled = "thresh_zstat2"
+)
+
+sub_join_res <- get_joined_res(contrast_list, SUBID, Zcontrast, zthr, 
+                               clusterSizeThr, nbin, thr_N_taskruns)
+
+
+```
+
+
+## Run for all subjects and all contrasts
+
+```{r res-all-subs-joined-contrasts}
+
+listsub <- df$sub %>% unique()
+
+contrast_list <- list(
+  Motion = "thresh_zstat1",
+  Scrambled = "thresh_zstat2"
+)
+
+
+all <- listsub %>% 
+  map( function(sub) get_joined_res(contrast_list, 
+                        sub, 
+                        Zcontrast, 
+                        zthr, 
+                        clusterSizeThr, 
+                        nbin, 
+                        thr_N_taskruns)) %>% bind_rows()
+
+```
+
+
+
+## Group-level analysis
+
+Consider only ROIs where a sig result was found in all 9 sub
+
+```{r}
+
+thr_N_subs <- 9
+
+all_nest <- all %>% 
+  group_by(JU, D_bins) %>% 
+  mutate(n_sub_sig = n()) %>% 
+  filter(n_sub_sig >= thr_N_subs) %>%
+  nest()
+
+
+# Function to compare Motion and Scrambled in every nested df
+# It's outside so that it can be easily modified to be something
+# other than t.test
+compare_contrasts <- function(df) {
+  t.test(df$Motion, df$Scrambled, paired = TRUE)
+}
+
+
+# Carry out the comparison Motion > Scrambled for each D_bin in each JU ROI
+ttest_res <- all_nest %>% 
+  mutate(
+    ttest = map(data, compare_contrasts )
+  )
+
+
+library(broom)
+
+# # Use the line below to check which estimates to extract
+# ttest_res$ttest[[1]] %>% glance()
+
+# Extract the parameters of interest (T,p)
+ttest_res <- ttest_res %>% 
+  mutate(
+    glance = ttest %>% map(glance),
+    T = glance %>% map_dbl("statistic"),
+    p = glance %>% map_dbl("p.value")
+  )
+
+
+# Unnest to prepare for the plot
+ttest_res %>% 
+  unnest(data)
+
 ```
 
 
 
 
-## Run for all subjects and all contrasts
+
+
+
+## Run for all subjects and all contrasts (OLE)
 
 To run the group-level analysis, first set the general parameters:
 
@@ -337,7 +477,7 @@ Then the following is run, from inner to outer map:
 3. concatenate the Motion and Scrambled tibbles by rows
 4. run the estimation for all subs (outer `map`) and concatenate all subs by rows (note that we don't need the sub ID so it's left out)
 
-```{r group-analysis}
+```{r group-analysis, eval=F, include=F}
 
 df <- create_dizio_files()
 
@@ -346,7 +486,7 @@ df <- create_dizio_files()
 zthr <- 2.3  # use smallcap to indicate that it is a scalar
 clusterSizeThr <- 50  # to build a meaningful histogram
 nbin <- 10 # set hist breaks to a fixed range
-thr_N_taskruns <- 4 # in how many taskruns (>2) should I find sig clusters, to consider it interesting?
+thr_N_taskruns <- 2 # in how many taskruns (>=2) should I find sig clusters, to consider it interesting?
 
 
 contrast_list <- list(
@@ -382,8 +522,11 @@ all <- map(
 
 Consider only ROIs where a sig result was found in at least 6/9 sub
 
-```{r}
+```{r, final-plot, fig.width=10, fig.height=10, eval=F, include=F}
 
+# I need to replace this thresholding with the significance of the two-samples t-test
+# i.e. I want to show only bins where there is a sig difference between the two contrasts
+# Therefore in the end no more threshold (thr_N_subs) on numba sub will be required
 thr_N_subs = 4
 
 group_avg <- all %>% 
@@ -404,12 +547,11 @@ group_avg %>%
   ggplot( aes(x = D_bins, y = meanZ, fill = contrast) ) + 
   geom_bar(stat = "identity", width = 1, position = position_identity(), alpha = 0.5) +
   geom_linerange( aes(ymin = meanZ - sdZ, ymax = meanZ + sdZ, color=contrast) ) +
-  coord_cartesian(ylim = c(zthr, zthr + 1)) +
+  coord_cartesian(ylim = c(zthr, zthr + 1.2)) +
   facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22))
 
 
 ```
-
 
 
 
