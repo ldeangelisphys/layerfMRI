@@ -2,10 +2,11 @@
 title: "Depth Analysis in Native Space"
 output: 
   html_document:
+    toc: true
     code_folding: hide
 ---
 
-# Analytical strategy
+## Analytical strategy
 Previously I quantified the distribution of the **count** of suprathreshold voxels for each depth bin. 
 
 This is however likely _not_ the best option since the count does not reflect the magnitude of the parameter estimate for a given contrast.
@@ -22,9 +23,16 @@ Of course I will also here have the problem that in some sub/ROIs there will be 
 
 **Notation**: D = Depth, JU = Juelich atlas/region, Z = Z-statistic image from the GLM
 
+A copy of this document in pdf format can be created with 
+```
+rmarkdown::render("depth_native_analysis_V5.Rmd", 'pdf_document')
+```
+Make sure to comment the part relative to the creation of the interactive collapsibletree.
+
 
 ## Select sub and Zcontrast, and choose thresholds and number of D bins
-This part will go at the end once all the functions are defined
+
+The values defined here for `SUBID`, `Zcontrast`, `zthr`, `clusterSizeThr`, `nbin` and `thr_N_taskruns` are only for development. The actual chosen values can be found below at _Run for all subjects and all contrast_ where the main function is run for each subject and contrast.
 
 ```{r load-libs, message=F}
 
@@ -37,7 +45,7 @@ Zcontrast <- "thresh_zstat1"
 zthr <- 2.3  # use smallcap to indicate that it is a scalar
 clusterSizeThr <- 100  # to build a meaningful histogram
 nbin <- 10 # set hist breaks to a fixed range
-thr_N_taskruns <- 4 # in how many taskruns (>2) should I find sig clusters, to consider it interesting?
+thr_N_taskruns <- 2 # in how many taskruns (>2) should I find sig clusters, to consider it interesting?
 
 
 
@@ -117,6 +125,7 @@ Load the nii for Zstat[contrast], Depth and JUelich atlas for all 8 taskruns, al
 - JU_nii : 8, one for each taskrun
 
 Then for each run/contrast
+
 1. threshold the Z_nii to zthr and create a Zthr_idx of suprathreshold voxels
 2. extract Z_vals, D_vals and JU_vals at the locations of Zthr_idx
 3. purrr Z, D, JU vals into a list of tibbles (8)
@@ -188,9 +197,11 @@ vals <- get_Z_D_JU_vals(zthr, niis$Z, niis$D, niis$JU)
 
 
 ## Get mean Z for each D bin in each JU region in each taskrun
-Here we create a function using the pipeline developed above, and we map it to each subtibble in `vals`, i.e. to the tibble referring to each taskrun.
+Here we use the dataframe `vals` created above - containing each subtibbles, one for each taskrun - to sample the depth in `nbin` ntiles (e.g. deciles if `nbin` = 10) and then extract the mean suprathreshold Z value for each cortical depth bin. This calculation is carried out separately for each taskrun (using `map`), and for each ROI.
 
-For each taskrun we will `map` the following procedure:
+Afterwards we create a `taskrun` column - derived from the numba of subtibbles (`length(ALL_taskruns_meanZ)`) - and we row-bind the mean Z for each bin in each ROI across taskrun, for later averaging across taskruns.
+
+Practically, for each taskrun we `map` the following procedure:
 
 1. group the data by JU ROIs, since the analysis is carried out separately for each one of them
 2. count the numba of sig voxels in each JU ROI, to be able to exclude ROIs with numba voxels < clusterSizeThr
@@ -198,7 +209,7 @@ For each taskrun we will `map` the following procedure:
 4. split the subtibble in many tibbles, each one for one JU ROI
 5. calculate ntiles (e.g. deciles) of Depth, according to the nbin variable, and set it as a factor
 6. group all the values (Z,D) by the ntile they belong to 
-7. calculate mean Z (and its sd) across all the values in each D ntile. **This is our desired metric of interest**. The final tibble of each ROI has N rows - one for each ntile/bin - and three columns for mean_Z, sd_Z, JU name.
+7. calculate mean Z across all the values in each D ntile. **This is our desired metric of interest**. The final tibble of each ROI has N rows - one for each ntile/bin - and two columns for mean_Z and JU name.
 8. bind all the ROI-specific tibbles by rows. Therefore in the final tibble there will be N JU_ROIs * 10 rows
 
 ```{r get-res-each-taskrun}
@@ -294,7 +305,7 @@ get_MEAN_taskruns_meanZ <- function(ALL_taskruns_meanZ, thr_N_taskruns) {
 
 # ------------------------------  Code for Main -------------------------------
 
-thr_N_taskruns <- 2 # in how many taskruns ( >= 2) should I find sig clusters, to consider it interesting?
+thr_N_taskruns <- 4 # in how many taskruns (must be >= 2) should I find sig clusters, to consider it interesting?
 
 # Average the mean Z in each D bin across taskruns
 MEAN_taskruns_meanZ <- get_MEAN_taskruns_meanZ(ALL_taskruns_meanZ, thr_N_taskruns)
@@ -303,9 +314,20 @@ MEAN_taskruns_meanZ <- get_MEAN_taskruns_meanZ(ALL_taskruns_meanZ, thr_N_taskrun
 
 ## Main function(s) to get the results in each subject
 
-### (1) Defun to get the results for each contrast
+In this section we group the functions defined above into one main function which is run for each subject : `get_joined_res`. 
 
-Returns a dataframe with columns for `[D_bin, TR_mean_Z, JU]` for one subject and **one contrast** (see the result of the previous cell for an example).
+```
+get_joined_res
+  └─ get_res_contrast
+      ├─ load_niis
+      ├─ get_Z_D_JU_vals
+      ├─ map(vals, get_meanZ)
+      └─ get_MEAN_taskruns_meanZ
+```
+
+### (1) Define fn to get the results for each contrast
+
+The `get_res_contrast` returns a dataframe with columns for `[D_bin, TR_mean_Z, JU]` for one subject and **one contrast** (see the resulting `MEAN_taskruns_meanZ` in the previous chunk for an example).
 
 ```{r res-one-sub-one-contrast}
 
@@ -331,16 +353,18 @@ get_res_contrast <- function(SUBID, Zcontrast, zthr, clusterSizeThr, nbin, thr_N
   return(MEAN_taskruns_meanZ)
 }
 
+# ------------------------------  Code for NEXT CHUNK ------------------------
 
-poppa <- get_res_contrast(SUBID, Zcontrast, zthr, clusterSizeThr, nbin, thr_N_taskruns)
+# totest <- get_res_contrast(SUBID, Zcontrast, zthr, clusterSizeThr, nbin, thr_N_taskruns)
 
 ```
 
 
-### (2) Defun to get the result for both contrasts and join them in one dataframe
+### (2) Define fn to get the result for both contrasts and join them in one dataframe
 
 Calculate the resulting dataframe `[D_bin, TR_mean_Z, JU]` - see cell above - for one subject in **both contrasts**, then `full_join` between contrasts.
-Now the dataframe is ready for group-level analysis
+
+Now the subject-specific dataframe is ready for group-level analysis.
 
 ```{r res-one-sub-joined-contrast}
 
@@ -360,7 +384,7 @@ get_joined_res <- function(contrast_list, SUBID, Zcontrast, zthr,
   # rename the meanZ columns with contrast names, and rearrange column order
   joined_res_named <- joined_res %>% 
     rename_with(~ names(contrast_list), c("TR_mean_Z.x","TR_mean_Z.y")) %>% 
-    relocate(JU, .after=D_bins)
+    relocate(JU, .after = D_bins)
   
   return(joined_res_named)
   
@@ -383,7 +407,23 @@ sub_join_res <- get_joined_res(contrast_list, SUBID, Zcontrast, zthr,
 
 ## Run for all subjects and all contrasts
 
+The user must provide 4 parameters: `zthr, clusterSizeThr, nbin, thr_N_taskruns` (unfold code to see the description).
+
+It returns a dataframe `all` containing the estimate for each subject, which will be used for the Group-level analysis.
+
+**NB**: for high values of `clusterSizeThr` and `thr_N_taskruns` the calculation might break (it would take too much time to build control structures), meaning that for certain subjects, at those thresholds there are no JU ROIs with sig clusters in either contrast.
+
 ```{r res-all-subs-joined-contrasts}
+
+# ----------------------  User-defined parameters  ----------------------------
+
+zthr <- 2.3           # values already corrected for MCP with GRF (p = 0.05)
+clusterSizeThr <- 50  # to build a meaningful histogram
+nbin <- 10            # bins to sample the cortical Depth
+thr_N_taskruns <- 4   # in how many runs there are sig clusters, to be interesting?
+
+# ----------------------  End of User-defined parameters  ---------------------
+
 
 listsub <- df$sub %>% unique()
 
@@ -408,12 +448,22 @@ all <- listsub %>%
 
 ## Group-level analysis
 
-Consider only ROIs where a sig result was found in all 9 sub
+A final parameter that the user should provide is the minimum number of subjects to consider for group-level analysis (`thr_N_subs`). This is due to the fact that there are only 9 subjects. It can happen that only two subjects have sig clusters in a given ROI, which means that the ttest would be run only on two values, which is of course meaningless.
 
-```{r}
+The mean Z values for every JU ROI containing sig clusters are compared between contrasts using a paired t test. The resulting tibble `ttest_res` contains inferential statistics (e.g. T, p) which will be later used for plotting.
 
-thr_N_subs <- 9
+Note that the final tibble `ttest_res` can also be unnested to get back the values which went into the ttest. This is useful to plot e.g. bars of the mean Z for each ROI in either contrasts.
 
+```{r compare-between-contrasts}
+
+# ----------------------  User-defined parameters  ----------------------------
+
+thr_N_subs <- 6
+
+# ----------------------  End of User-defined parameters  ---------------------
+
+# Threshold for minimum numba of subjects and nest the dataframes corresponding
+# to each D_bin in each JU ROI
 all_nest <- all %>% 
   group_by(JU, D_bins) %>% 
   mutate(n_sub_sig = n()) %>% 
@@ -450,108 +500,35 @@ ttest_res <- ttest_res %>%
   )
 
 
-# Unnest to prepare for the plot
+# # Unnest to prepare for the plot
+# ttest_res %>% 
+#   unnest(data)
+
+
+```
+
+
+## Plot the results
+
+The cortical depth was sampled using `r nbin` bins. For each bin, we extracted at each voxel the Z statistics derived from the single-subject GLM carried out in the native space for each of the two contrasts `r names(contrast_list)[1]` and `r names(contrast_list)[2]`. We considered only voxels at Z >= `r zthr` (corrected with GRF using a cluster p threshold of 0.05) with a minimum cluster size of `r clusterSizeThr` voxels and averaged their Z value at each voxel across runs (8 for each participant). Finally, we compared these average Z values across participant for each region of the Juelich atlas in which significant clusters of voxels were present in at least `r thr_N_taskruns` at the participant level.
+
+
+```{r, plot-results, fig.width=10, fig.height=10}
+
+# Plot results
 ttest_res %>% 
-  unnest(data)
-
-```
-
-
-
-
-
-
-
-## Run for all subjects and all contrasts (OLE)
-
-To run the group-level analysis, first set the general parameters:
-
-- zthr : Z threshold for voxels to be considered sig
-- clusterSizeThr : minimum cluster size
-- nbin : number of bins to sample Depth
-- thr_N_taskruns : for each JU ROI,  in how many taskruns (>2) should I find sig clusters, to consider it interesting?
-
-Then the following is run, from inner to outer map:
-1. run `get_results()` for one subs (inner `map2`)
-2. create a column with the contrast name (`map2(contrast_list, names(contrast_list))`)
-3. concatenate the Motion and Scrambled tibbles by rows
-4. run the estimation for all subs (outer `map`) and concatenate all subs by rows (note that we don't need the sub ID so it's left out)
-
-```{r group-analysis, eval=F, include=F}
-
-df <- create_dizio_files()
-
-# SUBID = "sub_02"     # df %>% distinct(sub) to see all available sub
-# Zcontrast <- "thresh_zstat1"
-zthr <- 2.3  # use smallcap to indicate that it is a scalar
-clusterSizeThr <- 50  # to build a meaningful histogram
-nbin <- 10 # set hist breaks to a fixed range
-thr_N_taskruns <- 2 # in how many taskruns (>=2) should I find sig clusters, to consider it interesting?
-
-
-contrast_list <- list(
-  Motion = "thresh_zstat1",
-  Scrambled = "thresh_zstat2"
-)
-
-# NB: sub_14 is FU for thresh_zstat2: not even in one run there are sig voxels at ztr > 3.1
-
-# ~ 20 sec to go through ~ 300 nifti files. Not bad.
-
-all <- map(
-  df$sub %>% unique(),
-  function(onesub) map2(
-    contrast_list, names(contrast_list),
-    function(contrast,name) {
-      get_results(SUBID = onesub, contrast, 
-                  zthr, clusterSizeThr, nbin, 
-                  thr_N_taskruns) %>% 
-        mutate(contrast = name)
-    }
-  ) %>% reduce(bind_rows)
-) %>% reduce(bind_rows)
-
-
-# all
-
-
-```
-
-
-## Average the results across subjects and plot
-
-Consider only ROIs where a sig result was found in at least 6/9 sub
-
-```{r, final-plot, fig.width=10, fig.height=10, eval=F, include=F}
-
-# I need to replace this thresholding with the significance of the two-samples t-test
-# i.e. I want to show only bins where there is a sig difference between the two contrasts
-# Therefore in the end no more threshold (thr_N_subs) on numba sub will be required
-thr_N_subs = 4
-
-group_avg <- all %>% 
-  select(-sd_Z) %>% 
-  group_by(contrast, JU, D_bins) %>% 
-  mutate(n_sub_sig = n()) %>% 
-  filter(n_sub_sig >= thr_N_subs) %>% 
-  summarise(
-    meanZ = mean(TR_mean_Z),
-    sdZ = sd(TR_mean_Z),
-    .groups = "drop"
-  )
-
-
-group_avg %>% 
+  select(D_bins, JU, T, p) %>% 
   inner_join(., julabels, by = c("JU"="numba")) %>% 
-  mutate(name = str_replace_all(name, "_", " ")) %>%
-  ggplot( aes(x = D_bins, y = meanZ, fill = contrast) ) + 
-  geom_bar(stat = "identity", width = 1, position = position_identity(), alpha = 0.5) +
-  geom_linerange( aes(ymin = meanZ - sdZ, ymax = meanZ + sdZ, color=contrast) ) +
-  coord_cartesian(ylim = c(zthr, zthr + 1.2)) +
+  mutate(name = str_replace_all(name, "_", " ")) %>% 
+  ggplot( aes(x = D_bins, y = T, fill = (1-p)) ) +
+  scale_fill_viridis_c(10) +
+  geom_bar(stat = "identity", width = 1, position = position_identity()) +
   facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22))
 
-
 ```
+
+
+
 
 
 
