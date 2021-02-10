@@ -45,7 +45,7 @@ Zcontrast <- "thresh_zstat1"
 zthr <- 2.3  # use smallcap to indicate that it is a scalar
 clusterSizeThr <- 100  # to build a meaningful histogram
 nbin <- 10 # set hist breaks to a fixed range
-thr_N_taskruns <- 2 # in how many taskruns (>2) should I find sig clusters, to consider it interesting?
+thr_N_taskruns <- 4 # in how many taskruns (>2) should I find sig clusters, to consider it interesting?
 
 
 
@@ -62,8 +62,10 @@ library(dplyr)
 library(purrr)
 select <- dplyr::select
 library(tibble)
+library(broom)
 library(ggplot2)
 library(ggthemes)
+library(kableExtra)
 library(tictoc)
 
 
@@ -419,7 +421,7 @@ It returns a dataframe `all` containing the estimate for each subject, which wil
 
 zthr <- 2.3           # values already corrected for MCP with GRF (p = 0.05)
 clusterSizeThr <- 50  # to build a meaningful histogram
-nbin <- 10            # bins to sample the cortical Depth
+nbin <- 6            # bins to sample the cortical Depth
 thr_N_taskruns <- 4   # in how many runs there are sig clusters, to be interesting?
 
 # ----------------------  End of User-defined parameters  ---------------------
@@ -433,6 +435,8 @@ contrast_list <- list(
 )
 
 
+tic()
+
 all <- listsub %>% 
   map( function(sub) get_joined_res(contrast_list, 
                         sub, 
@@ -441,6 +445,8 @@ all <- listsub %>%
                         clusterSizeThr, 
                         nbin, 
                         thr_N_taskruns)) %>% bind_rows()
+
+toc()
 
 ```
 
@@ -458,7 +464,7 @@ Note that the final tibble `ttest_res` can also be unnested to get back the valu
 
 # ----------------------  User-defined parameters  ----------------------------
 
-thr_N_subs <- 6
+thr_N_subs <- 7
 
 # ----------------------  End of User-defined parameters  ---------------------
 
@@ -468,11 +474,11 @@ all_nest <- all %>%
   group_by(JU, D_bins) %>% 
   mutate(n_sub_sig = n()) %>% 
   filter(n_sub_sig >= thr_N_subs) %>%
-  nest()
+  tidyr::nest()
 
 
 # Function to compare Motion and Scrambled in every nested df
-# It's outside so that it can be easily modified to be something
+# It's defined outside so that it can be easily modified to be something
 # other than t.test
 compare_contrasts <- function(df) {
   t.test(df$Motion, df$Scrambled, paired = TRUE)
@@ -508,22 +514,112 @@ ttest_res <- ttest_res %>%
 ```
 
 
-## Plot the results
+## Results
 
-The cortical depth was sampled using `r nbin` bins. For each bin, we extracted at each voxel the Z statistics derived from the single-subject GLM carried out in the native space for each of the two contrasts `r names(contrast_list)[1]` and `r names(contrast_list)[2]`. We considered only voxels at Z >= `r zthr` (corrected with GRF using a cluster p threshold of 0.05) with a minimum cluster size of `r clusterSizeThr` voxels and averaged their Z value at each voxel across runs (8 for each participant). Finally, we compared these average Z values across participant for each region of the Juelich atlas in which significant clusters of voxels were present in at least `r thr_N_taskruns` at the participant level.
+The group-level analysis was carried out on subject-specific parameter estimates of cortical depth and brain activity in the native space of the fMRI acquisition, to preserve the layer-specific spatial resolution which would be compromised by registering the data in a common template space.
+
+We quantified the mean (whole-brain corrected) Z value in different cortical depth bins for each region of the cytoarchitectonic atlas of Juelich transported into the native space of each fMRI run (8 for each participant). 
+
+The cortical depth was sampled using `r nbin` bins, from the white/gray matter border to the pial surface. 
+
+For each depth bin, we retained the median Z value of the voxels which survived whole-brain multiple comparison correction (GRF thresholding at p = 0.05 after masking the Z map at `r zthr`) in each of the two contrasts: `r names(contrast_list)[1]` and `r names(contrast_list)[2]`. The final parameter estimate of brain activity in either contrast for each cortical depth bin consisted of the averaged (median) Z value across runs. For the group-level analysis, we considered only Juelich regions featuring at least `r clusterSizeThr` significant voxels in at least `r thr_N_taskruns`/8 runs at the subject level. 
 
 
-```{r, plot-results, fig.width=10, fig.height=10}
-
-# Plot results
-ttest_res %>% 
-  select(D_bins, JU, T, p) %>% 
+```{r MCP-correction-and_table}
+# Add column of names for JU ROIs
+res <- ttest_res %>% 
+  select(D_bins, JU, T, p, data) %>% 
   inner_join(., julabels, by = c("JU"="numba")) %>% 
-  mutate(name = str_replace_all(name, "_", " ")) %>% 
-  ggplot( aes(x = D_bins, y = T, fill = (1-p)) ) +
-  scale_fill_viridis_c(10) +
-  geom_bar(stat = "identity", width = 1, position = position_identity()) +
-  facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22))
+  mutate(name = str_replace_all(name, "_", " ")) 
+
+
+# Apply fdr correction per ROI
+res <- res %>% 
+  group_by(JU) %>%
+  mutate(
+    pcorr = p.adjust(p, "fdr"),
+  ) %>% 
+  mutate(pcorr_sig = ifelse(pcorr <= 0.05, D_bins, NA))  # to print asterisk on sig p bins
+
+
+# Show a table of sig ROIs/bins
+res %>%
+  select(-data) %>% 
+  ungroup() %>% 
+  filter(!is.na(pcorr_sig)) %>% 
+  select(-c(JU,pcorr_sig)) %>% 
+  kbl(caption = "Significant differences ( $q(FDR) = 0.05$ ) in Motion > Scrambled" ) %>% 
+  kable_styling(c("condensed"))
+```
+
+
+
+
+```{r plot-group-comparison-T, fig.width=10, fig.height=10}
+
+# Plot the effect size (actually T stat) for the comparison Motion > Scrambled
+res %>% 
+  mutate(D_bins = as.numeric(D_bins)) %>% 
+  ggplot( aes(x = D_bins, y = T, fill = D_bins ) ) +
+  # scale_fill_gradient(low = "orange", high = "blue", na.value = NA) +
+  scale_fill_gradient2_tableau() +
+  geom_bar(stat = "identity", position = position_identity()) +
+  geom_text( aes(x = pcorr_sig, y = T + 0.1, label = "*"), fontface = "bold", size=10, na.rm = T ) +
+  facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22)) +
+  coord_cartesian(ylim = c(min(res$T), max(res$T))) +
+  theme_minimal() +  # also theme_bw and theme_few
+  labs(
+    title = "T statistic at each cortical depth for Motion > Scrambled"
+  ) +
+  ylab("Scrambled <   > Motion") + xlab("Cortical Depth bins :  1 = WM/GM border, 6 = pial")
+
+
+
+
+```
+
+
+
+
+```{r plot-group-comparison-descriptives, fig.width=10, fig.height=6}
+
+# function to calculate standard error after removing NAs
+sterr <- function(x) {
+  x <- x[!is.na(x)]
+  sd(x)/sqrt(length(x))
+}
+
+res_descriptives <- res %>%
+  select(-c(T,p,pcorr)) %>% 
+  unnest(data) %>% 
+  gather(Motion, Scrambled, key = "contrast", value = "raw") %>% 
+  # filter(JU == 13, D_bins ==1) %>%  # to remove later
+  group_by(JU, name, D_bins, contrast, pcorr_sig) %>% 
+  summarise(
+    meanZ = mean(raw, na.rm = T),
+    sterrZ = sterr(raw),
+    .groups = "drop"
+  )
+
+
+
+res_descriptives %>%
+  mutate(pcorr_sig = ifelse(contrast == "Motion", pcorr_sig, NA)) %>%  # to plot only one asterisk
+  ggplot( aes(x = D_bins, y = meanZ, fill = contrast) ) +
+  geom_bar(stat = "identity", position = position_identity(), alpha = 0.6) +
+  geom_text(
+    aes(x = pcorr_sig, y = meanZ + 0.1, label = "*"), fontface = "bold", size=10, na.rm = T 
+  ) +
+  geom_linerange(aes(ymin = meanZ - sterrZ, ymax = meanZ + sterrZ, color=contrast), alpha = 0.5) +
+  coord_cartesian(ylim = c(zthr, max(res_descriptives$meanZ) + 0.2)) +
+  facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22)) +
+  theme_minimal() +
+  labs(
+    title = "Mean corrected Z values for each Depth bin in each Juelich region across participants"
+  ) +
+  ylab("Mean Z across voxels") + xlab("Cortical Depth bins :  1 = WM/GM border, 6 = pial")
+
+
 
 ```
 
@@ -531,10 +627,35 @@ ttest_res %>%
 
 
 
+```{r}
+
+# How to put asterisks on top of sig bars
+
+# pf <- data.frame(
+#   x = 1:10,
+#   y = rt(10, 2)
+# ) %>% 
+#   mutate(sig = y > 1) %>% 
+#   mutate(xx = ifelse(x>5,x,NA))
+# 
+# pf <- data.frame(
+#   x = 1:10,
+#   y = rt(10, 2)
+# ) %>% 
+#   mutate(xsig = ifelse(abs(y) > 1, x, NA))
+# 
+# pf
+# 
+# 
+# pf %>% 
+#   ggplot( aes(x=x, y=y) ) +
+#   geom_bar(stat = "identity") +
+#   coord_cartesian(ylim = c(min(pf$y) - 1, max(pf$y) + 1)) +
+#   geom_text(x = pf$xsig, y = pf$y + 0.1, label = "***", na.rm = T) 
 
 
 
-
+```
 
 
 
