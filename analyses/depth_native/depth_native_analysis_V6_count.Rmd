@@ -25,7 +25,7 @@ Of course I will also here have the problem that in some sub/ROIs there will be 
 
 A copy of this document in pdf format can be created with 
 ```
-rmarkdown::render("depth_native_analysis_V5.Rmd", 'pdf_document')
+rmarkdown::render("depth_native_analysis_V[version_numba].Rmd", 'pdf_document')
 ```
 Make sure to comment the part relative to the creation of the interactive collapsibletree.
 
@@ -209,10 +209,19 @@ Practically, for each taskrun we `map` the following procedure:
 2. count the numba of sig voxels in each JU ROI, to be able to exclude ROIs with numba voxels < clusterSizeThr
 3. remove ROIs with numba voxels < clusterSizeThr 
 4. split the subtibble in many tibbles, each one for one JU ROI
-5. calculate ntiles (e.g. deciles) of Depth, according to the nbin variable, and set it as a factor
-6. group all the values (Z,D) by the ntile they belong to 
-7. calculate mean Z across all the values in each D ntile. **This is our desired metric of interest**. The final tibble of each ROI has N rows - one for each ntile/bin - and two columns for mean_Z and JU name.
+5. create a factor indexing the voxels in each cortical depth bin, e.g. [0..0.1], [0.11..0.2] ... [0.91..1]
+6. group all the values (Z,D) by the bin they belong to
+7. calculate mean Z across all the values in each D bin. **This is our desired metric of interest**. The final tibble of each ROI has N rows - one for each bin - and two columns for mean_Z and JU name.
 8. bind all the ROI-specific tibbles by rows. Therefore in the final tibble there will be N JU_ROIs * 10 rows
+
+**NB**: in a previous version there was a mistake due to the fact that I extracted the voxels (and relative Z value) for each bin with `dplyr::ntile`, while `base::findInterval` should be used:
+
+- CORRECT : `map(~ .x %>% mutate(D_bins = findInterval(D, seq(0, 1, by=1/nbin))) %>% arrange(D_bins) )`
+- WRONG : `map(~ .x %>% mutate(D_bins = ntile(D, nbin) %>% as.factor) %>% arrange(D) )`
+
+`ntile` actually builds N ranks (where N = nbin), however this means that if e.g. there are many more voxels in depth = 0..0.1, these voxels will occupy not only the first bin, but several ranks. Instead here I only want to extract voxels at different levels of depth, considering that their distribution along the cortical depth can be highly skewed. Therefore the funciton `base::findInterval` should be used.
+
+As a matter of fact, the main group-level results do not change much using either function.
 
 ```{r get-res-each-taskrun}
 
@@ -224,11 +233,12 @@ get_meanZ <- function(vals, clusterSizeThr, nbin) {
     arrange(nvox, JU) %>%               # sort by ascending nvox, just to check
     filter(nvox > clusterSizeThr) %>%   # 3. remove JU with nvox < clusterSizeThr
     group_split() %>%                   # 4. split: one for each JU ROI
-    map(~ .x %>% mutate(D_bins = ntile(D, nbin) %>% as.factor) %>% arrange(D) ) %>%  # 5. Depth bins
-    map(~ .x %>% group_by(D_bins) ) %>% # 6. group values by ntile
-    map(~ .x %>% summarise(             # 7. calculate mean Z for each ntile of D
+    map(~ .x %>% mutate(D_bins = findInterval(D, seq(0, 1, by=1/nbin))) %>% arrange(D_bins) ) %>%  # 
+    map(~ .x %>% group_by(D_bins) ) %>% # 6. group values by bin
+    map(~ .x %>% summarise(             # 7. calculate mean Z for each bin of D
       mean_Z = mean(Z),
       # sd_Z = sd(Z),
+      numba_Z = n(),
       JU = mean(JU),
       .groups = "drop"
     )) %>%
@@ -236,7 +246,6 @@ get_meanZ <- function(vals, clusterSizeThr, nbin) {
   
   return(ALL_taskruns_meanZ)
 }
-
 
 # # To test the function and plot the results for one taskrun only:
 # ALL_taskruns_meanZ <- map(list(vals[[1]]), get_meanZ)
@@ -264,7 +273,6 @@ ALL_taskruns_meanZ <- pmap(
 ) %>% bind_rows()
 
 
-
 ```
 
 
@@ -287,7 +295,7 @@ get_MEAN_taskruns_meanZ <- function(ALL_taskruns_meanZ, thr_N_taskruns) {
     group_split() %>%                      # 2. split ROIs
     map(~ .x %>% group_by(D_bins) ) %>%    # 3. group by D bin across taskruns for each ROI
     map(~ .x %>% summarise(                # 4. get the mean_Z for each D
-      TR_mean_Z = mean(mean_Z),
+      TR_mean_Z = mean(numba_Z),
       # sd_Z = sd(mean_Z),
       JU = mean(JU),
       .groups = "drop"
@@ -421,8 +429,8 @@ It returns a dataframe `all` containing the estimate for each subject, which wil
 
 zthr <- 2.3           # values already corrected for MCP with GRF (p = 0.05)
 clusterSizeThr <- 50  # to build a meaningful histogram
-nbin <- 6            # bins to sample the cortical Depth
-thr_N_taskruns <- 4   # in how many runs there are sig clusters, to be interesting?
+nbin <- 10            # bins to sample the cortical Depth
+thr_N_taskruns <- 2   # in how many runs there are sig clusters, to be interesting?
 
 # ----------------------  End of User-defined parameters  ---------------------
 
@@ -577,7 +585,7 @@ res %>%
   geom_bar(stat = "identity", position = position_identity()) +
   geom_text( aes(x = pcorr_sig, y = T + 0.1, label = "*"), fontface = "bold", size=10, na.rm = T ) +
   facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22)) +
-  coord_cartesian(ylim = c(min(res$T), max(res$T))) +
+  coord_cartesian(ylim = c(min(res$T), max(res$T) + 0.2)) +
   theme_minimal() +  # also theme_bw and theme_few
   labs(
     title = "T statistic at each cortical depth for Motion > Scrambled"
@@ -593,7 +601,7 @@ res %>%
 
 
 
-```{r plot-group-comparison-descriptives, fig.width=10, fig.height=6}
+```{r plot-group-comparison-descriptives, fig.width=10, fig.height=8}
 
 # function to calculate standard error after removing NAs
 sterr <- function(x) {
