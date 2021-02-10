@@ -448,6 +448,7 @@ all <- listsub %>%
 
 toc()
 
+
 ```
 
 
@@ -524,6 +525,16 @@ The cortical depth was sampled using `r nbin` bins, from the white/gray matter b
 
 For each depth bin, we retained the median Z value of the voxels which survived whole-brain multiple comparison correction (GRF thresholding at p = 0.05 after masking the Z map at `r zthr`) in each of the two contrasts: `r names(contrast_list)[1]` and `r names(contrast_list)[2]`. The final parameter estimate of brain activity in either contrast for each cortical depth bin consisted of the averaged (median) Z value across runs. For the group-level analysis, we considered only Juelich regions featuring at least `r clusterSizeThr` significant voxels in at least `r thr_N_taskruns`/8 runs at the subject level. 
 
+**Parameters used**
+
+| User defined   | Value              | Function                                            |
+| -------------  | ------------------ | --------------------------------------------------- |
+| zthr           | `r zthr`           | whole-brain corrected Z thr in each run             |
+| clusterSizeThr | `r clusterSizeThr` | min numba voxels in each JU ROI                     |
+| nbin           | `r nbin`           | numba of Depth bins                                 |
+| thr_N_taskruns | `r thr_N_taskruns` | thr for min numba of runs with sig amount of voxels |
+| thr_N_subs     | `r thr_N_subs`     | thr for min numba subs in which the effect was sig  |
+
 
 ```{r MCP-correction-and_table}
 # Add column of names for JU ROIs
@@ -571,10 +582,11 @@ res %>%
   labs(
     title = "T statistic at each cortical depth for Motion > Scrambled"
   ) +
-  ylab("Scrambled <   > Motion") + xlab("Cortical Depth bins :  1 = WM/GM border, 6 = pial")
-
-
-
+  ylab("Scrambled <   > Motion") + xlab("Cortical Depth bins :  1 = WM/GM border, 6 = pial")+
+  theme(
+    strip.text.x = element_text(size = 12), # increase size of title for each subplot
+    panel.spacing.y = unit(3, "lines")      # increase space between facets
+  ) 
 
 ```
 
@@ -617,45 +629,17 @@ res_descriptives %>%
   labs(
     title = "Mean corrected Z values for each Depth bin in each Juelich region across participants"
   ) +
-  ylab("Mean Z across voxels") + xlab("Cortical Depth bins :  1 = WM/GM border, 6 = pial")
+  ylab("Mean Z across voxels") + xlab("Cortical Depth bins :  1 = WM/GM border, 6 = pial") +
+  theme(
+    strip.text.x = element_text(size = 12), # increase size of title for each subplot
+    panel.spacing.y = unit(3, "lines")      # increase space between facets
+  )  
 
 
 
 ```
 
 
-
-
-
-```{r}
-
-# How to put asterisks on top of sig bars
-
-# pf <- data.frame(
-#   x = 1:10,
-#   y = rt(10, 2)
-# ) %>% 
-#   mutate(sig = y > 1) %>% 
-#   mutate(xx = ifelse(x>5,x,NA))
-# 
-# pf <- data.frame(
-#   x = 1:10,
-#   y = rt(10, 2)
-# ) %>% 
-#   mutate(xsig = ifelse(abs(y) > 1, x, NA))
-# 
-# pf
-# 
-# 
-# pf %>% 
-#   ggplot( aes(x=x, y=y) ) +
-#   geom_bar(stat = "identity") +
-#   coord_cartesian(ylim = c(min(pf$y) - 1, max(pf$y) + 1)) +
-#   geom_text(x = pf$xsig, y = pf$y + 0.1, label = "***", na.rm = T) 
-
-
-
-```
 
 
 
