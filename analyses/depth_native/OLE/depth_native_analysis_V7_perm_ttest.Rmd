@@ -25,7 +25,7 @@ Of course I will also here have the problem that in some sub/ROIs there will be 
 
 A copy of this document in pdf format can be created with 
 ```
-rmarkdown::render("depth_native_analysis_V5.Rmd", 'pdf_document')
+rmarkdown::render("depth_native_analysis_V[version_numba].Rmd", 'pdf_document')
 ```
 Make sure to comment the part relative to the creation of the interactive collapsibletree.
 
@@ -45,7 +45,7 @@ Zcontrast <- "thresh_zstat1"
 zthr <- 2.3  # use smallcap to indicate that it is a scalar
 clusterSizeThr <- 100  # to build a meaningful histogram
 nbin <- 10 # set hist breaks to a fixed range
-thr_N_taskruns <- 4 # in how many taskruns (>2) should I find sig clusters, to consider it interesting?
+thr_N_taskruns <- 2 # in how many taskruns (>2) should I find sig clusters, to consider it interesting?
 
 
 
@@ -179,7 +179,6 @@ get_Z_D_JU_vals <- function(zthr, Z_nii, D_nii, JU_nii) {
     function(Z,D,JU) tibble(Z,D,JU) %>% filter(JU > 0)
   )
 
-  
   return(vals)
 }
 
@@ -199,7 +198,7 @@ vals <- get_Z_D_JU_vals(zthr, niis$Z, niis$D, niis$JU)
 
 
 ## Get mean Z for each D bin in each JU region in each taskrun
-Here we use the dataframe `vals` created above - containing each subtibbles, one for each taskrun - to sample the depth in `nbin` ntiles (e.g. deciles if `nbin` = 10) and then extract the mean suprathreshold Z value for each cortical depth bin. This calculation is carried out separately for each taskrun (using `map`), and for each ROI.
+Here we use the dataframe `vals` created above - containing each subtibbles, one for each taskrun - to sample the depth in `nbin` bins (e.g. deciles if `nbin` = 10) and then extract the mean suprathreshold Z value for each cortical depth bin. This calculation is carried out separately for each taskrun (using `map`), and for each ROI.
 
 Afterwards we create a `taskrun` column - derived from the numba of subtibbles (`length(ALL_taskruns_meanZ)`) - and we row-bind the mean Z for each bin in each ROI across taskrun, for later averaging across taskruns.
 
@@ -238,6 +237,7 @@ get_meanZ <- function(vals, clusterSizeThr, nbin) {
     map(~ .x %>% summarise(             # 7. calculate mean Z for each bin of D
       mean_Z = mean(Z),
       # sd_Z = sd(Z),
+      numba_Z = n(),
       JU = mean(JU),
       .groups = "drop"
     )) %>%
@@ -246,8 +246,9 @@ get_meanZ <- function(vals, clusterSizeThr, nbin) {
   return(ALL_taskruns_meanZ)
 }
 
+
 # # To test the function and plot the results for one taskrun only:
-# ALL_taskruns_meanZ <- map(list(vals[[1]]), get_meanZ)
+# ALL_taskruns_meanZ <- map(list(vals[[1]]), ~ get_meanZ(.x, clusterSizeThr, nbin))
 # 
 # ALL_taskruns_meanZ %>% as.data.frame() %>%
 #   ggplot( aes(x = as.numeric(D_bins), y = mean_Z, fill = as.numeric(D_bins)) ) +
@@ -263,13 +264,19 @@ nbin <- 10 # set hist breaks to a fixed range
 
 # Get mean Z for each D bin in each JU region in each taskrun
 # 1. extract the metric of interest for each taskrun (madonna!)
-ALL_taskruns_meanZ <- map(vals, ~ get_meanZ(.x, clusterSizeThr, nbin))
+ALL_taskruns_meanZ <- map(vals, ~ get_meanZ(.x, clusterSizeThr, nbin) )
+
 
 # 2. assign a taskrun column - for further averaging - and bind_rows all together
 ALL_taskruns_meanZ <- pmap(
   list(1:length(ALL_taskruns_meanZ), ALL_taskruns_meanZ),
   function(nth_taskrun, df_taskrun) df_taskrun %>% mutate(taskrun = nth_taskrun)
 ) %>% bind_rows()
+
+# 3. create a column of *proportions* (prop_Z) instead of simple count (numba_Z)
+ALL_taskruns_meanZ <- ALL_taskruns_meanZ %>% 
+  group_by(JU,taskrun) %>% 
+  mutate(prop_Z = numba_Z/sum(numba_Z)*100)
 
 
 ```
@@ -294,7 +301,7 @@ get_MEAN_taskruns_meanZ <- function(ALL_taskruns_meanZ, thr_N_taskruns) {
     group_split() %>%                      # 2. split ROIs
     map(~ .x %>% group_by(D_bins) ) %>%    # 3. group by D bin across taskruns for each ROI
     map(~ .x %>% summarise(                # 4. get the mean_Z for each D
-      TR_mean_Z = mean(mean_Z),
+      TR_mean_Z = mean(prop_Z),    # numba_Z = count; prop_Z = proportion
       # sd_Z = sd(mean_Z),
       JU = mean(JU),
       .groups = "drop"
@@ -356,7 +363,12 @@ get_res_contrast <- function(SUBID, Zcontrast, zthr, clusterSizeThr, nbin, thr_N
     function(nth_taskrun, df_taskrun) df_taskrun %>% mutate(taskrun = nth_taskrun)
   ) %>% bind_rows()
   
-  # 3. Average the mean Z in each D bin across taskruns
+  # 3. create a column of *proportions* (prop_Z) instead of simple count (numba_Z)
+  ALL_taskruns_meanZ <- ALL_taskruns_meanZ %>% 
+    group_by(JU,taskrun) %>% 
+    mutate(prop_Z = numba_Z/sum(numba_Z) )
+  
+  # 4. Average the mean Z in each D bin across taskruns
   MEAN_taskruns_meanZ <- get_MEAN_taskruns_meanZ(ALL_taskruns_meanZ, thr_N_taskruns)
   
   return(MEAN_taskruns_meanZ)
@@ -426,10 +438,10 @@ It returns a dataframe `all` containing the estimate for each subject, which wil
 
 # ----------------------  User-defined parameters  ----------------------------
 
-zthr <- 2.3           # values already corrected for MCP with GRF (p = 0.05)
-clusterSizeThr <- 50  # to build a meaningful histogram
-nbin <- 10            # bins to sample the cortical Depth
-thr_N_taskruns <- 2   # in how many runs there are sig clusters, to be interesting?
+zthr <- 2.3            # values already corrected for MCP with GRF (p = 0.05)
+clusterSizeThr <- 100   # to build a meaningful histogram
+nbin <- 10             # bins to sample the cortical Depth
+thr_N_taskruns <- 2    # in how many runs there should be sig clusters, for this sub to be interesting?
 
 # ----------------------  End of User-defined parameters  ---------------------
 
@@ -451,7 +463,10 @@ all <- listsub %>%
                         zthr, 
                         clusterSizeThr, 
                         nbin, 
-                        thr_N_taskruns)) %>% bind_rows()
+                        thr_N_taskruns))
+
+# Create a column defining to which sub the results belong to and bind_rows
+all <- list(all,listsub) %>% pmap(~ .x %>% mutate(sub = .y)) %>% bind_rows()
 
 toc()
 
@@ -468,6 +483,8 @@ The mean Z values for every JU ROI containing sig clusters are compared between 
 
 Note that the final tibble `ttest_res` can also be unnested to get back the values which went into the ttest. This is useful to plot e.g. bars of the mean Z for each ROI in either contrasts.
 
+
+### Traditional t-test
 ```{r compare-between-contrasts}
 
 # ----------------------  User-defined parameters  ----------------------------
@@ -479,6 +496,7 @@ thr_N_subs <- 7
 # Threshold for minimum numba of subjects and nest the dataframes corresponding
 # to each D_bin in each JU ROI
 all_nest <- all %>% 
+  drop_na() %>%    # remove subs with non-sig results for either contrast
   group_by(JU, D_bins) %>% 
   mutate(n_sub_sig = n()) %>% 
   filter(n_sub_sig >= thr_N_subs) %>%
@@ -491,6 +509,7 @@ all_nest <- all %>%
 compare_contrasts <- function(df) {
   t.test(df$Motion, df$Scrambled, paired = TRUE)
 }
+
 
 
 # Carry out the comparison Motion > Scrambled for each D_bin in each JU ROI
@@ -520,6 +539,65 @@ ttest_res <- ttest_res %>%
 
 
 ```
+
+
+
+### Permutation t-test
+```{r compare-between-contrasts-perm}
+
+# # ----------------------  User-defined parameters  ----------------------------
+# 
+# thr_N_subs <- 7
+# 
+# # ----------------------  End of User-defined parameters  ---------------------
+# 
+# # Threshold for minimum numba of subjects and nest the dataframes corresponding
+# # to each D_bin in each JU ROI
+# all_nest <- all %>% 
+#   drop_na() %>%    # remove subs with non-sig results for either contrast
+#   group_by(JU, D_bins) %>% 
+#   mutate(n_sub_sig = n()) %>% 
+#   filter(n_sub_sig >= thr_N_subs) %>%
+#   tidyr::nest()
+# 
+# 
+# 
+# # Permutation t-test by Karl Broman
+# library("broman")
+# 
+# compare_contrasts_perm <- function(df) {
+#   df_diff <- df$Motion - df$Scrambled
+#   paired.perm.test(df_diff, n.perm = 5000, pval = TRUE)
+# }
+# 
+# 
+# # Carry out the comparison Motion > Scrambled for each D_bin in each JU ROI
+# ttest_res <- all_nest %>% 
+#   mutate(
+#     p_perm = map_dbl(data, compare_contrasts_perm )
+#   ) %>% 
+#   mutate(
+#     ttest = map(data, compare_contrasts )
+#   )
+# 
+# 
+# library(broom)
+# 
+# # Extract the parameters of interest (T,p)
+# ttest_res <- ttest_res %>% 
+#   mutate(
+#     glance = ttest %>% map(glance),
+#     T = glance %>% map_dbl("statistic"),
+#     p = p_perm
+#   )
+# 
+
+
+```
+
+
+
+
 
 
 ## Results
@@ -557,16 +635,16 @@ res <- res %>%
   mutate(
     pcorr = p.adjust(p, "fdr"),
   ) %>% 
-  mutate(pcorr_sig = ifelse(pcorr <= 0.05, D_bins, NA))  # to print asterisk on sig p bins
+  mutate(pcorr_sig = ifelse(p <= 0.05, D_bins, NA))  # to print asterisk on sig p bins
 
 
 # Show a table of sig ROIs/bins
 res %>%
   select(-data) %>% 
   ungroup() %>% 
-  filter(!is.na(pcorr_sig)) %>% 
+  filter(!is.na(pcorr_sig)) %>%
   select(-c(JU,pcorr_sig)) %>% 
-  kbl(caption = "Significant differences ( $q(FDR) = 0.05$ ) in Motion > Scrambled" ) %>% 
+  kbl(caption = "Significant differences either uncorrected or corrected ( $q(FDR) = 0.05$ ) in Motion > Scrambled" ) %>% 
   kable_styling(c("condensed"))
 ```
 
@@ -584,7 +662,7 @@ res %>%
   geom_bar(stat = "identity", position = position_identity()) +
   geom_text( aes(x = pcorr_sig, y = T + 0.1, label = "*"), fontface = "bold", size=10, na.rm = T ) +
   facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22)) +
-  coord_cartesian(ylim = c(min(res$T), max(res$T) + 0.5)) +
+  # coord_cartesian(ylim = c(min(res$T), max(res$T) + 0.2)) +
   theme_minimal() +  # also theme_bw and theme_few
   labs(
     title = "T statistic at each cortical depth for Motion > Scrambled"
@@ -593,9 +671,15 @@ res %>%
   theme(
     strip.text.x = element_text(size = 12), # increase size of title for each subplot
     panel.spacing.y = unit(3, "lines")      # increase space between facets
-  ) 
+  ) + 
+  coord_flip(ylim = c(min(res$T) - 0.2, max(res$T) + 0.2))
 
 ```
+
+
+
+
+
 
 
 
@@ -627,10 +711,10 @@ res_descriptives %>%
   ggplot( aes(x = D_bins, y = meanZ, fill = contrast) ) +
   geom_bar(stat = "identity", position = position_identity(), alpha = 0.6) +
   geom_text(
-    aes(x = pcorr_sig, y = meanZ + 0.1, label = "*"), fontface = "bold", size=10, na.rm = T 
+    aes(x = pcorr_sig, y = meanZ + 0.1, label = "*"), fontface = "bold", size=10, na.rm = T
   ) +
   geom_linerange(aes(ymin = meanZ - sterrZ, ymax = meanZ + sterrZ, color=contrast), alpha = 0.5) +
-  coord_cartesian(ylim = c(zthr, max(res_descriptives$meanZ) + 0.2)) +
+  # coord_cartesian(ylim = c(zthr, max(res_descriptives$meanZ) + 0.2)) +
   facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22)) +
   theme_minimal() +
   labs(
@@ -653,7 +737,20 @@ res_descriptives %>%
 
 
 
+```{r}
 
+# pvec <- res %>% 
+#   filter(JU == 91) %>% 
+#   ungroup() %>% 
+#   select(p) %>% unlist()
+# 
+# pvec
+# 
+# p.adjust(pvec, method = "fdr")
+# 
+
+
+```
 
 
 

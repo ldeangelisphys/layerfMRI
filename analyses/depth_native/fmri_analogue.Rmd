@@ -1,0 +1,71 @@
+---
+title: "fmri"
+output: html_document
+---
+
+
+# testing 10K lm's...
+```{r}
+
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(broom)
+library(tictoc)
+
+nvox = 1e5
+t = 200
+
+
+df <- data.frame(array(1:nvox, dim = c(1,nvox)))
+
+df <- df %>% map_df(~ rnorm(t))
+
+
+df <- df %>% gather(names(df), key = "vox", value = "intensity")
+
+df <- df %>% 
+  group_by(vox) %>% nest()
+
+# df$data[[1]]
+
+Xmat = rnorm(t)
+
+myGLM <- function(Y,Xmat) {
+  lm(intensity ~ Xmat, data = Y)
+}
+
+# myGLM(df$data[[1]], Xmat)
+
+tic()
+
+res <- df %>% 
+  mutate(
+    mod = map(data, ~ myGLM(.x,Xmat) )        
+  )
+
+toc()
+
+# res$mod[[1]] %>% summary()
+
+
+
+
+tic()
+
+res <- res %>% 
+  mutate(
+    glance = mod %>% map(broom::glance),
+    rsq = glance %>% map_dbl("r.squared"),
+    p = glance %>% map_dbl("p.value")
+  )
+
+toc()
+
+# proportion of false positives
+res$p[res$p <= .05] %>% length() / nvox
+
+
+
+```
+
