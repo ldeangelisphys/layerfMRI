@@ -27,6 +27,8 @@ regdata_dir=/data00/layerfMRI/regdata
 
 fsf_template=${PWD}/template_preproc.fsf
 
+smoothing=0.0  # set as > 0 ONLY for initial ISC! Then set back to 0.0
+
 # ----------------------  End of user defined variables -----------------------
 
 
@@ -62,6 +64,7 @@ for nii4d in `find ${bd} -name *run*.nii.gz | sort`; do
   sed -e "s@NIFTI4D@${nii4d}@g"  \
       -e "s@TOTALNUMBAVOXELS@${totalVoxels}@g" \
       -e "s@NUMBATIMEPOINTS@${dim4}@g" \
+      -e "s@SMOOTHINGKERNEL@${smoothing}@g" \
          ${fsf_template} > ${targetdir}/${fsf_name}
 
 
