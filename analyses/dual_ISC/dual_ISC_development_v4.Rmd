@@ -1,0 +1,485 @@
+---
+title: "dual ISC development v4 - a big love nest(2)"
+output: html_document
+---
+
+
+## Load libraries and read the logfile for all sub/run/movie into df
+```{r load-libs-and-log-data, message=F}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(stringr)
+library(RNifti)
+library(tictoc)
+library(ggplot2)
+library(kableExtra)
+options(digits = 3)
+
+# Immutable parameters
+gitdir <- "/data00/layerfMRI/Github_repo/"
+bd <- paste0(gitdir,"layerfMRI/analyses/dual_ISC/")
+regdatadir <- "/data00/layerfMRI/regdata/"
+depthdatadir <- paste0(bd, "/data_native/")
+
+
+# read the table with the names of JU ROI and remove WM regions
+julabels <- read.csv("labels_juelich.csv", stringsAsFactors = F) %>% 
+  mutate(name = str_replace(name,"['-/]","")) %>%    # get rid of special chars
+  mutate(numba = index + 1) %>%
+  filter(grepl("GM", name)) %>% 
+  select(-index)
+
+
+# load the logs and do some adjustment to names of columns and observations
+df <- read.csv("log_summary.csv") %>% 
+  arrange(subject,session,task,run) %>% 
+  select(-c(Trial,Event.Type,Time,NMov)) %>% 
+  mutate(sub = sprintf("sub_%02d",subject) ) %>%
+  select(-subject) %>% 
+  mutate(ses = sprintf("ses_%02d", session) ) %>% 
+  select(-session) %>% 
+  mutate(contrast = ifelse(Type == "M", "Motion", "Scrambled") ) %>% 
+  mutate(contrast_file = ifelse(Type == "M", "thresh_zstat1.nii.gz", "thresh_zstat2.nii.gz") ) %>% 
+  select(-c(Type,total_TR, Duration) ) %>% 
+  rename(muvi = Title) %>% 
+  relocate(sub, ses, task, run, muvi, start_TR, end_TR, contrast, contrast_file)
+
+
+# # When I will take care of splitting by taskrun, I have two choices: 
+# # for each task run, I can either nest or group_by
+# pf <- df %>% 
+#   filter(sub == "sub_02") %>% 
+#   group_by(task, run) %>% 
+#   nest()   # 1. nest OR...
+#   group_split()  # 2. group_by
+# 
+# pf$data[[1]]
+
+
+```
+
+
+## Getting idx_voxels (1) : Load images
+
+This is subject/taskrun/contrast specific. 
+I could have done it only taskrun specific and use some `map` to separately work on the two contrasts, but it would have been too complex to read and process, so I will load the 4D twice, one for Motion, the other for Scrambled. It takes about 30sec instead of 15sec, but it enhances the readability of the code.
+
+```{r}
+
+load_images <- function(df_taskrun_contrast) {
+  
+  # create a list containing the parameters to load the images
+  this <- df_taskrun_contrast[1,] %>% as.list() 
+  paste(this$sub, " task ", this$task, " run ", this$run, " ", this$contrast) %>% print()
+  
+  # fmri4D for this taskrun
+  fmri4D <- paste0(regdatadir,"/",
+                   this$sub,"/", this$ses,"/func/task_",
+                   this$task,"_run_", this$run,"_4D.nii.gz") %>% readNifti()
+  
+  fmri2D <- matrix(fmri4D, nrow = prod(dim(fmri4D)[1:3]), ncol = dim(fmri4D)[4])
+  
+  
+  # Zstat map FOR ONE CONTRAST in the native space of this taskrun
+  Z_nii <- paste0(depthdatadir,"/",this$sub, "/Zstat/", 
+                  "task_",this$task,
+                  "_run_",this$run,
+                  "/", this$contrast_file) %>% readNifti()
+    
+  
+  # Depth map in the native space of this taskrun
+  D_nii  <- paste0(depthdatadir,"/",
+                   this$sub,"/depth/", this$sub,"_depth_task_",
+                   this$task,"_run_", this$run,".nii.gz") %>% readNifti()
+  
+  
+  # JUelich regions in the native space of this taskrun
+  JU_nii <- paste0(depthdatadir,"/",
+                   this$sub,"/atlas/", this$sub,"_atlas_task_",
+                   this$task,"_run_", this$run,".nii.gz") %>% readNifti()
+
+  
+  nii_list <- list(fmri2D = fmri2D, Z_nii = Z_nii, D_nii = D_nii, JU_nii = JU_nii)
+
+  return(nii_list)
+
+}
+
+
+# # ------------- unit test -------------
+# df_taskrun_contrast <- df %>% filter(sub == "sub_02", task == 4, run == 1, contrast == "Scrambled")
+# df_taskrun_contrast
+# 
+# nii_list <- load_images(df_taskrun_contrast)
+# str(nii_list)
+
+
+```
+
+
+
+## Getting idx_voxels (2) : Get idx of >zthr voxels, grouped by JU and bin
+This is subject/taskrun/contrast specific
+
+```{r}
+
+get_idx_voxels <- function(zthr, nbin, clusterSizeThr, Z_nii, D_nii, JU_nii) {
+  
+  # Create an index of sig voxels, i.e. whose value is > zthr
+  Zthr_idx <- which(Z_nii > zthr)
+  
+  # Extract Z, D, JU values at the location of Zthr_idx
+  Z <- Z_nii[Zthr_idx]
+  D <- D_nii[Zthr_idx]
+  JU <- JU_nii[Zthr_idx]
+ 
+  # Purrr everything into a list of tibbles
+  # inside JU ROIs
+  df_idx <- tibble(Zthr_idx, Z, D, JU) %>%
+    rename(idx = Zthr_idx) %>% 
+    filter(JU > 0) # to retain only voxels within JU ROIs
+  
+  # Retain only JU ROI with numba voxels > clusterSizeThr 
+  df_idx <- df_idx %>% 
+    group_by(JU) %>%                    # 1. group_by JU ROI
+    mutate(nvox = n()) %>%              # 2. count numba vox in each JU ROI
+    arrange(nvox, JU) %>%               # sort by ascending nvox, just to check
+    filter(nvox > clusterSizeThr)       # 3. remove JU with nvox < clusterSizeThr
+  
+  # Find voxels in each depth bin and write their index in a list in a new column idx_voxels
+  df_idx <- df_idx %>%                  
+    mutate(D_bins = findInterval(D, seq(0, 1, by=1/nbin))) %>% arrange(JU,D_bins) %>%  # 4. assign voxels to bins
+    group_by(JU,D_bins) %>%             # 5. group by JU and bins, to have separate rows in the end
+    summarise(                          # 6. create a column where each cell has a list with the idx of sig voxels
+      idx_voxels = list(idx),
+      .groups = "drop"
+    )
+
+  return(df_idx)
+}
+
+
+# # ------------- unit test ------------------
+# zthr <- 2.3            # in the ISC results this will likely be a 0/1 logical
+# nbin <- 10              # define numba of bins
+# clusterSizeThr <- 50   # we don't want to consider JU ROIs with only 2 >zthr voxels
+# 
+# df_taskrun_contrast <- df %>% filter(sub == "sub_02", task == 4, run == 1, contrast == "Scrambled")
+# 
+# nii_list <- load_images(df_taskrun_contrast)
+# df_idx <- get_idx_voxels(zthr, nbin, clusterSizeThr, nii_list$Z_nii, nii_list$D_nii, nii_list$JU_nii)
+# df_idx
+
+```
+
+
+
+## Getting idx_voxels (3) : Combine the two functions above
+
+Combine `load_images()` and `get_idx_voxels()` into a fn that can be used within `mutate`
+
+```{r}
+
+# function to load files and extract idx_voxels
+get_IDX_per_muvi <- function(df_taskrun_contrast) {
+  print(df_taskrun_contrast)
+  nii_list <- load_images(df_taskrun_contrast)
+  df_idx <- get_idx_voxels(zthr, nbin, clusterSizeThr,nii_list$Z_nii, nii_list$D_nii, nii_list$JU_nii)
+  return(df_idx)
+}
+
+
+# # ----------- unit test --------------
+# test_df <- df %>% filter(sub == "sub_02", task == 4, run == 1) %>%
+#   nest_by(contrast) %>% rename(data_contrast = data) %>%         # 1. process the two contrasts separately
+#   mutate(shebang = list( get_IDX_per_muvi(data_contrast)) ) %>%  # 2. get the tc for each contrast/JU/bin
+#   unnest(data_contrast) %>%                                      # 3. unnest the two contrasts
+#   unnest(shebang)                                                # 4. idx_voxels for each (movie/contrast)/JU/bin
+# 
+# test_df
+
+```
+
+
+
+
+
+## Function to extract the mean TC given fmri2D, idx, start_TR and end_TR
+
+```{r}
+
+get_mean_tc <- function(fmri2D, idx_voxels, start_TR, end_TR) {
+
+  zscore <- function(x, na.rm = T) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
+      
+  idx <- unlist(idx_voxels)
+  tcs_at_idx_voxels <- fmri2D[idx, start_TR : (end_TR-1)]
+  
+  # in case there is only one voxels in that bin, we cannot take the mean
+  # but we can still standardize
+  if(length(idx) > 1) {
+    tcs_mean <- apply(tcs_at_idx_voxels, MARGIN = 2, mean) %>% zscore()    
+  } else {
+    tcs_mean <- tcs_at_idx_voxels %>% zscore()
+  }
+  
+  return(tcs_mean)
+}
+
+
+# # --------- unit test -------------
+# test_df <- df %>% filter(sub == "sub_02", task == 1, run == 1) %>%
+#   nest_by(contrast) %>% rename(data_contrast = data) %>%         # 1. process the two contrasts separately
+#   mutate(shebang = list( get_IDX_per_muvi(data_contrast)) ) %>%  # 2. get the tc for each contrast/JU/bin
+#   unnest(data_contrast) %>%                                      # 3. unnest the two contrasts
+#   unnest(shebang)                                                # 4. idx_voxels for each (movie/contrast)/JU/bin
+# 
+# # to double check that rowwise is doing its job properly, we can manually calculate the mean tc
+# # for one row and compare it with the corresponding row of test_df
+# numbarow <- 265
+# mini <- test_df[numbarow,] 
+# 
+# mini <- mini %>%
+#   mutate(tc_mean = list(get_mean_tc(nii_list$fmri2D, idx_voxels, start_TR, end_TR)) )
+# 
+# test_df <- test_df %>% 
+#   rowwise() %>% 
+#   mutate(tc_mean = list(get_mean_tc(nii_list$fmri2D, idx_voxels, start_TR, end_TR)) )
+# 
+# par(mfrow=c(1,2))
+# mini$tc_mean %>% unlist() %>%  plot(type='l')
+# test_df$tc_mean[[numbarow]] %>% unlist() %>% plot(type='l')
+
+
+```
+
+
+
+## Main function for one subject and one taskrun
+
+```{r}
+
+
+# I need to load the fmri4D again since I need it for the calculation of the mean_tc
+load_fmri <- function(df_taskrun) {
+  # create a list containing the parameters to load the images
+  this <- df_taskrun[1,] %>% as.list() 
+  paste(this$sub, " task ", this$task, " run ", this$run) %>% print()
+  
+  # fmri4D for this taskrun
+  fmri4D_file <- paste0(regdatadir,"/",this$sub,"/", this$ses,"/func/task_",this$task,"_run_", this$run,"_4D.nii.gz") 
+  fmri4D <- fmri4D_file %>% readNifti()
+  
+  fmri2D <- matrix(fmri4D, nrow = prod(dim(fmri4D)[1:3]), ncol = dim(fmri4D)[4])
+  return(list(fmri2D = fmri2D, fmri4D_file = fmri4D_file))
+}
+
+
+# Main function for one subject and one taskrun
+DO_TASKRUN <- function(df_taskrun) {
+  
+  df_results <- df_taskrun %>%
+  nest_by(contrast) %>% rename(data_contrast = data) %>%               # 1. process the two contrasts separately
+  mutate(shebang = list( get_IDX_per_muvi(data_contrast)) ) %>%        # 2. get idx for each contrast/JU/bin (same for all muvis)
+  unnest(data_contrast) %>%         # 3. unnest the two contrasts
+  unnest(shebang) %>%               # 4. idx_voxels for each (movie/contrast)/JU/bin
+  {
+    fmri = load_fmri(.)             # 5. store the fmri2D (and the filename) which is needed for get_mean_tc()
+    rowwise(.) %>% 
+      mutate(fmri4D_file = fmri$fmri4D_file) %>% 
+      mutate(tc_mean = list(get_mean_tc(fmri$fmri2D, idx_voxels, start_TR, end_TR)) )
+  } 
+  
+  return(df_results)
+}
+
+
+# # ------------ unit test ---------------------------
+# 
+# zthr <- 2.3            # in the ISC results this will likely be a 0/1 logical
+# nbin <- 10              # define numba of bins
+# clusterSizeThr <- 50   # we don't want to consider JU ROIs with only 2 >zthr voxels
+# 
+# df_taskrun <- df %>% filter(sub == "sub_02", task == 1, run == 1)
+# pf <- DO_TASKRUN(df_taskrun)
+
+```
+
+
+
+## Map across taskrun
+```{r}
+
+zthr <- 2.3            # in the ISC results this will likely be a 0/1 logical
+nbin <- 10              # define numba of bins
+clusterSizeThr <- 50   # we don't want to consider JU ROIs with only 2 >zthr voxels
+
+tic()
+
+pf <- df %>% 
+  filter(sub == "sub_02") %>% 
+  group_by(task,run) %>% group_split() %>% 
+  map( ~ .x %>% DO_TASKRUN) %>% 
+  bind_rows()
+
+toc()
+
+pf 
+
+```
+
+
+## For the sake of it, let's try to Map it also across subjects
+```{r}
+
+zthr <- 2.3            # in the ISC results this will likely be a 0/1 logical
+nbin <- 10              # define numba of bins
+clusterSizeThr <- 50   # we don't want to consider JU ROIs with only 2 >zthr voxels
+
+# df_sub = df %>% filter(sub %in% c("sub_02","sub_03"))
+
+tic()
+
+pf <- df %>% 
+  group_by(sub,task,run) %>% group_split() %>% 
+  map( ~ .x %>% DO_TASKRUN) %>% 
+  bind_rows()
+
+toc()
+
+# pf
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Just to estimate how big this crap is
+```{r}
+
+shebang <- tibble(
+  taskrun = c("task1_run1","task1_run2",
+              "task2_run1","task2_run2",
+              "task3_run1","task3_run2",
+              "task4_run1","task4_run2")
+) %>% 
+  mutate(contrast = list(c("thresh_zstat1","thresh_zstat2"))) %>% unnest(contrast) %>% 
+  mutate(movie = list(map_chr(1:10, ~ paste("movie_", .x))) ) %>% unnest(movie) %>% 
+  mutate(JU = list(map_chr(1:5, ~ paste("BA_", .x)  ))) %>%  unnest(JU) %>% 
+  mutate(bin = list(1:10)) %>% unnest(bin)
+
+shebang
+
+library(collapsibleTree)
+collapsibleTree(shebang, c("taskrun","contrast","movie","JU","bin"), collapsed = T, zoomable = F)
+
+
+```
+
+
+
+
+
+
+
+
+## Garbage collector
+```{r}
+
+# Quick plot of all/mean tcs for a given bin
+apply(idx_tcs, MARGIN = 2, mean) %>% plot(type='l')
+
+zscore <- function(x, na.rm = T) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
+
+
+library(tibble)
+idx_tcs %>% t() %>% as.tibble() %>%
+  mutate_all(zscore) %>% 
+  mutate(time = 1:nrow(.)) %>%
+  pivot_longer(cols = starts_with("V"), names_to = "vox", values_to = "intensity") %>%
+  arrange(vox) %>% 
+  ggplot() +
+    geom_line(aes(x = time, y = intensity, color = vox))
+
+
+
+```
+
+
+
+
+## Prepare df to receive the mean time courses for each bin (OLE, not needed)
+We need to get for each muvi one mean time course for each bin of each JU ROI. We could do it by nesting lists, but it would probably be very complex and not easy to read (as well as write to csv).
+
+The easiest way is to use a trick: we prepare for each movie nJU*nbin rows, where nJU is the numba of JU ROIs where there are sig voxels, and nbin is the number of bins. 
+
+The magic is done by creating a new column filled with lists, and then unnesting it. This has to be done (1) for the bins and (2) for the JU ROI **in this order!** since there are nbins for each JU ROI.
+
+Now for the really cool bit: of course there are _not_ sig voxels in all ROIs. Just after we create the extra rows in df, we will retain only those in which there are sig voxels using the info from df_idx!
+
+```{r}
+
+# read the table with the names of JU ROI and remove WM regions
+julabels <- read.csv("labels_juelich.csv", stringsAsFactors = F) %>% 
+  mutate(name = str_replace(name,"['-/]","")) %>%    # get rid of special chars
+  mutate(numba = index + 1) %>%
+  filter(grepl("GM", name)) %>% 
+  select(-index)
+
+
+df_BIG <- df %>% 
+  mutate(bin = list(1:nbin)) %>% 
+  unnest(bin) %>% 
+  mutate(JU = list(julabels)) %>%
+  unnest(JU) %>% 
+  rename(JU_name = name, JU_numba = numba) %>% 
+  relocate(bin, JU_numba, muvi)
+
+# create an index of JU ROIs where there are sig voxels, to retain only the necessary
+# rows in df_BIG
+sig_JU <- df_idx %>% distinct(JU) %>% pull()
+
+df_BIG <- df_BIG %>% 
+  filter(JU_numba %in% sig_JU) %>% 
+  arrange(JU_numba)
+
+df_BIG
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
