@@ -1,0 +1,180 @@
+---
+title: "Fixing the presentation log file"
+author: "Leonardo Cerliani"
+date: '`r paste("Created on March 2, 2021. Last Update on", Sys.Date())`'
+output: 
+  html_document:
+    code_folding: hide
+---
+
+## The problem: movies with `end_TR` logged **after** the end of the fmri4D acquisition
+
+The `end_TR` of some movies goes beyond the number of volumes in the actual fMRI4D. This does not happen in all cases.
+
+This problem is sneaky since the `end_TR` is always consistent with the `total_TR` in the log file, however there is a discrepancy between the `total_TR` and the actual number of volumes in the fMRI4D nifti file (as read from the actual nifti files).
+
+As a result, the code which should extract the time courses for each movie by looking at the `start_TR` and `end_TR` sometimes breaks with a typical `index exceeds dimensions`.
+
+```
+movie_time_course = fmri4D[idx_voxels, start_TR : (end_TR - 1)]
+```
+
+Ritu reports that this is due to the fact that the presentation log kept recording after the stimuli presentation was terminated, into the following sequence, which is a 5 volumes top-up sequence. Indeed the difference between the numba of volumes and the `total_TR` in the log - when there is one - is always 5 volumes.
+
+I will fix in the following way: 
+
+1. After reading the original `log_summary.csv` I will use `fslr` to read the header of each fMRI4D file, extract the numba of volumes  and send it to a new column `dim4`. 
+2. I will then check `ifelse` the `end_TR` of any video is bigger than `dim4`, and in this case set it to `dim4`.
+3. Finally I will write a new `log_summary_FIXED.csv` which will be used for the time courses extraction.
+
+```{r, message=F, warning=F}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(stringr)
+library(tictoc)
+library(kableExtra)
+library(DT)
+
+library(fslr)
+get.fsloutput()
+get.fsl()
+
+# Immutable parameters
+gitdir <- "/data00/layerfMRI/Github_repo/"
+bd <- paste0(gitdir,"layerfMRI/analyses/dual_ISC/")
+regdatadir <- "/data00/layerfMRI/regdata/"
+depthdatadir <- paste0(bd, "/data_native/")
+
+
+df <- read.csv("log_summary.csv") %>% 
+  arrange(subject,session,task,run) %>% 
+  select(-c(Trial,Event.Type,Time,NMov)) %>% 
+  mutate(sub = sprintf("sub_%02d",subject) ) %>%
+  select(-subject) %>% 
+  mutate(ses = sprintf("ses_%02d", session) ) %>% 
+  select(-session) %>% 
+  mutate(contrast = ifelse(Type == "M", "Motion", "Scrambled") ) %>% 
+  mutate(contrast_file = ifelse(Type == "M", "thresh_zstat1.nii.gz", "thresh_zstat2.nii.gz") ) %>% 
+  select(-c(Type) ) %>% 
+  rename(muvi = Title) %>% 
+  relocate(sub, ses, task, run, muvi, start_TR, end_TR, contrast, contrast_file)
+
+```
+
+
+## 1. Display the issue
+You can see the problem in the table below, because `dim4` is higher than `end_TR` in some movies.
+NB: `sub_08` has been removed.
+```{r}
+# function to get the dim4 of the fmri4D without loading them - to be passed to the map below
+get_fmri4D_dim4 <- function(df_sub_taskrun) {
+  this <- df_sub_taskrun[1,] %>% as.list()
+  fmri4D_file <- paste0(regdatadir,"/",this$sub,"/", 
+                        this$ses,"/func/task_",this$task,"_run_", this$run,"_4D.nii.gz")
+  dim4_info_raw <- fslr::fslhd(fmri4D_file, verbose = F)[9]
+  dim4_info <- str_split(dim4_info_raw,"\t")[[1]] %>% tail(1) %>% as.numeric()
+  df_sub_taskrun %>% mutate(dim4 = dim4_info)
+}
+
+# get the dim4 as a new column
+pf <- df %>% 
+  group_by(sub,task,run) %>% 
+  group_split() %>% 
+  map(~ .x %>% get_fmri4D_dim4) %>% 
+  bind_rows()
+
+
+# you can see the problem here, because the dim4 is higher than the end_TR in some movies
+pf %>% 
+  mutate(dim4 = as.numeric(dim4)) %>% 
+  filter(end_TR > dim4) %>% 
+  filter(sub != "sub_08") %>%
+  mutate(diff_end_dim4 = dim4 - end_TR) %>% 
+  relocate(dim4, .after = total_TR) %>% 
+  relocate(Duration, .after = muvi) %>% 
+  select(-c(contrast,contrast_file)) %>% 
+  datatable() %>% 
+  formatStyle(
+    c("end_TR","total_TR","dim4"), backgroundColor = "#F3F6A2"
+  )
+
+
+
+
+
+```
+
+
+
+## 2. Fixing the issue
+
+```{r}
+
+# fixing the issue
+
+pf %>%
+  filter(sub != "sub_08") %>%
+  mutate(end_TR_new = ifelse(end_TR > dim4, dim4, end_TR) ) %>%  # here's the fix
+  relocate(end_TR_new, .after=end_TR) %>%
+  filter(end_TR > dim4) %>%
+  select(-c(contrast, contrast_file,Duration)) %>% 
+  datatable() %>% 
+  formatStyle(
+    c("end_TR","total_TR","dim4"), backgroundColor = "#F3F6A2"
+  )
+
+
+```
+
+
+## 3. Saving a new `log_summary_FIXED.csv` file
+And since I'm in at, I will also filter out `sub_08`
+
+```{r}
+
+df_FIXED <- pf %>%
+  filter(sub != "sub_08") %>%
+  mutate(end_TR_new = ifelse(end_TR > dim4, dim4, end_TR) ) %>%  # here's the fix
+  relocate(end_TR_new, .after=end_TR) %>%
+  mutate(end_TR = end_TR_new) %>% 
+  # mutate(diffTR = end_TR - end_TR_new) # just to check that is 0 everywhere
+  # mutate(PROBLEM = ifelse( (dim4 - end_TR) < 0, "PROBLEM", NA ) ) %>%  another check
+  select(-end_TR_new) %>%   # now we can remove it and leave only end_TR
+  select(-c(total_TR, Duration) )  # rm as inconsistent with dim4 thus confusing
+  
+  
+df_FIXED %>% write.csv("log_summary_FIXED.csv", row.names = F)
+
+
+read.csv("log_summary_FIXED.csv", stringsAsFactors = F) %>% datatable()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
