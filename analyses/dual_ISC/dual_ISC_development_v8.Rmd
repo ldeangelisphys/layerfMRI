@@ -1,10 +1,16 @@
 ---
-title: "Dual ISC development v7 - a big love purrring nest"
+title: "Dual ISC development v8 - a big love purrring nest"
 subtitle: "Modified to load the results of first ISC bin maps instead of native GLM Z maps"
 output: 
   html_document:
     code_folding: hide
 ---
+
+## Important update wrt v7
+Due to transformation in native space, the the intersection between the ISC significant blovs and JU regions can have different size in different runs within a sub (or across subs). Since different movies are presented in different runs, this might lead to lose the time course of some movies in some JU ROIs, as the size of the intersection between JU and ISC sig might fall under the `clusterThrSize`. 
+
+For this reason, we only retain JUs featuring all the `nbins` where all 36 movies are present, 
+
 
 ## Analytic strategy
 We aim to carry out an dual Inter-Subject Correlation (ISC) for each cortical depth bin and Juelich regions (JU ROIs) across all subjects.
@@ -58,13 +64,13 @@ options(digits = 3)
 
 
 # : choose here which ISC flavour you want
-ISC_flavour <- "ANOVA_M_S"   # can be "M_OR_S" or "ANOVA_M_S" 
+ISC_flavour <- "M_OR_S"   # can be "M_OR_S" or "ANOVA_M_S" 
 
 # Make sure there is no similar assignmens in any of the following cells! (i.e that
 # all unit tests are commented)
 zthr <- 0            # in the ISC results this is just > 0 since we use binary maps
-nbin <- 6             # define numba of bins
-clusterSizeThr <- 10   # we don't want to consider JU ROIs with only 2 >zthr voxels
+nbin <- 10             # define numba of bins
+clusterSizeThr <- 200   # we don't want to consider JU ROIs with only 2 >zthr voxels
                         # M_OR_S thr : 100; ANOVA_M_S thr : 10
 
 
@@ -449,7 +455,7 @@ Check the available RAM before adding more workers.
 
 
 library(furrr)
-plan("multisession", workers=30)
+plan("multisession", workers=40)
 
 tic()
 
@@ -464,6 +470,31 @@ toc()
 plan(sequential)
 
 # pf 
+
+```
+
+
+## some checks
+```{r, eval=F, include=F}
+
+# grab the lengt of each time course
+ppf <- pf %>% 
+  select(-c(start_TR, end_TR, dim4, ISC_flavour, fmri4D_file, idx_voxels)) %>% 
+  rowwise() %>%
+  mutate(tc_length = tc_mean %>% unlist() %>% length())
+
+# show muvis which have sometimes different length
+ppf %>% 
+  group_by(muvi) %>% 
+  distinct(tc_length) %>% 
+  group_by(muvi) %>% 
+  mutate(n_different_duration = n()) %>% 
+  filter(n_different_duration > 1) %>%
+  group_split()
+
+
+dfnu <- read.csv("/data00/layerfMRI/logs/log_summary.csv", stringsAsFactors = F)
+
 
 ```
 
@@ -484,9 +515,9 @@ This basically leads to a great mess.
 
 - are present in all subs
 - have all the requested bins (e.g 10)
-- JUs in which there are tc for all muvis in all bins
+- there are tc for all muvis in all bins
 
-
+**NB**: in ANOVA_M_S there is no single JU ROI for which there are time courses for all nbins, for all subs, for all muvis. The max amount of sub satisfying muvis=36 for each bin in **any** JU ROI is n_sub=2(nbin=10) or 3(nbin=4/6)
 ```{r}
 
 # criteria to select rows (besides nbin)
@@ -495,36 +526,87 @@ numba_sub <- df %>% distinct(sub) %>% count() %>% pull()
 
 
 pf_homogeneous <- pf %>% 
-  group_by(JU, muvi) %>% 
+  # retain all sub, muvi, JU for which there are all bins
+  group_by(sub, muvi, JU) %>% 
   mutate(n_bins = n_distinct(D_bins)) %>% 
-  filter(n_bins == nbin) %>%   # keep only JU with 10 bins
+  filter(n_bins == nbin) %>%   # keep only JU with nbin bins
   ungroup() %>% 
-  group_by(JU, D_bins) %>% 
+  
+  # retain all sub, JU, D_bins=10 for which there are tcs for all muvis
+  group_by(sub, JU, D_bins) %>% 
   mutate(n_muvis = n_distinct(muvi)) %>% 
   filter(n_muvis == numba_muvis) %>%  # keep only JU with 36 movies 
   ungroup() %>% 
-  group_by(JU, muvi, contrast) %>% 
+  
+  # retain all muvi=36, JU, D_bins=10 for which there are all subs
+  group_by(muvi, JU, D_bins) %>% 
   mutate(n_sub = n_distinct(sub)) %>% 
   filter(n_sub == numba_sub) %>% # keep only JU with all 9 subs
-  ungroup() 
+  ungroup()
+
+
+
+# ------------------------- Testing -------------------------------------------
+
+# the following is for testing the correct intersection across sub / muvi / JU / D_bins
+pf %>% 
+  
+  # initial selection ONLY for testing: COMMENT WHEN WRITING THE CSV
+  select(-c(start_TR, end_TR, task, run, ExpectedDuration, dim4, ISC_flavour,
+            idx_voxels, fmri4D_file, ses, tc_mean)) %>%
+  
+  # retain all sub, muvi, JU for which there are all bins
+  group_by(sub, muvi, JU) %>% 
+  mutate(n_bins = n_distinct(D_bins)) %>% 
+  filter(n_bins == nbin) %>%   # keep only JU with nbin bins
+  ungroup() %>% 
+  
+  # retain all sub, JU, D_bins=10 for which there are tcs for all muvis
+  group_by(sub, JU, D_bins) %>% 
+  mutate(n_muvis = n_distinct(muvi)) %>% 
+  filter(n_muvis == numba_muvis) %>%  # keep only JU with 36 movies 
+  ungroup() %>% 
+  
+  # retain all muvi=36, JU, D_bins=10 for which there are all subs
+  group_by(muvi, JU, D_bins) %>% 
+  mutate(n_sub = n_distinct(sub)) %>% 
+  filter(n_sub == numba_sub) %>% # keep only JU with all 9 subs
+  ungroup() %>% 
+
+  # Verify the correct intersection by unnesting each new var at a time, e.g.:
+  # %>% unnest(which_JU)
+  # The intersection is correct if the number of list elements in the other
+  # columns remains the same for each unnested observation AND specifically:
+  # - the numba subs is always = 9
+  # - the numba of bins is always = nbin (e.g. 4,6 or 10)
+  # - the (min) numba of muvis is always = 36
+  summarise(
+    which_subs = list(unique(sub)),
+    min_numba_muvis = min(n_muvis),
+    which_bins = list(unique(D_bins)),
+    which_JU = list(unique(JU))
+  ) %>% 
+  unnest(which_JU)
 
 
 ```
 
 ## Unfold time courses and write the csv
+**NB**: There is a very sneaky issue with `paste`: in some cases there is a `\n` added at the end of the string, so I need to remove it manually.
 ```{r}
 
 # Unfold the tcs and write to csv
 filename_csv_2_write <- paste0(ISC_flavour,"_JU_time_courses_thr",clusterSizeThr,"_bin",nbin,".csv")
 
 pf_homogeneous %>%
-  mutate(tc_mean_unfolded = paste(tc_mean) ) %>%
+  mutate(tc_mean_unfolded = paste(tc_mean) %>% str_replace("\n","") ) %>%
   select(-c(idx_voxels, fmri4D_file, tc_mean)) %>%
   write.csv(filename_csv_2_write, row.names = F)
 
 pf_homogeneous %>% distinct(n_sub)
 pf_homogeneous %>% distinct(n_muvis)
 pf_homogeneous %>% distinct(n_bins)
+
 
 ```
 
@@ -533,6 +615,9 @@ pf_homogeneous %>% distinct(n_bins)
 
 ## Test reading the written csv in again
 ```{r, eval=F, include=F}
+
+filename_csv_2_write <- paste0(ISC_flavour,"_JU_time_courses_thr",clusterSizeThr,"_bin",nbin,".csv")
+
 df_written <- read.csv(filename_csv_2_write, stringsAsFactors = F)
 
 
@@ -547,7 +632,10 @@ df_written %>%
   group_by(JU) %>% group_split()
 
 
+
 ```
+
+
 
 
 ## Procedure to read the csv and convert back the char array to a list

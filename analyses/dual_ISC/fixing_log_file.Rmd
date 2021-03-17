@@ -47,7 +47,7 @@ regdatadir <- "/data00/layerfMRI/regdata/"
 depthdatadir <- paste0(bd, "/data_native/")
 
 
-df <- read.csv("log_summary.csv") %>% 
+df <- read.csv("log_summary.csv", stringsAsFactors = F) %>% 
   arrange(subject,session,task,run) %>% 
   select(-c(Trial,Event.Type,Time,NMov)) %>% 
   mutate(sub = sprintf("sub_%02d",subject) ) %>%
@@ -60,7 +60,15 @@ df <- read.csv("log_summary.csv") %>%
   rename(muvi = Title) %>% 
   relocate(sub, ses, task, run, muvi, start_TR, end_TR, contrast, contrast_file)
 
+
+# # just check the differences between Duration and ExpectedDuration
+# df %>% 
+#   rowwise() %>% 
+#   mutate(diffDuration = ifelse(Duration != ExpectedDuration, "poppa",NA)) %>% 
+#   filter(!is.na(diffDuration))
+
 ```
+
 
 
 ## 1. Display the issue
