@@ -71,8 +71,11 @@ nbin <- nrow(CC)
 
 
 # Prepare color palettes
-# display.brewer.pal(5,"Greens")
-FANTASIA <- brewer.pal(nbin, "Paired")
+
+# library(wesanderson)
+# FANTASIA <- wes_palette("Zissou1", 6, type = "continuous") 
+WES <- c("#78B7C5","#78B7C5", "#E1AF00","#E1AF00", "#F21A00","#F21A00")
+  
 REDS <- colorRampPalette(c(brewer.pal(5,"Reds")[2],brewer.pal(5,"Reds")[5]))
 GREENS <- colorRampPalette(c(brewer.pal(5,"Greens")[2],brewer.pal(5,"Greens")[5]))
 BLUES <- colorRampPalette(c(brewer.pal(5,"Blues")[2],brewer.pal(5,"Blues")[5]))
@@ -81,7 +84,7 @@ BLUES <- colorRampPalette(c(brewer.pal(5,"Blues")[2],brewer.pal(5,"Blues")[5]))
 # prepare link_colors by generating a named character that will be used as a lookup
 # https://www.infoworld.com/article/3323006/do-more-with-r-quick-lookup-tables-using-named-vectors.html
 # link_colors_lookup <- brewer.pal(dim(CC)[1],"Reds")
-link_colors_lookup <- FANTASIA
+link_colors_lookup <- WES
 names(link_colors_lookup) <- rownames(CC)
 link_colors <- map_chr(names(source), ~ link_colors_lookup[.x] %>% unname() %>% toRGB(alpha = 0.3))
 
@@ -90,16 +93,20 @@ x_pos <- c(rep(0,nbin),rep(1,nbin),rep(2,nbin))
 y_pos <- rep(seq(1:nbin),3)
 
 
-plot_ly(
+fig <- plot_ly(
   type = "sankey",
-  arrangement = "freedom", hoverinfo = "skip", 
+  domain = list(
+      x =  c(0,1),
+      y =  c(0,1)
+    ),
+  arrangement = "snap", hoverinfo = "skip", 
   textfont = list(family = "Arial"),
   orientation = "h",
   node = list(
     label = colnames(CC),
     x = x_pos/max(x_pos),
-    y = y_pos/max(y_pos),
-    color = c(FANTASIA, GREENS(nbin), BLUES(nbin)),
+    # y = y_pos/max(y_pos),
+    color = c(WES, WES, WES),
     pad = 5,
     thickness = 20
   ),
@@ -111,31 +118,21 @@ plot_ly(
   )
 )
 
+fig
+
 ```
 
 
-## sankey in B&W
-```{r}
-plot_ly(
-  type = "sankey",
-  arrangement = "freedom", hoverinfo = "skip", 
-  textfont = list(family = "Arial"),
-  orientation = "h",
-  node = list(
-    label = colnames(CC),
-    x = x_pos/max(x_pos),
-    y = y_pos/max(y_pos),
-    color = c(FANTASIA, GREENS(nbin), BLUES(nbin)),
-    pad = 5,
-    thickness = 20
-  ),
-  link = list(
-    source = source,
-    target = target,
-    value = CC[idx]
-    # color = link_colors
-  )
-)
-```
+
+
+
+
+
+
+
+
+
+
+
 
 
