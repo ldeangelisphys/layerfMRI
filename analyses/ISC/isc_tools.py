@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import pearsonr
 
 def r2numpy(rvec):
     
