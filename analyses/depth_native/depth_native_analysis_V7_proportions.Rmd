@@ -278,7 +278,7 @@ Practically, for each taskrun we `map` the following procedure:
 2. count the numba of sig voxels in each JU ROI, to be able to exclude ROIs with numba voxels < clusterSizeThr
 3. remove ROIs with numba voxels < clusterSizeThr 
 4. split the subtibble in many tibbles, each one for one JU ROI
-5. create a factor indexing the voxels in each cortical depth bin, e.g. [0..0.1], [0.11..0.2] ... [0.91..1]
+5. create a factor indexing the voxels in each cortical depth bin, e.g. [>0..0.1], [0.11..0.2] ... [0.91..1]
 6. group all the values (Z,D) by the bin they belong to
 7. calculate mean Z in each D bin
 8. calculate the proportion of activated voxels in each bin wrt to all other bins. **This is our desired metric of interest**. The final tibble of each ROI has N rows - one for each bin - and two columns for prop_Z and JU name.

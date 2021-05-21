@@ -7,7 +7,7 @@ output:
 ---
 
 ## Important update wrt v7
-Due to transformation in native space, the the intersection between the ISC significant blovs and JU regions can have different size in different runs within a sub (or across subs). Since different movies are presented in different runs, this might lead to lose the time course of some movies in some JU ROIs, as the size of the intersection between JU and ISC sig might fall under the `clusterThrSize`. 
+Due to transformation in native space, the intersection between the ISC significant blobs and JU regions can have different size in different runs within a sub (or across subs). Since different movies are presented in different runs, this might lead to lose the time course of some movies in some JU ROIs, as the size of the intersection between JU and ISC sig might fall under the `clusterThrSize`. 
 
 For this reason, we only retain JUs featuring all the `nbins` where all 36 movies are present, 
 
@@ -69,8 +69,8 @@ ISC_flavour <- "M_OR_S"   # can be "M_OR_S" or "ANOVA_M_S"
 # Make sure there is no similar assignmens in any of the following cells! (i.e that
 # all unit tests are commented)
 zthr <- 0            # in the ISC results this is just > 0 since we use binary maps
-nbin <- 10             # define numba of bins
-clusterSizeThr <- 200   # we don't want to consider JU ROIs with only 2 >zthr voxels
+nbin <- 6             # define numba of bins
+clusterSizeThr <- 100   # we don't want to consider JU ROIs with only 2 >zthr voxels
                         # M_OR_S thr : 100; ANOVA_M_S thr : 10
 
 
@@ -227,7 +227,7 @@ get_idx_voxels <- function(zthr, nbin, clusterSizeThr, Z_nii, D_nii, JU_nii) {
 # nbin <- 10              # define numba of bins
 # clusterSizeThr <- 100   # we don't want to consider JU ROIs with only 2 >zthr voxels
 # 
-# df_taskrun_contrast <- df %>% filter(sub == "sub_03", task == 1, run == 1, contrast == "Motion")
+# df_taskrun_contrast <- df %>% filter(sub == "sub_02", task == 1, run == 1, contrast == "Motion")
 # 
 # nii_list <- load_images(df_taskrun_contrast)
 # df_idx <- get_idx_voxels(zthr, nbin, clusterSizeThr, nii_list$Z_nii, nii_list$D_nii, nii_list$JU_nii)
@@ -327,7 +327,8 @@ get_mean_tc <- function(fmri2D, idx_voxels, start_TR, end_TR) {
 # par(mfrow=c(1,2))
 # mini$tc_mean %>% unlist() %>%  plot(type='l')
 # test_df$tc_mean[[numbarow]] %>% unlist() %>% plot(type='l')
-
+#
+# test_df %>% group_by(JU) %>% group_split()
 
 ```
 
@@ -389,7 +390,7 @@ DO_TASKRUN <- function(df_taskrun) {
 # df_taskrun <- df %>% filter(sub == "sub_05", task == 3, run == 2)
 # pf <- DO_TASKRUN(df_taskrun)
 # 
-# pf
+# pf %>% group_by(JU) %>% group_split()
 
 ```
 
@@ -423,8 +424,13 @@ DO_TASKRUN <- function(df_taskrun) {
 # plan(sequential)
 # 
 # 
+# 
+# # checking JUs
+# pf %>% group_by(JU) %>% group_split()
+# 
+# 
 # # checking numba movies
-# pf %>% 
+# pf %>%
 #   group_by(JU, D_bins) %>%
 #   summarise(
 #     typemov = n_distinct(muvi),
@@ -469,7 +475,7 @@ toc()
 # Explicitly end the parallel plan
 plan(sequential)
 
-# pf 
+# pf %>% group_by(JU) %>% group_split()
 
 ```
 
@@ -477,23 +483,23 @@ plan(sequential)
 ## some checks
 ```{r, eval=F, include=F}
 
-# grab the lengt of each time course
-ppf <- pf %>% 
-  select(-c(start_TR, end_TR, dim4, ISC_flavour, fmri4D_file, idx_voxels)) %>% 
-  rowwise() %>%
-  mutate(tc_length = tc_mean %>% unlist() %>% length())
-
-# show muvis which have sometimes different length
-ppf %>% 
-  group_by(muvi) %>% 
-  distinct(tc_length) %>% 
-  group_by(muvi) %>% 
-  mutate(n_different_duration = n()) %>% 
-  filter(n_different_duration > 1) %>%
-  group_split()
-
-
-dfnu <- read.csv("/data00/layerfMRI/logs/log_summary.csv", stringsAsFactors = F)
+# # grab the lengt of each time course
+# ppf <- pf %>% 
+#   select(-c(start_TR, end_TR, dim4, ISC_flavour, fmri4D_file, idx_voxels)) %>% 
+#   rowwise() %>%
+#   mutate(tc_length = tc_mean %>% unlist() %>% length())
+# 
+# # show muvis which have sometimes different length
+# ppf %>% 
+#   group_by(muvi) %>% 
+#   distinct(tc_length) %>% 
+#   group_by(muvi) %>% 
+#   mutate(n_different_duration = n()) %>% 
+#   filter(n_different_duration > 1) %>%
+#   group_split()
+# 
+# 
+# dfnu <- read.csv("/data00/layerfMRI/logs/log_summary.csv", stringsAsFactors = F)
 
 
 ```
@@ -541,7 +547,7 @@ pf_homogeneous <- pf %>%
   # retain all muvi=36, JU, D_bins=10 for which there are all subs
   group_by(muvi, JU, D_bins) %>% 
   mutate(n_sub = n_distinct(sub)) %>% 
-  filter(n_sub == numba_sub) %>% # keep only JU with all 9 subs
+  filter(n_sub >= (numba_sub-1) ) %>% # keep only JU with all 9 subs (edit: n_sub >= 8 for the occipital blob)
   ungroup()
 
 
@@ -553,7 +559,7 @@ pf %>%
   
   # initial selection ONLY for testing: COMMENT WHEN WRITING THE CSV
   select(-c(start_TR, end_TR, task, run, ExpectedDuration, dim4, ISC_flavour,
-            idx_voxels, fmri4D_file, ses, tc_mean)) %>%
+            idx_voxels, fmri4D_file, ses, tc_mean)) %>% 
   
   # retain all sub, muvi, JU for which there are all bins
   group_by(sub, muvi, JU) %>% 
@@ -565,13 +571,14 @@ pf %>%
   group_by(sub, JU, D_bins) %>% 
   mutate(n_muvis = n_distinct(muvi)) %>% 
   filter(n_muvis == numba_muvis) %>%  # keep only JU with 36 movies 
-  ungroup() %>% 
+  ungroup() %>%
   
   # retain all muvi=36, JU, D_bins=10 for which there are all subs
   group_by(muvi, JU, D_bins) %>% 
   mutate(n_sub = n_distinct(sub)) %>% 
-  filter(n_sub == numba_sub) %>% # keep only JU with all 9 subs
+  filter(n_sub >= (numba_sub-1) ) %>% # keep only JU with all 9 subs (edit: n_sub >= 8 for the occipital blob)
   ungroup() %>% 
+
 
   # Verify the correct intersection by unnesting each new var at a time, e.g.:
   # %>% unnest(which_JU)
@@ -586,7 +593,7 @@ pf %>%
     which_bins = list(unique(D_bins)),
     which_JU = list(unique(JU))
   ) %>% 
-  unnest(which_JU)
+  unnest(which_subs)
 
 
 ```
@@ -620,16 +627,17 @@ filename_csv_2_write <- paste0(ISC_flavour,"_JU_time_courses_thr",clusterSizeThr
 
 df_written <- read.csv(filename_csv_2_write, stringsAsFactors = F)
 
+df_written %>% group_by(JU) %>% group_split()
 
-df_written %>% 
-  arrange(sub, ses, task, run, muvi, JU, D_bins) %>% 
-  select(-c(tc_mean_unfolded, dim4, contrast))
-
-
-df_written %>% 
-  select(-c(tc_mean_unfolded, dim4, contrast)) %>% 
-  filter(sub == "sub_02", task == 1, run == 1, muvi == "M6cigaretteD.avi") %>% 
-  group_by(JU) %>% group_split()
+# df_written %>% 
+#   arrange(sub, ses, task, run, muvi, JU, D_bins) %>% 
+#   select(-c(tc_mean_unfolded, dim4, contrast))
+# 
+# 
+# df_written %>% 
+#   select(-c(tc_mean_unfolded, dim4, contrast)) %>% 
+#   filter(sub == "sub_02", task == 1, run == 1, muvi == "M6cigaretteD.avi") %>% 
+#   group_by(JU) %>% group_split()
 
 
 
@@ -675,7 +683,6 @@ behemot <- tibble(
 collapsibleTree(behemot, c("taskrun","contrast","movie","JU","bin"), collapsed = T, zoomable = F)
 
 ```
-
 
 
 

@@ -97,8 +97,11 @@ server <- function(input, output) {
     nbin <- nrow(CC)
     
     # Prepare color palettes
-    # display.brewer.pal(5,"Greens")
-    FANTASIA <- brewer.pal(nbin, "Paired")
+    
+    # The one below is inspired to the library(wesanderson)
+    # palette: wes_palette("Zissou1", 6, type = "continuous") 
+    WES <- c("#78B7C5","#78B7C5", "#E1AF00","#E1AF00", "#F21A00","#F21A00")
+    
     REDS <- colorRampPalette(c(brewer.pal(5,"Reds")[2],brewer.pal(5,"Reds")[5]))
     GREENS <- colorRampPalette(c(brewer.pal(5,"Greens")[2],brewer.pal(5,"Greens")[5]))
     BLUES <- colorRampPalette(c(brewer.pal(5,"Blues")[2],brewer.pal(5,"Blues")[5]))
@@ -106,7 +109,7 @@ server <- function(input, output) {
     # prepare link_colors by generating a named character that will be used as a lookup
     # https://www.infoworld.com/article/3323006/do-more-with-r-quick-lookup-tables-using-named-vectors.html
     # link_colors_lookup <- brewer.pal(dim(CC)[1],"Reds")
-    link_colors_lookup <- FANTASIA
+    link_colors_lookup <- WES
     names(link_colors_lookup) <- rownames(CC)
     link_colors <- map_chr(names(source), ~ link_colors_lookup[.x] %>% unname() %>% toRGB(alpha = 0.3))
     
@@ -122,7 +125,7 @@ server <- function(input, output) {
         label = colnames(CC),
         x = x_pos/max(x_pos),
         y = y_pos/max(y_pos),
-        color = c(FANTASIA, GREENS(nbin), BLUES(nbin)),
+        color = c(WES, WES, WES),
         pad = 5,
         thickness = 20
       ),
