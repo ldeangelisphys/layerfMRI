@@ -1,11 +1,18 @@
 # T1w and T1map estimation from MP2RAGE scans
 _Leonardo Cerliani, november 2020_
 
+```
+source:       /data01/layerfMRI/rawdata_RPI/
+destination:  /data01/layerfMRI/rawdata_RPI/
+```
 
-The process is launched with `./launch_MP2RAGE_reconstruction.sh`.
+The process is launched with `./launch_MP2RAGE_reconstruction.sh`, which contains also a list of SUB_ID as a bash array.
 
-This calls parallel instances of `do_MP2RAGE_reconstruction.py` to process all participants.
+The launcher calls parallel instances of `do_MP2RAGE_reconstruction.py` to process all participants.
+
 Calling `python do_MP2RAGE_reconstruction.py` by itself will provide usage information.
+
+This script uses `nighres.intensity.mp2rage_t1_mapping`.
 
 **ETA is about 1 minute**
 

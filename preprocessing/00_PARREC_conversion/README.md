@@ -1,7 +1,13 @@
 # PAR/REC conversion and reorienting to RPI
 _Leonardo Cerliani, november 2020_
 
+```
+source:       /data01/layerfMRI/PARREC/2018_7T_14sub_raw
+destination:  /data01/layerfMRI/rawdata_RPI/sub_${sub}
+```
+
 `do_PARREC_conversion.sh` : carries out the conversion from PAR/REC format to compressed nifti (nii.gz) and reorient the images to RPI
+
 `list` : is a text file with the id of the participants to process
 
 The `do_PARREC_conversion.sh` script is generally not called directly, but rather in parallel for all subjects using:

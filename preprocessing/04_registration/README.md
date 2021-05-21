@@ -1,20 +1,28 @@
 # ANTsPy Registration
 _Leonardo Cerliani, november 2020_
 
+```
+source:       /data00/layerfMRI/regdata/
+destination:  /data00/layerfMRI/regdata/
+```
+
 ## 01. Estimate transformations
 `do_estimate_transformation.py` : carries out estimation of the alignment between each `fmri[session][taskrun]` and the MNI 1mm, in the following order:
 
 ```
-fmri <-- part_anat <-- full_anat <-- MNI
+MNI <-- full anat <-- part anat <-- fmri
 ```
+
+**NB: everything related to registration with ANTs should be read from right to left,** e.g. `MNI_fmri` indicates a transformation `fmri --> MNI`
 
 `launch_do_estimate_transformation.sh` : launches N processes of `do_estimate_transformation.py` in parallel to process all subjects. The number of threads used by ANTs can be chosen as an argument of `do_estimate_transformation.py`
 
-Overlays of registration results are produced in the `/registration.html` file of each subject's QC directory.
+The single-stage as well as composite transformations are saved in `/data00/layerfMRI/regdata/sub_[SUB_ID]/reg`
+
+Overlays of registration results are produced in the `/registration.html` file of each subject's QC directory
 
 __ETA is about 30' with 5 threads per subject__
 
----
 
 ## 02. Apply `fmri <-- MNI` transformations
 `do_apply_transformation.py` : applies the MNI_fmri transformation estimated in the script above

@@ -1,6 +1,10 @@
 # Basic fMRI preprocessing (realignment, detrending)
 _Leonardo Cerliani, december 2020_
 
+```
+source:       /data01/layerfMRI/rawdata_RPI/
+destination:  /data00/layerfMRI/regdata/
+```
 
 `do_basic_processing.sh` : carries out realignment and detrending of the raw images for one subject. Run it alone to have information about the parameters
 
@@ -9,8 +13,6 @@ _Leonardo Cerliani, december 2020_
 __Note__: the raw data is in `/data01/layerfMRI/rawdata_RPI`, where the report html with estimated movement parameters will be found, e.g. `sub_02_ses_01_task_1_run_1.feat/report.html`
 
 The preprocessed 4D is instead in `/data00/layerfMRI/regdata`
-
----
 
 <details>
 <summary>Example output:</summary>
