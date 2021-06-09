@@ -285,8 +285,8 @@ def plot_export_isc(cdf,input_file,method):
 
     fig.suptitle('')
 
-    plt.savefig(input_file.replace(method,f'RESULTS/{method}').replace('.csv','_isc.png'), dpi = 300)
-    cdf.to_csv(input_file.replace(method,f'RESULTS/{method}').replace('.csv','_isc.csv'))
+    plt.savefig(input_file.replace('.csv','_isc.png'), dpi = 300)
+    cdf.to_csv(input_file.replace('.csv','_isc.csv'))
     
     return
 
