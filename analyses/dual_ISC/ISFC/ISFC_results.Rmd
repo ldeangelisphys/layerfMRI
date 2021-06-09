@@ -41,8 +41,22 @@ colnames(CC) <- R2_names
   CC %>% plot(asp=T, digits=2, col=brewer.pal(9,"Reds"), key=NULL)
 # )
 
+  
 
 ```
+
+
+
+```{r}
+CC %>% plot(
+  asp=T, digits=2, col=brewer.pal(9,"Reds"), key=NULL,
+  axis.col = list(side=1, las=2),
+  axis.row = list(side=2, las=1),
+  axis.key = NULL
+)
+
+```
+
 
 
 ## Draw the sankey

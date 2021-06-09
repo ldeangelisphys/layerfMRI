@@ -166,7 +166,20 @@ draw_CC <- function(R1, R2) {
   rownames(CC) <- R1_names
   colnames(CC) <- R2_names
   
-  CC %>% plot(asp=T, digits=2, col=brewer.pal(9,"Reds"), key=NULL)
+  # # digits inside and no colorbar
+  # CC %>% plot(
+  #   asp=T, digits=2, col=brewer.pal(9,"Reds"), key=NULL,
+  #   axis.col = list(side=1, las=2),
+  #   axis.row = list(side=2, las=1)
+  # )
+  
+  # no digits and colorbar
+  CC %>% plot(
+    asp=T, col=brewer.pal(9,"Reds"),
+    axis.col = list(side=1, las=2),
+    axis.row = list(side=2, las=1)
+  )
+  
 }
 
 

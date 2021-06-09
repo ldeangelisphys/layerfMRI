@@ -1,0 +1,354 @@
+---
+title: "dual ISC results"
+subtitle: "Results of the comparison between Scrambled and Motion from the second ISC"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+## Analytic strategy
+We aim to carry out an dual Inter-Subject Correlation (ISC) for each cortical depth bin and Juelich regions (JU ROIs) across all subjects.
+
+**The first ISC** is carried out in the MNI space, after super-smoothing the data to with a 6mm FWHM gaussian kernel (8 times the original voxel size). This ISC is intended to provide localizers of brain activity in either conditions. To this aim, either (1) the union of Motion and Scrambled thresholded Zmaps (`M_OR_S`), or (2) the one-way anova between Motion and Scrambled is used (`ANOVA_M_S`).
+
+Note that we still need to define a threshold for the number of voxels to consider as interesting for each JU ROI (`clusterSizeThr`), since we don't want to consider time courses from a region where e.g. only 2 voxels out of 1000 were deemed as active.
+
+With respect to this, note also that the blobs in the `M_OR_S` map are (evidently) much bigger than those in the `ANOVA_M_S`, therefore these `clusterSizeThr` need to be different. Specifically:
+
+- `M_OR_S : clusterSizeThr >= 100 voxels`
+- `ANOVA_M_S : clusterSizeThr = 10-20 voxels max`
+
+Given the very small amount of voxels active in the `ANOVA_M_S`, and given that this was estimated on supersmoothed data, I wouldn't trust too much this modality.
+
+**The purpose of the previous notebook (`dual_ISC_development_v[N].Rmd`) was to prepare the data for the second ISC**. It returns a single (quite big) csv file with colums for all the variables above, and one column `tc_mean_unfolded` containing the mean time course - stored as character vector - for that bin/JU/movie/task/run/subject. 
+
+The original ETA is ~ 30 minutes, however by parallelising with `purrr` we can get down to ~ 2.5 minutes. This is achieved by using 30 workers which require ~ 150 GB of RAM. Make sure you have enough free RAM on the system at the present time before adding too many workers. 
+
+
+**The second ISC** took as input the time courses extracted from the **_unsmoothed_** fmri data with the following level of granularity:
+
+- for each cortical depth bin (user-defined `nbin` below)
+- for each JU ROI (N sig after `clusterSizeThr` out of ~100 JU ROIs)
+- for each movie (18 Motion and 18 Scrambled)
+- for each task (ntask = 4) and run (nrun = 2 for each task)
+- for each subject (currently 9)
+
+
+## Read csv of ISC results and prepare the environment
+The input are the ISC parameter estimates obtained for each bin of each JU region in each sub, prepared by Lorenzo.
+
+
+```{r load-libs, message=F}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(stringr)
+library(ggplot2)
+library(ggthemes)
+library(kableExtra)
+library(DT)
+options(digits = 3)
+
+# -------------------------- User-defined parameters --------------------------
+
+# : choose here which ISC flavour you want
+ISC_flavour <- "M_OR_S"   # can be "M_OR_S" or "ANOVA_M_S" 
+nbin <- 6                 # check the file names in the results_dir folder, e.g 10
+clusterSizeThr <- 100
+
+# -------------------------- End of User-defined parameters -------------------
+
+# Immutable parameters
+gitdir <- "/data00/layerfMRI/Github_repo/"
+bd <- paste0(gitdir,"layerfMRI/analyses/dual_ISC/")
+results_dir <- paste0(bd,'/RESULTS_ISC')
+
+# read the table with the names of JU ROI and remove WM regions
+julabels <- read.csv("labels_juelich.csv", stringsAsFactors = F) %>% 
+  mutate(name = str_replace(name,"['-/]","")) %>%    # get rid of special chars
+  mutate(numba = index + 1) %>%
+  filter(grepl("GM", name)) %>% 
+  select(-index)
+
+
+# build filename of the ISC results based on the user-defined parameters
+lorenzo_results_csv <- paste0(
+  results_dir,"/",
+  ISC_flavour,"_JU_time_courses_thr",
+  clusterSizeThr,"_bin", 
+  nbin, "_isc.csv"
+)
+
+ISC_estimates <- read.csv(lorenzo_results_csv,stringsAsFactors = F)
+
+
+# ISC_estimates %>% group_by(JU) %>% group_split()
+
+
+```
+
+
+
+
+## Test Motion > Scrambled
+Separately for each bin of each JU region
+
+```{r t-test, message=F}
+
+ISC_estimates_nest <- ISC_estimates %>% 
+  select(-c(tc_concatenated, X)) %>% 
+  inner_join(julabels, by=c("JU"="numba")) %>% 
+  group_by(JU,D_bins) %>% 
+  nest()
+
+
+# Function to test Motion > Scrambled in every nested df
+# It's defined outside so that it can be easily modified to be something
+# other than t.test
+compare_contrasts <- function(df) {
+  t.test(df %>% filter(contrast == "Motion") %>% select(isc) %>% pull(), 
+         df %>% filter(contrast == "Scrambled") %>% select(isc) %>% pull(), 
+         paired = TRUE)
+}
+
+
+# Carry out the comparison Motion > Scrambled for each D_bin in each JU ROI
+ttest_res <- ISC_estimates_nest %>% 
+  mutate(
+    ttest = map(data, compare_contrasts)
+  )
+
+
+library(broom)
+
+# # Use the line below to check which estimates to extract
+# ttest_res$ttest[[1]] %>% glance()
+
+# Extract the parameters of interest (T,p)
+ttest_res <- ttest_res %>% 
+  mutate(
+    glance = ttest %>% map(glance),
+    T = glance %>% map_dbl("statistic"),
+    p = glance %>% map_dbl("p.value")
+  )
+
+
+```
+
+
+
+## Results `r ISC_flavour`
+
+The results of the initial ISC on smoothed (6mm FWHM) data were used to localize the voxels to be considered for the second ISC, using unsmoothed data, in each Juelich region (JU).
+
+In this case we consider the following binary mask derived from the results of the first ISC: `r ISC_flavour`.
+
+- `M_OR_S` : union of significant voxels in Motion and Scrambled, clusterSizeThr >= 100 voxels`
+- `ANOVA_M_S` : voxels showing a significant difference between Motion and Scrambled, clusterSizeThr = 10-20 voxels max
+
+Additionally, we considered only JU regions with at least `r clusterSizeThr` significantly activated voxels after correction. The cortical ribbon was sampled in `r nbin` bins of equal width.
+
+For each bin in each JU region fulfilling this requirement, we concatenated the characteristic (i.e. mean) time course across all the Motion or Scrambled movies, extracted from the unsmoothed data in the native space. The second ISC was carried out on these time courses to yield one parameter estimate for each subject, JU region, bin.
+
+_[Lorenzo will provide details about the ISC here]_
+
+Finally, the parameter estimates were compared between conditions using a paired t-test to test in which bin and JU region Motion > Scrambled. The final p values were corrected for multiple comparison using FDR within each JU region.
+
+
+```{r create-table}
+# Add column of names for JU ROIs
+res <- ttest_res %>% 
+  select(D_bins, JU, T, p, data) %>% 
+  inner_join(. , julabels, by = c("JU"="numba")) %>% 
+  mutate(name = str_replace_all(name, "_", " ")) 
+
+
+# Apply fdr correction per ROI
+res <- res %>% 
+  group_by(JU) %>%
+  mutate(
+    pcorr = p.adjust(p, "fdr"),
+  ) %>% 
+  mutate(pcorr_sig = ifelse(pcorr <= 0.05, D_bins, NA))  # to print asterisk on sig p bins
+
+
+# Show a table of sig ROIs/bins
+title = "Significant differences uncorrected and corrected ( $q(FDR) = 0.05$ ) in Motion > Scrambled"
+
+res %>%
+  select(-data) %>% 
+  ungroup() %>% 
+  filter(!is.na(pcorr_sig)) %>%
+  select(-c(JU,pcorr_sig)) %>% 
+  relocate(pcorr, .after = p) %>%
+  kbl(caption =  title) %>% 
+  kable_styling(c("condensed")) 
+
+
+```
+
+
+
+
+## Plot T stat
+
+```{r plot-group-comparison-T, fig.width=10, fig.height=10}
+
+# Plot the effect size (actually T stat) for the comparison Motion > Scrambled
+res %>% 
+  mutate(D_bins = as.numeric(D_bins)) %>% 
+  ggplot( aes(x = D_bins, y = T, fill = D_bins ) ) +
+  # scale_fill_gradient(low = "orange", high = "blue", na.value = NA) +
+  scale_fill_gradient2_tableau() +
+  geom_bar(stat = "identity", position = position_identity()) +
+  geom_text( aes(x = pcorr_sig, y = T + 0.1, label = "*"), fontface = "bold", size=10, na.rm = T ) +
+  facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22)) +
+  # coord_cartesian(ylim = c(min(res$T), max(res$T) + 0.2)) +
+  theme_minimal() +  # also theme_bw and theme_few
+  labs(
+    title = "T statistic at each cortical depth for Motion > Scrambled",
+    subtitle = "Comparison of the ISC parameter estimates in each bin in either contrast"
+  ) +
+  ylab("Scrambled <   > Motion") + xlab("Cortical Depth bins :  1 = WM/GM border, 6 = pial")+
+  theme(
+    strip.text.x = element_text(size = 12), # increase size of title for each subplot
+    panel.spacing.y = unit(3, "lines")      # increase space between facets
+  ) + 
+  coord_flip(ylim = c(min(res$T) - 0.2, max(res$T) + 0.2))
+
+```
+
+
+
+## Plot descriptives
+
+```{r plot-group-comparison-descriptives, fig.width=10, fig.height=8}
+
+# function to calculate standard error after removing NAs
+sterr <- function(x) {
+  x <- x[!is.na(x)]
+  sd(x)/sqrt(length(x))
+}
+
+res_descriptives <- res %>%
+  select(-c(T,p,pcorr,name)) %>% 
+  unnest(data) %>% 
+  mutate(name = str_replace_all(name, "_", " ")) %>% 
+  group_by(JU, name, D_bins, contrast, pcorr_sig) %>% 
+  summarise(
+    meanZ = mean(isc, na.rm = T),
+    sterrZ = sterr(isc),
+    .groups = "drop"
+  )
+
+
+
+res_descriptives %>%
+  mutate(pcorr_sig = ifelse(contrast == "Motion", pcorr_sig, NA)) %>%  # to plot only one asterisk
+  ggplot( aes(x = D_bins, y = meanZ, fill = contrast) ) +
+  geom_bar(stat = "identity", position = position_identity(), alpha = 0.6) +
+  geom_text(
+    aes(x = pcorr_sig, y = meanZ + 0, label = "*"), fontface = "bold", size=10, na.rm = T
+  ) +
+  geom_linerange(aes(ymin = meanZ - sterrZ, ymax = meanZ + sterrZ, color=contrast), alpha = 0.5) +
+  # coord_cartesian(ylim = c(zthr, max(res_descriptives$meanZ) + 0.2)) +
+  facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22)) +
+  theme_minimal() +
+  labs(
+    title = "Mean ISC parameter estimates for each Depth bin in each Juelich region across participants"
+  ) +
+  ylab("Mean ISC estimate across participants") + 
+  xlab("Cortical Depth bins :  1 = WM/GM border, 6 = pial") +
+  theme(
+    strip.text.x = element_text(size = 11), # increase size of title for each subplot
+    panel.spacing.y = unit(3, "lines")      # increase space between facets
+  ) +
+  coord_flip()
+
+
+
+```
+
+
+
+## Plot T stat with ISC(Motion - Scrambled) variability within subject
+
+```{r plot-group-variability, fig.width=10, fig.height=12}
+
+# function to calculate the mean of Motion - Scrambled across participants
+get_M_minus_S <- function(df) {
+  df %>% 
+    pivot_wider(names_from = contrast, values_from = isc) %>% 
+    mutate(M_minus_S = Motion - Scrambled) %>% 
+    select(M_minus_S)
+}
+
+
+# function to calculate standard error after removing NAs
+sterr <- function(x) {
+  x <- x[!is.na(x)]
+  sd(x)/sqrt(length(x))
+}
+
+
+# prepare the Motion - Scrambled for each sub, its mean and sderr
+res2plot <- res %>% 
+  mutate(
+    diff_MS = map(data, get_M_minus_S),
+  ) %>% 
+  select(D_bins, JU, diff_MS,name,pcorr_sig) %>% 
+  unnest(diff_MS) %>% 
+  group_by(D_bins, JU) %>% 
+  mutate(
+    diff_mean = mean(M_minus_S, na.rm = T),
+    diff_sterr = sterr(M_minus_S)
+  )
+  # # pipe the following to have a clearer view of res2plot
+  # group_by(D_bins, JU, diff_mean,diff_sterr,name,pcorr_sig) %>% 
+  # nest()
+
+
+
+# plot mean difference Motion - Scrambled, and its variability across subs
+res2plot %>% 
+  # unnest(data) %>% 
+  ggplot( aes(x = D_bins, y = diff_mean, fill = D_bins) ) +
+  geom_bar(stat = "identity", position = position_identity(), alpha = 0.6) +
+  # geom_linerange(
+  #   aes(ymin = diff_mean - diff_sterr, ymax = diff_mean + diff_sterr),
+  #   color="red", alpha = 0.5
+  # ) +
+  scale_fill_gradient2_tableau() +
+  geom_point(
+    aes(x = pcorr_sig, y = M_minus_S, fill = D_bins),
+    shape = 21, size = 2,
+    na.rm = T # to suppress the warning due to plotting only pcorr_sig cols
+  ) + 
+    geom_linerange(
+    aes(ymin = diff_mean - diff_sterr, ymax = diff_mean + diff_sterr),
+    color="red", alpha = 0.5
+  ) +
+  facet_wrap(~ name, scales = "free", labeller = label_wrap_gen(width=22)) +
+
+  theme_minimal() +
+  labs(
+    title = "Mean Motion - Scrambled ISC parameter estimates for each Depth bin in each Juelich region across participants",
+    subtitle = "Individual participants are plotted only for bins which show a (corrected) sig difference between Motion and Scrambled"
+  ) +
+  ylab("Mean Motion - Scrambled ISC estimate across participants") + 
+  xlab("Cortical Depth bins :  1 = WM/GM border, 6 = pial") +
+  theme(
+    strip.text.x = element_text(size = 11), # increase size of title for each subplot
+    panel.spacing.y = unit(3, "lines")      # increase space between facets
+  ) +
+  coord_flip(ylim = c(min(res2plot$diff_mean) - 0.05, max(res2plot$diff_mean) + 0.05))
+
+
+```
+
+
+
+
+
+
+

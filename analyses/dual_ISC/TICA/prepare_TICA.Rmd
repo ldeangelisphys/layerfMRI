@@ -1,0 +1,137 @@
+---
+title: "prepare_TICA"
+output: html_document
+---
+
+
+```{r}
+
+nbin <- 10
+
+df <- readRDS(paste0("M_OR_S_JU_time_courses_thr100_bin",nbin,".rds"))
+
+
+```
+
+
+
+```{r}
+muvi_ses2
+
+a <- df$tc_mean[1]
+b <- df$tc_mean[2]
+
+
+c(a,b,a) %>% unlist()
+
+df1 <- df %>% 
+  filter(JU == 13, sub == "sub_02", D_bins == 10, run == 1)
+
+listmuvi <- df$muvi %>% unique() %>% sort()
+
+extract_tc <- function(df,moviename) {
+  df %>% 
+    filter(muvi == moviename) %>% 
+    select(tc_mean) %>% pull %>% unlist
+}
+
+
+allmuvi <- map(listmuvi, ~ extract_tc(df1, .x))
+names(allmuvi) <- listmuvi
+
+allmuvi %>% unlist %>% as.data.frame()
+
+
+```
+
+
+
+```{r}
+
+df1 <- df %>% 
+  filter(JU == 13, sub == "sub_09")
+
+# lists for map
+listmuvi <- df$muvi %>% unique() %>% sort()
+listnbin <- df$D_bins %>% unique %>% sort()
+listsub <- df$sub %>% unique %>% sort()
+
+
+extract_tc <- function(df, onebin, onerun, onesub) {
+  
+  print(paste0(onesub,", run ",onerun,", bin ",onebin))
+
+  get_tc_vec <- function(df, muviname) {
+    df %>% 
+      filter(muvi == muviname, D_bins == onebin, run == onerun, sub == onesub) %>% 
+      select(tc_mean) %>% pull %>% unlist
+  }
+  
+  allmuvi <- map(listmuvi, ~ get_tc_vec(df, .x))
+  names(allmuvi) <- listmuvi
+  
+  allmuvi <- allmuvi %>% unlist %>% as.data.frame %>%  
+    tibble::rownames_to_column() %>% 
+    mutate(D_bin = onebin)
+}
+
+
+# test <- extract_tc(df, onebin = 1, onerun = 1, onesub = "sub_03")
+
+
+```
+
+
+```{r}
+
+run_one_sub <- function(sub,df) {
+  df_run1 <- map_df(listnbin, ~ extract_tc(df, .x, onerun = 1, onesub = sub) )
+  df_run2 <- map_df(listnbin, ~ extract_tc(df, .x, onerun = 2, onesub = sub) )
+  df_runs <- rbind(df_run1, df_run2) %>% mutate(sub = sub)
+  colnames(df_runs) <- c("muvi","vals","D_bin","sub")
+  return(df_runs)
+}
+
+# test <- run_one_sub("sub_03",df)
+
+
+allsub <- map_df(listsub, ~ run_one_sub(.x,df))
+
+
+poppa <- allsub %>% nest_by(sub)
+poppa <- poppa %>% unnest(c(data))
+
+poppa %>% filter(sub == "sub_02", D_bin == 10)
+
+
+map(listsub, ~ poppa %>% filter(sub == .x, D_bin == 10) %>% nrow)
+
+```
+
+
+## Ok, it's all fucked up
+Apparently all the subs have a different number of either movies or time points in movies or whatever christ knows. Let's run some checks
+
+```{r}
+
+poppa <- allsub %>% 
+  mutate(muvi = str_replace(muvi, "D.avi[:digit:]+",""))
+
+poppa$muvi %>% unique()
+
+poppa %>% 
+  group_by(sub, muvi) %>% 
+  summarise(n_muvi = n()) %>% 
+  arrange(muvi) %>% 
+  group_split()
+
+  ungroup() %>% 
+  group_by(muvi) %>% group_split()
+
+
+
+
+```
+
+
+
