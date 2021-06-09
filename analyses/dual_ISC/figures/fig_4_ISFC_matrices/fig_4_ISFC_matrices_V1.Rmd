@@ -1,0 +1,89 @@
+---
+title: "fig. 4 - ISFC results"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r,message=F}
+library(tidyverse)
+library(plot.matrix)
+library(plotly)
+library(RColorBrewer)
+
+nbin = 6
+
+filename_template <- paste0(
+  getwd(), "/",
+  "CORR_FLAVOUR_t-values_CONTRAST_SEED_1-SEED_2_thr100_bin6.txt"
+)
+
+
+corr_flavour = "ISFC"
+contrast = "Motion-Scrambled"
+seed_1 <- "PFt"
+seed_2 <- "BA44"
+
+```
+
+
+
+
+```{r,message=F,echo=F}
+library(heatmaply)
+
+genplot <- function(filename_template, corr_flavour, contrast, seed_1, seed_2) {
+  
+  CC_file <- str_replace_all(
+    filename_template, c(
+      "CORR_FLAVOUR" = corr_flavour,
+      "CONTRAST" = contrast,
+      "SEED_1" = seed_1,
+      "SEED_2" = seed_2
+    )
+  )
+  
+  CC <- read.table(CC_file, header = F, sep = " ") %>% as.matrix()
+  
+  seed_1_names <- map(1:nbin, ~ paste0(seed_1,"_",.x))
+  seed_2_names <- map(1:nbin, ~ paste0(seed_2,"_",.x))
+  
+  rownames(CC) <- seed_1_names
+  colnames(CC) <- seed_2_names
+  
+  p <-  plot(
+    CC,
+    # digits=2,                           # comment this for no digits
+    asp=T, col=brewer.pal(9,"Reds"), 
+    # key=NULL, axis.key = NULL,           # uncomment to hide colorbar
+    axis.col = list(side=1, las=2),
+    axis.row = list(side=2, las=1),
+    xlab = "", ylab = ""
+  )
+  
+  return(p)
+  
+  
+}
+
+par(mar=c(5, 5, 0, 5)) # adapt margins
+p1 <- genplot(filename_template, corr_flavour, contrast, seed_1, seed_2)
+# p2 <- genplot(filename_template, corr_flavour, contrast, seed_1, seed_2)
+
+# # to save the figure to disk
+# png(filename="tobeprinted.png")
+# p1 <- genplot(filename_template, corr_flavour, contrast, seed_1, seed_2)
+# dev.off()
+
+```
+
+
+
+
+
+
+
+
+
+
+
