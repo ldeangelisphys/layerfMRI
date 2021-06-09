@@ -4,6 +4,7 @@ subtitle: "Results of the comparison between Scrambled and Motion from the secon
 output: 
   html_document:
     code_folding: hide
+    keep_md: true
 ---
 
 ## Analytic strategy
