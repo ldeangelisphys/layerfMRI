@@ -1,0 +1,164 @@
+---
+title: "procedure fig 2: ISC1"
+author: "LC"
+date: "6/14/2021"
+output: html_document
+---
+
+
+## Set up the root directory!
+```{r, setup, include=FALSE}
+
+bd="/Users/leonardo/GoogleDrive/LAYER_fMRI/__PAPER__/figures/"
+thisfigdir="fig_2_results_ISC1/Data/"
+
+knitr::opts_knit$set(root.dir = paste0(bd,thisfigdir))
+getwd()
+```
+
+
+## Atlas
+
+Since all the analyses were carried out using the `icbm152_2009_brain` provided by nilearn, I used a Juelich atlas already in this space (which is different from the space used in the SPM toolbox and from the MNI fsl space).
+
+The atlas is currently stored in `/data00/layerfMRI/Github_repo/layerfMRI/analyses/depth_native/01_registration/juelich_atlas`
+
+It contains the maximum probability maps of following regions of interest:
+
+- BA44 : intensity 13
+- PFt :  intensity 35
+- latOCC : intensity 200
+
+Since there was no JU region appropriately covering this blob, we choose the region with intensity 23 from the Harvard-Oxford cortical atlas ("lateral occipital")
+
+NB: remember that in the corresponding csv the number is intensity minus 1 since they like to start from 0.
+
+
+## Extract the ROIs to create the image with the overlays
+
+- BA44 : intensity 13
+- PFt :  intensity 35
+- latOCC : intensity 200
+
+Then add them all into `ROI_ALL`
+
+
+
+```{bash, engine.opts='-l'}
+
+fslmaths juelich_atlas/atlas_juelich_icbm -thr 13 -uthr 13 -bin ROI_BA44
+fslmaths juelich_atlas/atlas_juelich_icbm -thr 35 -uthr 35 -bin ROI_PFt
+fslmaths juelich_atlas/atlas_juelich_icbm -thr 200 -uthr 200 -bin ROI_latOCC
+fslmaths ROI_BA44 -add ROI_PFt -add ROI_latOCC ROI_ALL
+imrm ROI_BA44 ROI_PFt ROI_latOCC
+
+```
+
+
+## Copy results images and correct header
+
+```{bash, engine.opts='-l'}
+
+imcp orig/looISC_M_boot_uncorrected_p001_k50 ./M_boot
+imcp orig/looISC_S_boot_uncorrected_p001_k50 ./S_boot
+imcp orig/looISC_M_OR_S_boot_uncorrected_p001_k50_bin ./M_OR_S_boot
+
+imcp orig/looISC_M_t-test_uncorrected_p001_k50 ./M_param
+imcp orig/looISC_S_t-test_uncorrected_p001_k50 ./S_param
+imcp orig/looISC_M_OR_S_t-test_uncorrected_p001_k50_bin ./M_OR_S_param
+
+
+```
+
+The header of the images provided by Lorenzo cannot be read in fslview/ITK SNAP (they crash) likely due to some idiosyncratic encoding of the data type in the header.
+
+I can fix this in python `fix_images.py`, whose content is in the cell below.
+
+Even if you just use fsleyes (which apparently ignores the bad header), do the fix otherwise fslmaths will crash
+
+```{r}
+library(reticulate)
+use_condaenv("py3", required=TRUE)
+```
+
+
+```{python}
+
+import numpy as np
+import nibabel as nib
+
+bd='/Users/leonardo/GoogleDrive/LAYER_fMRI/__PAPER__/figures/fig_2_results_ISC1/Data/'
+
+for contrast in ['M_boot','S_boot', 'M_OR_S_boot', 'M_param', 'S_param', 'M_OR_S_param']:
+    print(contrast)
+    img = nib.load(bd + contrast + '.nii.gz')
+    data = img.get_fdata()
+    data.shape
+    hdr = img.header
+    newdata = np.zeros(data.shape, dtype=np.float32)
+    newimg = nib.Nifti1Image(data, img.affine)
+    nib.save(newimg, bd + contrast + '.nii.gz')
+
+
+```
+
+
+## Mask with thresholded icbm brain
+The best contrast of the `icbm152_2009_brain` is at 48..96 in fsleyes. When overlaying `ROI_ALL` and `M_OR_S_boot` mask there are of course some smearing which are not informative anyway.
+Let's create a mask of the icbm in this range and then mask both JU and OR bin maps, and eventually also the icbm
+
+```{bash, engine.opts='-l'}
+
+fslmaths icbm152_2009_brain -thr 48 -uthr 96 icbm152_2009_brain_thr48_96
+fslmaths icbm152_2009_brain_thr48_96 -bin icbm_mask
+fslmaths M_OR_S_boot -mul icbm_mask M_OR_S_boot_masked
+fslmaths ROI_ALL -mul icbm_mask ROI_ALL_masked
+
+```
+
+
+
+## Create binarized versions of the icbm-masked contrasts, both for boot and for param
+```{bash, engine.opts='-l'}
+
+for i in M_boot S_boot M_param S_param; do
+  fslmaths ${i} -thr 0 -mul icbm_mask.nii.gz -bin ${i}_mask
+done
+
+```
+
+
+
+## Image of M_OR_S over ROI_ALL and bootstrap vs parametric
+ 
+Done in fsleyes. 
+To get ROI_ALL in yellow, M_OR_S in red and the intersection in orange, put ROI_ALL_masked on top and M_OR_S underneath, then enable some alpha in both images.
+Crosshair centered in `[-57, 22, 34]`
+Use spline interpolation on the icbm in order to facilitate the alpha in keynote.
+
+Load this image stack:
+- `icbm152_2009_brain_thr48_96`
+- `M-OR_S_boot_masked` (Red)
+- `ROI_ALL_masked` (Yellow)
+- `M_boot_mask` (Blue)
+- `S_boot_mask` (Green)
+- `M_param_mask` (Blue)
+- `S_param_mask` (Green)
+
+## Statistical maps of Intact and Scrambled
+Glass brain produced in `nilearn` using `M_boot.nii.gz` and `S_boot.nii.gz`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
