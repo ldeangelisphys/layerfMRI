@@ -899,90 +899,6 @@ walk2(listsub, mats_Scrambled, ~ writeimgs(.x, .y, "Scrambled"))
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Unfold time courses and write the csv
-**NB**: There is a very sneaky issue with `paste`: in some cases there is a `\n` added at the end of the string, so I need to remove it manually.
-```{r}
-
-# Unfold the tcs and write to csv
-filename_csv_2_write <- paste0(ISC_flavour,"_JU_time_courses_thr",clusterSizeThr,"_bin",nbin,".csv")
-
-pf_homogeneous %>%
-  mutate(tc_mean_unfolded = paste(tc_mean) %>% str_replace("\n","") ) %>%
-  select(-c(idx_voxels, fmri4D_file, tc_mean)) %>%
-  write.csv(filename_csv_2_write, row.names = F)
-
-pf_homogeneous %>% distinct(n_sub)
-pf_homogeneous %>% distinct(n_muvis)
-pf_homogeneous %>% distinct(n_bins)
-
-
-```
-
-
-
-
-## Test reading the written csv in again
-```{r, eval=F, include=F}
-
-filename_csv_2_write <- paste0(ISC_flavour,"_JU_time_courses_thr",clusterSizeThr,"_bin",nbin,".csv")
-
-df_written <- read.csv(filename_csv_2_write, stringsAsFactors = F)
-
-df_written %>% group_by(JU) %>% group_split()
-
-# df_written %>% 
-#   arrange(sub, ses, task, run, muvi, JU, D_bins) %>% 
-#   select(-c(tc_mean_unfolded, dim4, contrast))
-# 
-# 
-# df_written %>% 
-#   select(-c(tc_mean_unfolded, dim4, contrast)) %>% 
-#   filter(sub == "sub_02", task == 1, run == 1, muvi == "M6cigaretteD.avi") %>% 
-#   group_by(JU) %>% group_split()
-
-
-
-```
-
-
-
-
-## Procedure to read the csv and convert back the char array to a list
-The procedure is documented [here](https://stackoverflow.com/questions/48024266/save-a-data-frame-with-list-columns-as-csv-file)
-```{r, eval=F, include=F}
-
-df_written <- read.csv(filename_csv_2_write, stringsAsFactors = F)
-
-df_with_lists <- df_written %>%
-  mutate(tc=list(eval(parse(text=tc_mean_unfolded))))
-
-df_with_lists$tc[[2]]
-object.size(df_with_lists)
-
-```
-
-
-
 ## Get a taste of how big this behemot is (for each sub...)
 ```{r, message=F}
 
@@ -1004,19 +920,6 @@ behemot <- tibble(
 collapsibleTree(behemot, c("taskrun","contrast","movie","JU","bin"), collapsed = T, zoomable = F)
 
 ```
-
-
-
-```{r}
-
-TICAdir <- paste0(bd,"/TICA/")
-
-filename_RDS_2_write <- paste0(ISC_flavour,"_JU_time_courses_thr",clusterSizeThr,"_bin",nbin,".rds")
-
-saveRDS(pf_homogeneous, file = paste0(TICAdir,filename_RDS_2_write))
-
-```
-
 
 
 
