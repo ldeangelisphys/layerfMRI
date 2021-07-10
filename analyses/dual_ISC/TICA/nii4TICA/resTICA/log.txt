@@ -1,0 +1,680 @@
+
+Melodic Version 3.15
+
+melodic -i listfiles -o resTICA -m mask.nii.gz -a tica --report --vn -v 
+---------------------------------------------
+
+Melodic results will be in resTICA
+
+Mask provided : mask.nii.gz
+
+Reading data file Motion_sub_02  ...  done
+  Estimating data smoothness ...  done 
+  Removing mean image ... done
+Reading data file Motion_sub_03  ...  done
+  Removing mean image ... done
+Reading data file Motion_sub_05  ...  done
+  Removing mean image ... done
+Reading data file Motion_sub_06  ...  done
+  Removing mean image ... done
+Reading data file Motion_sub_09  ...  done
+  Removing mean image ... done
+Reading data file Motion_sub_10  ...  done
+  Removing mean image ... done
+Reading data file Motion_sub_11  ...  done
+  Removing mean image ... done
+Reading data file Motion_sub_12  ...  done
+  Removing mean image ... done
+Reading data file Motion_sub_14  ...  done
+  Removing mean image ... done
+Reading data file Scrambled_sub_02  ...  done
+  Removing mean image ... done
+Reading data file Scrambled_sub_03  ...  done
+  Removing mean image ... done
+Reading data file Scrambled_sub_05  ...  done
+  Removing mean image ... done
+Reading data file Scrambled_sub_06  ...  done
+  Removing mean image ... done
+Reading data file Scrambled_sub_09  ...  done
+  Removing mean image ... done
+Reading data file Scrambled_sub_10  ...  done
+  Removing mean image ... done
+Reading data file Scrambled_sub_11  ...  done
+  Removing mean image ... done
+Reading data file Scrambled_sub_12  ...  done
+  Removing mean image ... done
+Reading data file Scrambled_sub_14  ...  done
+  Removing mean image ... done
+Excluding voxels with constant value ... done
+
+Initial data size : 574 x 18
+
+Reading data file Motion_sub_02  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Motion_sub_03  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Motion_sub_05  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Motion_sub_06  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Motion_sub_09  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Motion_sub_10  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Motion_sub_11  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Motion_sub_12  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Motion_sub_14  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Scrambled_sub_02  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Scrambled_sub_03  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Scrambled_sub_05  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Scrambled_sub_06  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Scrambled_sub_09  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Scrambled_sub_10  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Scrambled_sub_11  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Scrambled_sub_12  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+Reading data file Scrambled_sub_14  ...  done
+  Removing mean image ... done
+  Individual whitening in a 6 dimensional subspace 
+
+  Data size : 108 x 18
+
+Starting PCA  ... done
+Start whitening using  6 dimensions ... 
+  retaining 76.6681 percent of the variability 
+ ... done
+
+Starting ICA estimation using tica
+
+  Step no. 1 change : 0.918345
+  Step no. 2 change : 0.688817
+  Step no. 3 change : 0.99335
+  Step no. 4 change : 0.972313
+  Step no. 5 change : 0.558717
+  Step no. 6 change : 0.652414
+  Step no. 7 change : 0.78593
+  Step no. 8 change : 0.29372
+  Step no. 9 change : 0.21708
+ Rank-1 approximation of the time courses;  change : 0.963552
+  Step no. 11 change : 0.941984
+  Step no. 12 change : 0.0895574
+  Step no. 13 change : 0.0795066
+  Step no. 14 change : 0.0756292
+  Step no. 15 change : 0.0772494
+  Step no. 16 change : 0.0810483
+  Step no. 17 change : 0.0880091
+  Step no. 18 change : 0.0965268
+  Step no. 19 change : 0.107358
+ Rank-1 approximation of the time courses;  change : 0.734427
+  Step no. 21 change : 0.942375
+  Step no. 22 change : 0.0949401
+  Step no. 23 change : 0.101932
+  Step no. 24 change : 0.11085
+  Step no. 25 change : 0.125983
+  Step no. 26 change : 0.142639
+  Step no. 27 change : 0.163331
+  Step no. 28 change : 0.184479
+  Step no. 29 change : 0.210445
+ Rank-1 approximation of the time courses;  change : 0.962181
+  Step no. 31 change : 0.954578
+  Step no. 32 change : 0.341622
+  Step no. 33 change : 0.387055
+  Step no. 34 change : 0.437603
+  Step no. 35 change : 0.490111
+  Step no. 36 change : 0.555053
+  Step no. 37 change : 0.6195
+  Step no. 38 change : 0.701959
+  Step no. 39 change : 0.782373
+ Rank-1 approximation of the time courses;  change : 0.998574
+  Step no. 41 change : 0.977537
+  Step no. 42 change : 0.679364
+  Step no. 43 change : 0.783143
+  Step no. 44 change : 0.880045
+  Step no. 45 change : 0.351742
+  Step no. 46 change : 0.171907
+  Step no. 47 change : 0.0773368
+  Step no. 48 change : 0.0518646
+  Step no. 49 change : 0.0380523
+ Rank-1 approximation of the time courses;  change : 0.871937
+  Step no. 51 change : 0.942321
+  Step no. 52 change : 0.00328828
+  Step no. 53 change : 0.00301982
+  Step no. 54 change : 0.00300466
+  Step no. 55 change : 0.00312914
+  Step no. 56 change : 0.0033616
+  Step no. 57 change : 0.00368475
+  Step no. 58 change : 0.00408866
+  Step no. 59 change : 0.00457468
+ Rank-1 approximation of the time courses;  change : 0.0813244
+  Step no. 61 change : 0.942277
+  Step no. 62 change : 0.0217386
+  Step no. 63 change : 0.0228921
+  Step no. 64 change : 0.0248094
+  Step no. 65 change : 0.027549
+  Step no. 66 change : 0.0308007
+  Step no. 67 change : 0.0346504
+  Step no. 68 change : 0.0391437
+  Step no. 69 change : 0.0442322
+ Rank-1 approximation of the time courses;  change : 0.494721
+  Step no. 71 change : 0.942328
+  Step no. 72 change : 0.0382765
+  Step no. 73 change : 0.0386152
+  Step no. 74 change : 0.0405798
+  Step no. 75 change : 0.0442719
+  Step no. 76 change : 0.0486152
+  Step no. 77 change : 0.0547495
+  Step no. 78 change : 0.062287
+  Step no. 79 change : 0.0713502
+ Rank-1 approximation of the time courses;  change : 0.670182
+  Step no. 81 change : 0.942777
+  Step no. 82 change : 0.126179
+  Step no. 83 change : 0.141073
+  Step no. 84 change : 0.15827
+  Step no. 85 change : 0.178139
+  Step no. 86 change : 0.201635
+  Step no. 87 change : 0.226899
+  Step no. 88 change : 0.257317
+  Step no. 89 change : 0.289141
+ Rank-1 approximation of the time courses;  change : 0.961412
+  Step no. 91 change : 0.952105
+  Step no. 92 change : 0.295577
+  Step no. 93 change : 0.325486
+  Step no. 94 change : 0.360247
+  Step no. 95 change : 0.413871
+  Step no. 96 change : 0.463555
+  Step no. 97 change : 0.528471
+  Step no. 98 change : 0.590125
+  Step no. 99 change : 0.670311
+ Rank-1 approximation of the time courses;  change : 0.99052
+  Step no. 101 change : 0.987494
+  Step no. 102 change : 0.230841
+  Step no. 103 change : 0.277251
+  Step no. 104 change : 0.188492
+  Step no. 105 change : 0.162918
+  Step no. 106 change : 0.157115
+  Step no. 107 change : 0.158668
+  Step no. 108 change : 0.169312
+  Step no. 109 change : 0.182534
+ Rank-1 approximation of the time courses;  change : 0.184872
+  Step no. 111 change : 0.951115
+  Step no. 112 change : 0.264773
+  Step no. 113 change : 0.297644
+  Step no. 114 change : 0.332088
+  Step no. 115 change : 0.371795
+  Step no. 116 change : 0.418777
+  Step no. 117 change : 0.468225
+  Step no. 118 change : 0.529018
+  Step no. 119 change : 0.590395
+ Rank-1 approximation of the time courses;  change : 0.993437
+  Step no. 121 change : 0.968215
+  Step no. 122 change : 0.572316
+  Step no. 123 change : 0.656426
+  Step no. 124 change : 0.737515
+  Step no. 125 change : 0.210493
+  Step no. 126 change : 0.296692
+  Step no. 127 change : 0.224085
+  Step no. 128 change : 0.202045
+  Step no. 129 change : 0.202876
+ Rank-1 approximation of the time courses;  change : 0.206879
+  Step no. 131 change : 0.943058
+  Step no. 132 change : 0.163598
+  Step no. 133 change : 0.184944
+  Step no. 134 change : 0.207645
+  Step no. 135 change : 0.235676
+  Step no. 136 change : 0.264822
+  Step no. 137 change : 0.300451
+  Step no. 138 change : 0.337088
+  Step no. 139 change : 0.382175
+ Rank-1 approximation of the time courses;  change : 0.990728
+  Step no. 141 change : 0.967459
+  Step no. 142 change : 0.574856
+  Step no. 143 change : 0.662197
+  Step no. 144 change : 0.757794
+  Step no. 145 change : 0.851959
+  Step no. 146 change : 0.281195
+  Step no. 147 change : 0.204663
+  Step no. 148 change : 0.123423
+  Step no. 149 change : 0.100447
+ Rank-1 approximation of the time courses;  change : 0.471072
+  Step no. 151 change : 0.942219
+  Step no. 152 change : 0.102013
+  Step no. 153 change : 0.106564
+  Step no. 154 change : 0.112378
+  Step no. 155 change : 0.122926
+  Step no. 156 change : 0.135292
+  Step no. 157 change : 0.150822
+  Step no. 158 change : 0.168906
+  Step no. 159 change : 0.189487
+ Rank-1 approximation of the time courses;  change : 0.908389
+  Step no. 161 change : 0.945803
+  Step no. 162 change : 0.186629
+  Step no. 163 change : 0.203825
+  Step no. 164 change : 0.223412
+  Step no. 165 change : 0.256874
+  Step no. 166 change : 0.289114
+  Step no. 167 change : 0.330245
+  Step no. 168 change : 0.370611
+  Step no. 169 change : 0.421564
+ Rank-1 approximation of the time courses;  change : 0.98531
+  Step no. 171 change : 0.97039
+  Step no. 172 change : 0.629405
+  Step no. 173 change : 0.728913
+  Step no. 174 change : 0.839597
+  Step no. 175 change : 0.948618
+  Step no. 176 change : 0.395246
+  Step no. 177 change : 0.153157
+  Step no. 178 change : 0.0571426
+  Step no. 179 change : 0.0382813
+ Rank-1 approximation of the time courses;  change : 0.835357
+  Step no. 181 change : 0.942228
+  Step no. 182 change : 0.0192705
+  Step no. 183 change : 0.0130637
+  Step no. 184 change : 0.00955746
+  Step no. 185 change : 0.00744118
+  Step no. 186 change : 0.00632823
+  Step no. 187 change : 0.0057841
+  Step no. 188 change : 0.00563205
+  Step no. 189 change : 0.00576287
+ Rank-1 approximation of the time courses;  change : 0.156263
+  Step no. 191 change : 0.942289
+  Step no. 192 change : 0.00312927
+  Step no. 193 change : 0.00117734
+  Step no. 194 change : 0.000850052
+  Step no. 195 change : 0.000690869
+  Step no. 196 change : 0.000621862
+  Step no. 197 change : 0.000603143
+  Step no. 198 change : 0.000612985
+  Step no. 199 change : 0.00064615
+ Rank-1 approximation of the time courses;  change : 0.0388333
+  Step no. 201 change : 0.942278
+  Step no. 202 change : 0.0102949
+  Step no. 203 change : 0.0102737
+  Step no. 204 change : 0.0108222
+  Step no. 205 change : 0.0118306
+  Step no. 206 change : 0.0131007
+  Step no. 207 change : 0.0146676
+  Step no. 208 change : 0.0165085
+  Step no. 209 change : 0.0186343
+ Rank-1 approximation of the time courses;  change : 0.191529
+  Step no. 211 change : 0.942302
+  Step no. 212 change : 0.0145435
+  Step no. 213 change : 0.0131528
+  Step no. 214 change : 0.0131516
+  Step no. 215 change : 0.013862
+  Step no. 216 change : 0.0148843
+  Step no. 217 change : 0.016353
+  Step no. 218 change : 0.0180961
+  Step no. 219 change : 0.0205151
+ Rank-1 approximation of the time courses;  change : 0.325272
+  Step no. 221 change : 0.942294
+  Step no. 222 change : 0.0568491
+  Step no. 223 change : 0.0627255
+  Step no. 224 change : 0.0700073
+  Step no. 225 change : 0.0788397
+  Step no. 226 change : 0.0891573
+  Step no. 227 change : 0.100667
+  Step no. 228 change : 0.114255
+  Step no. 229 change : 0.129019
+ Rank-1 approximation of the time courses;  change : 0.845476
+  Step no. 231 change : 0.942551
+  Step no. 232 change : 0.127541
+  Step no. 233 change : 0.137185
+  Step no. 234 change : 0.148257
+  Step no. 235 change : 0.166315
+  Step no. 236 change : 0.187967
+  Step no. 237 change : 0.215342
+  Step no. 238 change : 0.242739
+  Step no. 239 change : 0.276849
+ Rank-1 approximation of the time courses;  change : 0.975199
+  Step no. 241 change : 0.959869
+  Step no. 242 change : 0.440214
+  Step no. 243 change : 0.501547
+  Step no. 244 change : 0.569325
+  Step no. 245 change : 0.637288
+  Step no. 246 change : 0.72322
+  Step no. 247 change : 0.806804
+  Step no. 248 change : 0.231205
+  Step no. 249 change : 0.251739
+ Rank-1 approximation of the time courses;  change : 0.50773
+  Step no. 251 change : 0.947605
+  Step no. 252 change : 0.168529
+  Step no. 253 change : 0.17135
+  Step no. 254 change : 0.176701
+  Step no. 255 change : 0.191839
+  Step no. 256 change : 0.209128
+  Step no. 257 change : 0.232336
+  Step no. 258 change : 0.259001
+  Step no. 259 change : 0.289715
+ Rank-1 approximation of the time courses;  change : 0.944257
+  Step no. 261 change : 0.951503
+  Step no. 262 change : 0.290103
+  Step no. 263 change : 0.321128
+  Step no. 264 change : 0.360361
+  Step no. 265 change : 0.413389
+  Step no. 266 change : 0.462953
+  Step no. 267 change : 0.527344
+  Step no. 268 change : 0.588822
+  Step no. 269 change : 0.668558
+ Rank-1 approximation of the time courses;  change : 0.99062
+  Step no. 271 change : 0.987364
+  Step no. 272 change : 0.228671
+  Step no. 273 change : 0.279876
+  Step no. 274 change : 0.191758
+  Step no. 275 change : 0.166291
+  Step no. 276 change : 0.160874
+  Step no. 277 change : 0.162737
+  Step no. 278 change : 0.173892
+  Step no. 279 change : 0.187623
+ Rank-1 approximation of the time courses;  change : 0.179404
+  Step no. 281 change : 0.951535
+  Step no. 282 change : 0.272423
+  Step no. 283 change : 0.30644
+  Step no. 284 change : 0.342056
+  Step no. 285 change : 0.382941
+  Step no. 286 change : 0.431391
+  Step no. 287 change : 0.482225
+  Step no. 288 change : 0.544868
+  Step no. 289 change : 0.607948
+ Rank-1 approximation of the time courses;  change : 0.994086
+  Step no. 291 change : 0.969079
+  Step no. 292 change : 0.585912
+  Step no. 293 change : 0.673122
+  Step no. 294 change : 0.756549
+  Step no. 295 change : 0.226545
+  Step no. 296 change : 0.273477
+  Step no. 297 change : 0.197612
+  Step no. 298 change : 0.174983
+  Step no. 299 change : 0.172576
+ Rank-1 approximation of the time courses;  change : 0.238911
+  Step no. 301 change : 0.942394
+  Step no. 302 change : 0.129165
+  Step no. 303 change : 0.145513
+  Step no. 304 change : 0.163371
+  Step no. 305 change : 0.185342
+  Step no. 306 change : 0.208543
+  Step no. 307 change : 0.236673
+  Step no. 308 change : 0.266035
+  Step no. 309 change : 0.301814
+ Rank-1 approximation of the time courses;  change : 0.987106
+  Step no. 311 change : 0.96157
+  Step no. 312 change : 0.468646
+  Step no. 313 change : 0.535053
+  Step no. 314 change : 0.607571
+  Step no. 315 change : 0.680288
+  Step no. 316 change : 0.772554
+  Step no. 317 change : 0.86244
+  Step no. 318 change : 0.284079
+  Step no. 319 change : 0.20006
+ Rank-1 approximation of the time courses;  change : 0.555687
+  Step no. 321 change : 0.942643
+  Step no. 322 change : 0.0999191
+  Step no. 323 change : 0.0934941
+  Step no. 324 change : 0.0918975
+  Step no. 325 change : 0.0962778
+  Step no. 326 change : 0.102674
+  Step no. 327 change : 0.112652
+  Step no. 328 change : 0.12445
+  Step no. 329 change : 0.138907
+ Rank-1 approximation of the time courses;  change : 0.807469
+  Step no. 331 change : 0.942501
+  Step no. 332 change : 0.129223
+  Step no. 333 change : 0.140037
+  Step no. 334 change : 0.152694
+  Step no. 335 change : 0.175299
+  Step no. 336 change : 0.197974
+  Step no. 337 change : 0.226439
+  Step no. 338 change : 0.255059
+  Step no. 339 change : 0.29059
+ Rank-1 approximation of the time courses;  change : 0.978435
+  Step no. 341 change : 0.960878
+  Step no. 342 change : 0.458184
+  Step no. 343 change : 0.522661
+  Step no. 344 change : 0.593686
+  Step no. 345 change : 0.664653
+  Step no. 346 change : 0.754719
+  Step no. 347 change : 0.842258
+  Step no. 348 change : 0.264679
+  Step no. 349 change : 0.216792
+ Rank-1 approximation of the time courses;  change : 0.544151
+  Step no. 351 change : 0.944355
+  Step no. 352 change : 0.122406
+  Step no. 353 change : 0.118931
+  Step no. 354 change : 0.119556
+  Step no. 355 change : 0.127404
+  Step no. 356 change : 0.137299
+  Step no. 357 change : 0.151607
+  Step no. 358 change : 0.168224
+  Step no. 359 change : 0.18807
+ Rank-1 approximation of the time courses;  change : 0.877871
+  Step no. 361 change : 0.945476
+  Step no. 362 change : 0.182053
+  Step no. 363 change : 0.19906
+  Step no. 364 change : 0.219913
+  Step no. 365 change : 0.252694
+  Step no. 366 change : 0.284431
+  Step no. 367 change : 0.324787
+  Step no. 368 change : 0.364528
+  Step no. 369 change : 0.414583
+ Rank-1 approximation of the time courses;  change : 0.985481
+  Step no. 371 change : 0.96989
+  Step no. 372 change : 0.620337
+  Step no. 373 change : 0.717716
+  Step no. 374 change : 0.825757
+  Step no. 375 change : 0.932019
+  Step no. 376 change : 0.374175
+  Step no. 377 change : 0.157359
+  Step no. 378 change : 0.063212
+  Step no. 379 change : 0.041824
+ Rank-1 approximation of the time courses;  change : 0.778434
+  Step no. 381 change : 0.942224
+  Step no. 382 change : 0.0260274
+  Step no. 383 change : 0.0204367
+  Step no. 384 change : 0.0174198
+  Step no. 385 change : 0.0160758
+  Step no. 386 change : 0.0157692
+  Step no. 387 change : 0.0162794
+  Step no. 388 change : 0.0173037
+  Step no. 389 change : 0.018857
+ Rank-1 approximation of the time courses;  change : 0.274196
+  Step no. 391 change : 0.942302
+  Step no. 392 change : 0.011559
+  Step no. 393 change : 0.0103713
+  Step no. 394 change : 0.0104605
+  Step no. 395 change : 0.0110962
+  Step no. 396 change : 0.011997
+  Step no. 397 change : 0.013238
+  Step no. 398 change : 0.0147147
+  Step no. 399 change : 0.0168801
+ Rank-1 approximation of the time courses;  change : 0.286112
+  Step no. 401 change : 0.94229
+  Step no. 402 change : 0.0496043
+  Step no. 403 change : 0.0545206
+  Step no. 404 change : 0.0606984
+  Step no. 405 change : 0.0682982
+  Step no. 406 change : 0.0771638
+  Step no. 407 change : 0.0871273
+  Step no. 408 change : 0.0988557
+  Step no. 409 change : 0.11168
+ Rank-1 approximation of the time courses;  change : 0.812692
+  Step no. 411 change : 0.942384
+  Step no. 412 change : 0.108936
+  Step no. 413 change : 0.116495
+  Step no. 414 change : 0.125599
+  Step no. 415 change : 0.139696
+  Step no. 416 change : 0.158105
+  Step no. 417 change : 0.181262
+  Step no. 418 change : 0.204635
+  Step no. 419 change : 0.233573
+ Rank-1 approximation of the time courses;  change : 0.967158
+  Step no. 421 change : 0.956491
+  Step no. 422 change : 0.377883
+  Step no. 423 change : 0.428943
+  Step no. 424 change : 0.48569
+  Step no. 425 change : 0.543743
+  Step no. 426 change : 0.616148
+  Step no. 427 change : 0.6873
+  Step no. 428 change : 0.779594
+  Step no. 429 change : 0.869367
+ Rank-1 approximation of the time courses;  change : 0.999857
+  Step no. 431 change : 0.958602
+  Step no. 432 change : 0.124199
+  Step no. 433 change : 0.0533596
+  Step no. 434 change : 0.035575
+  Step no. 435 change : 0.0220238
+  Step no. 436 change : 0.0146201
+  Step no. 437 change : 0.00915897
+  Step no. 438 change : 0.00601231
+  Step no. 439 change : 0.00379177
+ Rank-1 approximation of the time courses;  change : 0.974899
+  Step no. 441 change : 0.942289
+  Step no. 442 change : 0.00601126
+  Step no. 443 change : 0.00606745
+  Step no. 444 change : 0.00654955
+  Step no. 445 change : 0.00728732
+  Step no. 446 change : 0.00818722
+  Step no. 447 change : 0.00925205
+  Step no. 448 change : 0.0104923
+  Step no. 449 change : 0.0119017
+ Rank-1 approximation of the time courses;  change : 0.116623
+  Step no. 451 change : 0.942294
+  Step no. 452 change : 0.00943379
+  Step no. 453 change : 0.00775597
+  Step no. 454 change : 0.00739046
+  Step no. 455 change : 0.00752197
+  Step no. 456 change : 0.00788551
+  Step no. 457 change : 0.00852357
+  Step no. 458 change : 0.00932385
+  Step no. 459 change : 0.0103434
+ Rank-1 approximation of the time courses;  change : 0.203177
+  Step no. 461 change : 0.942286
+  Step no. 462 change : 0.0361815
+  Step no. 463 change : 0.0394364
+  Step no. 464 change : 0.0437111
+  Step no. 465 change : 0.0491057
+  Step no. 466 change : 0.0553978
+  Step no. 467 change : 0.062558
+  Step no. 468 change : 0.0709476
+  Step no. 469 change : 0.0802218
+ Rank-1 approximation of the time courses;  change : 0.720257
+  Step no. 471 change : 0.942359
+  Step no. 472 change : 0.0755868
+  Step no. 473 change : 0.0795258
+  Step no. 474 change : 0.0851307
+  Step no. 475 change : 0.0939983
+  Step no. 476 change : 0.104988
+  Step no. 477 change : 0.120543
+  Step no. 478 change : 0.136515
+  Step no. 479 change : 0.156063
+ Rank-1 approximation of the time courses;  change : 0.914658
+  Step no. 481 change : 0.949939
+  Step no. 482 change : 0.253465
+  Step no. 483 change : 0.286067
+  Step no. 484 change : 0.322595
+  Step no. 485 change : 0.361947
+  Step no. 486 change : 0.409761
+  Step no. 487 change : 0.458523
+  Step no. 488 change : 0.519276
+  Step no. 489 change : 0.579704
+ Rank-1 approximation of the time courses;  change : 0.99305
+  Convergence after 490 steps 
+
+Sorting IC maps
+Calculating T- and S-modes 
+Calculating T- and S-modes 
+
+Writing results to : 
+  resTICA/melodic_IC
+  resTICA/melodic_Tmodes
+  resTICA/melodic_Smodes
+  resTICA/melodic_mix
+  resTICA/melodic_FTmix
+  resTICA/melodic_PPCA
+  resTICA/melodic_ICstats
+  resTICA/mask
+...done
+Creating report index page ...done
+
+
+Running Mixture Modelling on Z-transformed IC maps ...
+  IC map 1 ... 
+   calculating mixture-model fit 
+   re-scaling spatial maps ... 
+   thresholding ... 
+   alternative hypothesis test at p > 0.5
+   creating report page ...    done
+  IC map 2 ... 
+   calculating mixture-model fit 
+   re-scaling spatial maps ... 
+   thresholding ... 
+   2-sided null hypothesis test at 0.05
+   2-sided null hypothesis test at 0.01
+   creating report page ...    done
+  IC map 3 ... 
+   calculating mixture-model fit 
+   re-scaling spatial maps ... 
+   thresholding ... 
+   alternative hypothesis test at p > 0.5
+   creating report page ...    done
+  IC map 4 ... 
+   calculating mixture-model fit 
+   re-scaling spatial maps ... 
+   thresholding ... 
+   alternative hypothesis test at p > 0.5
+   creating report page ...    done
+  IC map 5 ... 
+   calculating mixture-model fit 
+   re-scaling spatial maps ... 
+   thresholding ... 
+   2-sided null hypothesis test at 0.05
+   2-sided null hypothesis test at 0.01
+   creating report page ...    done
+  IC map 6 ... 
+   calculating mixture-model fit 
+   re-scaling spatial maps ... 
+   thresholding ... 
+   alternative hypothesis test at p > 0.5
+   creating report page ...    done
+
+Writing results to : 
+  resTICA/melodic_IC
+  resTICA/melodic_Tmodes
+  resTICA/melodic_Smodes
+  resTICA/melodic_mix
+  resTICA/melodic_FTmix
+  resTICA/melodic_PPCA
+  resTICA/melodic_ICstats
+  resTICA/mask
+...done
+
+
+ To view the output report point your web browser at resTICA/report/00index.html
+
+finished!
+
