@@ -870,10 +870,6 @@ testmat(sub=1, JU=1, bin=1)
 ## Separate Motion from Scrambled and write the niftis
 ```{r}
 
-nii <- asNifti(mats[[1]])
-writeNifti(nii, paste0(TICAdir,"/subtest.nii.gz"))
-
-
 # Intacts are on top, and the number of time points is exactly the half (as expected)
 idx_Motion <- 1:(1148/2)
 idx_Scrambled <- (1148/2 + 1):1148
@@ -889,15 +885,35 @@ library(RNifti)
 
 writeimgs <- function(sub,mat,flavour) {
   nii <- asNifti(mat)
-  writeNifti(nii, paste0(TICAdir,"/nii4TICA/",sub,"_",flavour,".nii.gz"))
+  writeNifti(nii, paste0(TICAdir,"/nii4TICA/",flavour,"_",sub,".nii.gz"))
 }
 
-walk2(listsub, mats_Motion, ~ writeimgs(.x, .y, "M"))
-walk2(listsub, mats_Scrambled, ~ writeimgs(.x, .y, "S"))
+walk2(listsub, mats_Motion, ~ writeimgs(.x, .y, "Motion"))
+walk2(listsub, mats_Scrambled, ~ writeimgs(.x, .y, "Scrambled"))
 
 
 
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
