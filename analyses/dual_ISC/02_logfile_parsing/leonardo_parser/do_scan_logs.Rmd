@@ -1,0 +1,213 @@
+---
+title: "Processing layerfMRI scan logs"
+author: "LC"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    toc: true
+    code_folding: show
+---
+
+
+## Read the list of all files
+```{r}
+# !diagnostics off
+
+library(tidyverse)
+
+bd = "/Users/leonardo/GoogleDrive/LAYER_fMRI/logs/"
+
+TR <- 4.1
+
+df_files <- list.files(paste0(bd,"/clean/")) %>% 
+        as_tibble() %>%
+        rename(filename = value) %>% 
+        rowwise() %>% 
+        tidyr::separate(
+          filename, c("sub","session","set","garbage","run"),
+          sep = "_", fill = "right", remove = F
+        ) %>% 
+        select(!garbage) %>% 
+        mutate(
+          ses = str_extract(session,"[1-2]"),
+          task = str_extract(set,"[1-4]"),
+          run = str_extract(run, "[1-2]")
+        ) %>% 
+        select(!c(session,set))
+      
+df_files
+
+```
+
+
+
+## Prepare the function to parse the log files
+```{r message=FALSE}
+
+
+
+parse_log <- function(filename) {
+  
+  logfile <- paste0(bd,"/clean/",filename)
+  sub <- str_split(filename,"_") %>% unlist() %>% .[1]
+  
+  # read file and skip the first lines
+  file_content <- readr::read_delim(logfile, skip = 3, delim = "\t")
+  
+  # (1) get the muviz and their duration in nTR 
+  # (table at the bottom of the text file)
+  muviz <- file_content %>% filter(grepl("SBL",Subject))
+  
+  muviz <- muviz %>% 
+   select(Subject, Duration) %>%
+   rowwise() %>% 
+   mutate(name = strsplit(Subject, "\\", fixed = T) %>% unlist() %>% tail(n=1)) %>% 
+   mutate(nTR = round(as.numeric(Duration)/10000/TR)) %>% 
+   select(name, Duration, nTR)
+  
+  
+  # (2) get the log
+  log <- file_content %>% filter(grepl(sub, Subject))
+  
+  
+  # remove the "Response" lines and create a column to write the pulse numba
+  log <- log %>% 
+   rename(event_type = `Event Type`) %>% 
+   filter(event_type != 'Response') %>% 
+   select(event_type, Code, Time) %>% 
+   mutate(pulse_numba = 0)
+  
+  
+  # fill the column contaning the pulse numba
+  idx_pulse <- log$event_type == "Pulse"
+  log$pulse_numba[idx_pulse] <- 1:sum(idx_pulse)
+
+  
+  # (1) shift the pulse_numba of -1 so that the pulse_numba on each video 
+  #     (Action[N]) corresponds to the starting volume/time point
+  # (2) na.omit, thereby getting rid of the last row with 'Quit'
+  # (3) isolate the rows with movies
+  log <- log %>% 
+    mutate(muvi_start_volume = lead(pulse_numba, n = 1)) %>%
+    na.omit() %>% 
+    filter(grepl("Action",Code)) %>% 
+    select(Code, muvi_start_volume)
+  
+  
+  # join log and muviz to get the final values
+  # NB: I use -2 to calculate the final volume since with -1 
+  #     I have volumes which were out of the acquisition (FU)
+  log <- cbind(muviz,log) %>% 
+    mutate(muvi_end_volume = muvi_start_volume + nTR - 2) %>% 
+    mutate(filename = filename)
+    
+  
+  return(log)
+  
+}
+
+# # tester
+# poppa <- parse_log(df_files$filename[1]) %>% suppressWarnings()
+
+```
+
+
+
+## Parse all the files using `map`
+```{r message=FALSE}
+
+df_logs <- df_files$filename %>% 
+  map_df(~ parse_log(.x) %>% suppressWarnings()) %>% 
+  group_by(filename) %>% 
+  nest()
+
+df <- inner_join(df_files, df_logs, by="filename")
+
+df <- df %>% unnest(cols = c(data))
+
+colnames(df)
+
+```
+
+
+
+## Do some checks
+```{r}
+
+# # generic check
+# df %>%
+#   group_by(name) %>%
+#   select(c(filename,name,nTR,muvi_start_volume,muvi_end_volume)) %>%
+#   group_split()
+
+
+# Checking that a given movie covers the same numba of time points
+# in all subs (the var_nTR should be always 0)
+df %>% 
+  group_by(name) %>%
+  summarise(
+    nTR_min = min(nTR),
+    nTR_max = max(nTR),
+    var_nTR = var(nTR),
+    .groups = "drop"
+  )
+
+
+# In order for ISFC/TICA to be feasible, the concatenated time course
+# of all movies must have the same length in all subs
+df %>% 
+  group_by(sub) %>%
+  select(sub,name,nTR) %>%
+  summarise(tot_TR = sum(nTR), .groups="drop")
+
+# # Overview of the start/end TR and duration for each muvi across subs
+# df %>% 
+#   group_by(name) %>% 
+#   select(name, muvi_start_volume, muvi_end_volume, nTR) %>% 
+#   group_split()
+
+
+# Check the alignment of all muvis across subs visually
+# NB: if you want to use Duration instead of nTR you first need to mutate it
+# as.numeric
+n_muvis <- df$name %>% unique() %>% length
+colori = rainbow(n_muvis, s=.6, v=.9)[sample(1:n_muvis,n_muvis)]
+
+df %>%
+  select(sub, name, Duration) %>% 
+  arrange(sub,name) %>%
+  ggplot(aes(fill = name, y = as.numeric(Duration), x = sub)) +
+    geom_bar(position = "stack", stat = "identity") +
+    scale_fill_manual(values=colori) +
+    theme(axis.text.x=element_text(angle=45, hjust=1))
+
+```
+
+## Save the whole thing
+```{r}
+
+write.csv(df, paste0(bd,"/timings.csv"))
+
+df
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

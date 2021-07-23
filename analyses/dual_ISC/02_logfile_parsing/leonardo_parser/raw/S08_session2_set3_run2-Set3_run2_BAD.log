@@ -1,0 +1,41 @@
+Scenario - Set3
+Logfile written - 02/22/2018 11:09:41
+
+Subject	Pulse	Event Type	Code	Time	TTime	Uncertainty	Duration	Uncertainty	ReqTime	ReqDur	Stim Type	Pair Index
+
+S08_session2_set3_run2	0	Response	1	327250	327250	0
+S08_session2_set3_run2	1	Pulse	1	327250	327250	0
+S08_session2_set3_run2	1	Response	1	368340	368340	0
+S08_session2_set3_run2	2	Pulse	1	368340	368340	0
+S08_session2_set3_run2	2	Picture	BL	368968	368968	1	480469	1	0	next	other	0
+S08_session2_set3_run2	2	Response	1	409430	409430	0
+S08_session2_set3_run2	3	Pulse	1	409430	409430	0
+S08_session2_set3_run2	3	Response	1	450520	450520	0
+S08_session2_set3_run2	4	Pulse	1	450520	450520	0
+S08_session2_set3_run2	4	Video	Action1	450646	450646	1			0		other	0
+S08_session2_set3_run2	4	Response	1	491610	491610	0
+S08_session2_set3_run2	5	Pulse	1	491610	491610	0
+S08_session2_set3_run2	5	Response	1	532700	532700	0
+S08_session2_set3_run2	6	Pulse	1	532700	532700	0
+S08_session2_set3_run2	6	Response	1	573790	573790	0
+S08_session2_set3_run2	7	Pulse	1	573790	573790	0
+S08_session2_set3_run2	7	Response	1	614880	614880	0
+S08_session2_set3_run2	8	Pulse	1	614880	614880	0
+S08_session2_set3_run2	8	Response	1	655970	655970	0
+S08_session2_set3_run2	9	Pulse	1	655970	655970	0
+S08_session2_set3_run2	9	Response	1	697060	697060	0
+S08_session2_set3_run2	10	Pulse	1	697060	697060	0
+S08_session2_set3_run2	10	Response	1	738142	738142	8
+S08_session2_set3_run2	11	Pulse	1	738142	738142	8
+S08_session2_set3_run2	11	Quit		830110	830110	NA
+
+
+video summary
+filename	start frame	end frame	frames presented	frames dropped	start time	end time	duration
+H:\SBL\1.ActionPrediction_June2017\Stimuli\S22shirtD.avi	1	949	911	38	450646	829782	379136
+
+
+Event Type	Code	Type	Response	RT	RT Uncertainty	Time	Uncertainty	Duration	Uncertainty	ReqTime	ReqDur
+
+Picture	BL	other				368968	1	480469	1	0	next
+Video	Action1	other				450646	1			0

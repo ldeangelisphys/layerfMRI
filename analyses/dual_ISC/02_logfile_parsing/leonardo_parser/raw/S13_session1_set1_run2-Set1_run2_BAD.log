@@ -1,0 +1,27 @@
+Scenario - Set1
+Logfile written - 09/14/2018 12:54:29
+
+Subject	Pulse	Event Type	Code	Time	TTime	Uncertainty	Duration	Uncertainty	ReqTime	ReqDur	Stim Type	Pair Index
+
+S13_session1_set1_run2	0	Response	1	1034286	1034286	0
+S13_session1_set1_run2	1	Pulse	1	1034286	1034286	0
+S13_session1_set1_run2	1	Response	1	1075376	1075376	0
+S13_session1_set1_run2	2	Pulse	1	1075376	1075376	0
+S13_session1_set1_run2	2	Picture	BL	1075993	1075993	1	202636	1	0	next	other	0
+S13_session1_set1_run2	2	Response	1	1116465	1116465	0
+S13_session1_set1_run2	3	Pulse	1	1116465	1116465	0
+S13_session1_set1_run2	3	Response	1	1157555	1157555	0
+S13_session1_set1_run2	4	Pulse	1	1157555	1157555	0
+S13_session1_set1_run2	4	Video	Action1	1157658	1157658	1			0		other	0
+S13_session1_set1_run2	4	Quit		1257246	1257246	NA
+
+
+video summary
+filename	start frame	end frame	frames presented	frames dropped	start time	end time	duration
+H:\SBL\1.ActionPrediction_June2017\Stimuli\S8frameD.avi	1	249	239	10	1157658	1256840	99183
+
+
+Event Type	Code	Type	Response	RT	RT Uncertainty	Time	Uncertainty	Duration	Uncertainty	ReqTime	ReqDur
+
+Picture	BL	other				1075993	1	202636	1	0	next
+Video	Action1	other				1157658	1			0

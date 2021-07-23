@@ -1,0 +1,53 @@
+Scenario - Set1
+Logfile written - 02/14/2018 13:04:48
+
+Subject	Trial	Event Type	Code	Time	TTime	Uncertainty	Duration	Uncertainty	ReqTime	ReqDur	Stim Type	Pair Index
+
+S07_session1_set1_run1	0	Response	1	329179	329179	0
+S07_session1_set1_run1	0	Pulse	1	329179	329179	0
+S07_session1_set1_run1	0	Response	1	370269	370269	0
+S07_session1_set1_run1	0	Pulse	1	370269	370269	0
+S07_session1_set1_run1	1	Picture	BL	371052	0	1	623254	1	0	next	other	0
+S07_session1_set1_run1	1	Response	1	411359	40307	0
+S07_session1_set1_run1	1	Pulse	1	411359	40307	0
+S07_session1_set1_run1	1	Response	1	451053	80001	1397
+S07_session1_set1_run1	1	Pulse	1	451053	80001	1397
+S07_session1_set1_run1	1	Response	1	493539	122487	0
+S07_session1_set1_run1	1	Pulse	1	493539	122487	0
+S07_session1_set1_run1	1	Video	Action1	493652	122601	1			0		other	0
+S07_session1_set1_run1	1	Response	1	534629	163577	0
+S07_session1_set1_run1	1	Pulse	1	534629	163577	0
+S07_session1_set1_run1	1	Response	1	575719	204667	0
+S07_session1_set1_run1	1	Pulse	1	575719	204667	0
+S07_session1_set1_run1	1	Response	1	616809	245757	1
+S07_session1_set1_run1	1	Pulse	1	616809	245757	1
+S07_session1_set1_run1	1	Response	1	657899	286847	0
+S07_session1_set1_run1	1	Pulse	1	657899	286847	0
+S07_session1_set1_run1	1	Response	1	698989	327937	0
+S07_session1_set1_run1	1	Pulse	1	698989	327937	0
+S07_session1_set1_run1	1	Response	1	740079	369027	0
+S07_session1_set1_run1	1	Pulse	1	740079	369027	0
+S07_session1_set1_run1	1	Response	1	781169	410117	0
+S07_session1_set1_run1	1	Pulse	1	781169	410117	0
+S07_session1_set1_run1	1	Response	1	822259	451207	0
+S07_session1_set1_run1	1	Pulse	1	822259	451207	0
+S07_session1_set1_run1	1	Response	1	863349	492298	0
+S07_session1_set1_run1	1	Pulse	1	863349	492298	0
+S07_session1_set1_run1	1	Response	1	904439	533388	0
+S07_session1_set1_run1	1	Pulse	1	904439	533388	0
+S07_session1_set1_run1	1	Response	1	945529	574478	0
+S07_session1_set1_run1	1	Pulse	1	945529	574478	0
+S07_session1_set1_run1	2	Picture	BL	994306	0	1	186867	1	0	next	other	0
+S07_session1_set1_run1	2	Quit		1176240	181934	NA
+
+
+video summary
+filename	start frame	end frame	frames presented	frames dropped	start time	end time	duration
+H:\SBL\1.ActionPrediction_June2017\Stimuli\S1ballonD.avi	1	1250	1249	1	493652	993639	499987
+
+
+Event Type	Code	Type	Response	RT	RT Uncertainty	Time	Uncertainty	Duration	Uncertainty	ReqTime	ReqDur
+
+Picture	BL	other				371052	1	623254	1	0	next
+Video	Action1	other				493652	1			0
+Picture	BL	other				994306	1	186867	1	0	next

@@ -1,0 +1,181 @@
+---
+title: "fig. 4 - ISFC results"
+output: html_document
+runtime: shiny
+---
+
+
+## Set up the root directory!
+```{r, setup, include=FALSE}
+
+bd="/Users/leonardo/GoogleDrive/LAYER_fMRI/__PAPER__/figures/"
+thisfigdir="fig_4_ISFC_matrices/"
+
+datadir=paste0(bd,thisfigdir,'/Data/')
+pdfdir=paste0(bd,thisfigdir,'/FigureElementsPDF/')
+
+knitr::opts_knit$set(root.dir = datadir)
+getwd()
+```
+
+
+
+```{r,message=F,echo=F}
+library(shiny)
+library(tidyverse)
+library(plot.matrix)
+library(plotly)
+library(RColorBrewer)
+
+
+nbin = 6
+
+filename_template <- paste0(
+  getwd(), "/",
+  "CORR_FLAVOUR_t-values_CONTRAST_SEED_1-SEED_2_thr100_bin6.txt"
+)
+
+
+
+df <- as_tibble(list.files(pattern = "*t-values*"))
+colnames(df) <- "filename"
+
+df <- df %>% 
+  rowwise() %>% 
+  mutate(corr_flavour = str_extract(filename, "ISFC|WSFC")) %>% 
+  mutate(contrast = str_split(filename,"_")[[1]][3]) %>% 
+  mutate(seed_1 = str_split(str_split(filename,"_")[[1]][4], "-")[[1]][1]) %>%
+  mutate(seed_2 = str_split(str_split(filename,"_")[[1]][4], "-")[[1]][2]) %>% 
+  mutate(choiceNames = paste(corr_flavour,contrast,seed_1,"~",seed_2,sep = " "))
+
+# df
+
+
+radioButtons(
+  "choose_flavour",
+  "Choose which contrast to display",
+  choiceNames = df$choiceNames,
+  choiceValues = df$filename 
+)
+
+radioButtons(
+  "showaxis",
+  label = "Show axis and values",
+  choices = c("Show","Hide")
+)
+
+plotOutput("flavour_plot")
+
+actionButton("savepic","Save me!")
+
+```
+
+```{r,message=F,echo=F}
+
+genplot <- function(filename_template, corr_flavour, contrast, seed_1, seed_2) {
+  
+  CC_file <- str_replace_all(
+    filename_template, c(
+      "CORR_FLAVOUR" = corr_flavour,
+      "CONTRAST" = contrast,
+      "SEED_1" = seed_1,
+      "SEED_2" = seed_2
+    )
+  )
+  
+  CC <- read.table(CC_file, header = F, sep = " ") %>% as.matrix()
+  
+  seed_1_names <- map(1:nbin, ~ paste0(seed_1,"_",.x))
+  seed_2_names <- map(1:nbin, ~ paste0(seed_2,"_",.x))
+  
+  rownames(CC) <- seed_1_names
+  colnames(CC) <- seed_2_names
+
+  # handle the case of a matrix full of zeros (otherwise they would be plot in red)
+  if (sum(CC) == 0) {paletta = "white"} else {paletta = brewer.pal(9,"Reds")}
+  
+  # display the palette with the following in the console
+  # display.brewer.pal(9,"Reds")
+
+  print(CC)
+    
+  if(input$showaxis == "Show") {
+
+    
+      plot(CC,
+        digits=2,
+        asp=T, 
+        col=paletta,
+        # key=NULL, axis.key = NULL,           # uncomment to hide colorbar
+        axis.col = list(side=3, las=2),
+        axis.row = list(side=2, las=1),
+        xlab = "", ylab = "", main = ""
+      )
+    
+  } else {
+    
+      plot(CC,
+        asp=T, 
+        col=paletta,
+        # key=NULL, axis.key = NULL,           # uncomment to hide colorbar
+        axis.row = NULL,
+        axis.col = NULL,
+        xlab = "", ylab = "", main = ""
+      )
+      
+  }
+}
+
+
+# Output matrix on screen
+output$flavour_plot <- renderPlot({
+  
+  chosen <- df %>% 
+    filter(filename == input$choose_flavour) %>% 
+    as.list()
+  
+  par(mar=c(5, 5, 5, 11)) # adapt margins
+  p <- genplot(
+    filename_template, 
+    chosen$corr_flavour, 
+    chosen$contrast, 
+    chosen$seed_1, 
+    chosen$seed_2
+  )
+  
+})
+
+
+# Save the image upon button press
+observeEvent(input$savepic, {
+  
+  chosen <- df %>% 
+    filter(filename == input$choose_flavour) %>% 
+    as.list()
+  
+  plotname <- paste0(chosen$filename,".pdf")
+  pdf(paste0(pdfdir,plotname))
+  
+  par(mar=c(5, 5, 5, 11)) # adapt margins
+  p <- genplot(
+    filename_template, 
+    chosen$corr_flavour, 
+    chosen$contrast, 
+    chosen$seed_1, 
+    chosen$seed_2
+  )
+  
+  dev.off()
+  
+})
+
+
+```
+
+
+
+
+
+
+
+

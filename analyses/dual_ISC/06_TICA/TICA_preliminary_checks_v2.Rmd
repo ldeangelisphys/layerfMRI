@@ -1,0 +1,227 @@
+---
+title: "Checks on muvi duration in logfiles"
+output: html_document
+---
+
+While preparing concatenated time courses of all muvis for a Tensor ICA (TICA) analysis, I noticed that the total length was different across subjects. This should prevent the possibility of running not only TICA, but also ISC.
+
+I decided to investigate further. I previously calculated the length of each muvi as `end_TR - start_TR`, so I first decided to instead check if the total lenght would be the same if, instead of using the _calculated_ length, I would use the _expected_ length of the muvi (which is also reported in the log file)
+
+
+## Load libraries + csv of log_summary
+NB: The `log_summary_FIXED.csv` contains the same info of the `log_summary.csv` 
+prepared by Lorenzo, with just some additional columns and some fixes in the values -
+e.g. "sub_02" instead of "2" in the sub column - to fit my processing scripts
+
+```{r, message=F}
+library(tidyverse)
+library(DT)
+library(kableExtra)
+library(rmarkdown)
+
+df <- read_csv("log_summary_FIXED.csv")
+
+```
+
+
+
+## Checks on the _expected_ duration
+Check that all the concatenated time courses will be of identical length across
+subs. This might sound lame - since we use the ExpectedDuration which is a 
+constant - however the ExpectedDuration is taken from the log file, and we want
+to check that the its value is the same in all subs.
+```{r}
+
+# start/end TR and expected duration for each muvi
+df %>% 
+  group_by(muvi) %>% 
+  select(sub, run, muvi, start_TR, end_TR, ExpectedDuration) %>%
+  arrange(muvi,run) %>% # group_split() 
+  paged_table
+  
+
+
+# In order for ISFC/TICA to be feasible, the concatenated time course
+# of all movies must have the same length in all subs
+df %>% 
+  group_by(sub) %>%
+  select(sub,muvi,ExpectedDuration) %>%
+  summarise(tot_TR = sum(ExpectedDuration), .groups="drop")
+
+
+# Checking that a given movie covers the same numba of time points
+# in all subs. This is important since the the value could potentially
+# differ in the log file of different subs, even though their sum - checked
+# above - might still be the same.
+# Briefly, the var_nTR in the table below should always be 0
+df %>% 
+  group_by(muvi) %>%
+  summarise(
+    nTR_min = min(ExpectedDuration),
+    nTR_max = max(ExpectedDuration),
+    var_nTR = var(ExpectedDuration),
+    .groups = "drop"
+  ) %>% 
+  paged_table
+
+
+# # Checking that the end_TR does not go above the recorded length of the fmri 4D
+# # (data to be gathered using fsl in the terminal - CORRECT and long to display)
+# df %>% 
+#   group_by(ses,task,run,sub) %>% 
+#   summarise(
+#     max_end_TR = max(end_TR),
+#     var_end_TR = var(max(end_TR)),
+#     .groups = "drop"
+#   ) %>%
+#   group_by(sub) %>% 
+#   group_split()
+
+```
+
+
+
+## Checks on the _recorded_ duration - i.e. that recorded in the log file. Problems here.
+```{r}
+# -------- PROBLEM HERE!! --------------------------------
+
+# Calculate the total lenght of the time course for each sub if we consider
+# end_TR - start_TR
+df %>% 
+  group_by(sub) %>% 
+  select(sub,start_TR, end_TR) %>% 
+  mutate(CalculatedDuration = end_TR - start_TR) %>% 
+  summarise(total_tc_length = sum(CalculatedDuration))
+
+
+```
+
+
+The difference between expected and calculated length of the concatenated
+time course is not that big (max 7 TR), however there are larger differences
+in the calculated vs. expected muvi duration (up to 11 TRs).
+
+This means that while the total length is not very different across subs, the
+recorded alignment of the muvis across subs can vary substantially
+
+```{r}
+# Mismatch between expected and recorded duration 
+# of the muvis.
+# Note that there is some similarity across subjects (try group_by(sub) )
+# and it happens only for 8 specific intact (M) muvis (try group_by(muvi) )
+df %>% 
+  group_by(muvi) %>% 
+  select(muvi,start_TR, end_TR, ExpectedDuration) %>% 
+  mutate(
+    CalculatedDuration = end_TR - start_TR,
+    Expected_minus_Calculated = ExpectedDuration - CalculatedDuration
+  ) %>% 
+  filter(Expected_minus_Calculated != 0) %>% 
+  # group_split()
+  summarise(
+    avgMismatch = mean(Expected_minus_Calculated)
+  )
+  
+
+
+# However in reality the misalignment does not look that big
+n_muvis <- df$muvi %>% unique() %>% length
+colori = rainbow(n_muvis, s=.6, v=.9)[sample(1:n_muvis,n_muvis)]
+
+df %>%
+  mutate(duration = end_TR - start_TR) %>% 
+  select(sub, muvi, duration) %>% 
+  arrange(sub,muvi) %>%
+  ggplot(aes(fill = muvi, y = duration, x = sub)) +
+    geom_bar(position = "stack", stat = "identity") +
+    scale_fill_manual(values=colori) +
+    theme(axis.text.x=element_text(angle=45, hjust=1))
+
+```
+
+
+
+
+## Fixing the problem using the expected rather than the recorded duration of the movie
+```{r}
+# To fix this, we can use the expected duration instead of the calculated. 
+# As we saw above, this will obviously allow to have concatenated time
+# courses of the same lenght
+df %>% 
+  group_by(sub) %>%
+  select(sub,muvi,ExpectedDuration) %>%
+  summarise(tot_TR = sum(ExpectedDuration), .groups="drop")
+
+
+# However I need to make sure that using start_TR + ExpectedDuration
+# would not go over the recorded length of the time course.
+# Let's check that.
+df %>% 
+  select(muvi,start_TR, end_TR, ExpectedDuration, dim4) %>% 
+  mutate(
+    ImposedDuration = start_TR + ExpectedDuration,
+    overflow = ImposedDuration - dim4
+  ) %>% 
+  filter(overflow > 0)
+
+
+# If I use start_TR + ExpectedDuration, I have three muvis that go
+# over the length of the fmri 4D. This is probably because Lorenzo
+# calculated the start_TR one volume after the recorded start volume
+# of the muvi (it needs a shift -1).
+# We can fix this by using start_TR - 1. This is better than
+# ExpectedDuration - 1 since it also fixes the issue of the lacked shift.
+df %>% 
+  select(muvi,start_TR, end_TR, ExpectedDuration, dim4) %>% 
+  mutate(
+    ImposedDuration = (start_TR - 1) + ExpectedDuration,
+    overflow = ImposedDuration - dim4
+  ) %>% 
+  filter(overflow == 0)
+
+
+# At this point everything is perfectly aligned
+# NB: the colori is defined above, to have the same colors
+
+df %>%
+  select(sub, muvi, ExpectedDuration) %>% 
+  arrange(sub,muvi) %>%
+  ggplot(aes(fill = muvi, y = ExpectedDuration, x = sub)) +
+    geom_bar(position = "stack", stat = "identity") +
+    scale_fill_manual(values=colori) +
+    theme(axis.text.x=element_text(angle=45, hjust=1))
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

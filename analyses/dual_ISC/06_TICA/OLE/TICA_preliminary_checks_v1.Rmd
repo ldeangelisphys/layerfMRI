@@ -1,0 +1,173 @@
+---
+title: "TICA preliminary checks"
+output: html_document
+---
+
+## Checks on the _expected duration_
+```{r}
+library(tidyverse)
+
+df <- read_csv("log_summary_FIXED.csv")
+
+# start/end TR and expected duration for each muvi
+df %>% 
+  group_by(muvi) %>% 
+  select(muvi, start_TR, end_TR, ExpectedDuration) %>% 
+  group_split()
+
+
+# In order for ISFC/TICA to be feasible, the concatenated time course
+# of all movies must have the same length in all subs
+df %>% 
+  group_by(sub) %>%
+  select(sub,muvi,ExpectedDuration) %>%
+  summarise(tot_TR = sum(ExpectedDuration), .groups="drop")
+
+
+# Checking that a given movie covers the same numba of time points
+# in all subs
+df %>% 
+  group_by(muvi) %>%
+  summarise(
+    nTR_min = min(ExpectedDuration),
+    nTR_max = max(ExpectedDuration),
+    var_nTR = var(ExpectedDuration),
+    .groups = "drop"
+  )
+
+
+# Checking that the end_TR does not go above the actual length of the fmri 4D
+# (data to be gathered using fsl in the terminal - CORRECT)
+df %>% 
+  group_by(ses,task,run,sub) %>% 
+  summarise(
+    max_end_TR = max(end_TR),
+    var_end_TR = var(max(end_TR))
+  ) %>%
+  group_by(sub) %>% 
+  group_split()
+```
+
+
+
+## Checks on the _actual_ (i.e. recorded) duration. Problems here.
+```{r}
+# -------- PROBLEM HERE!! --------------------------------
+
+# # Check that the expected and actual duration of the movies are the same -
+# df %>%
+#   select(sub,ses,task,run,ExpectedDuration, start_TR, end_TR, muvi, dim4) %>%
+#   mutate(diff = ExpectedDuration - (end_TR - start_TR)) %>%
+#   select(!c(sub,ses,task,run)) %>%
+#   select(muvi, start_TR, ExpectedDuration, end_TR, dim4, diff) %>%
+#   mutate(start_TR_n_duration = start_TR + ExpectedDuration) %>%  # if I use (start_TR -1) it fixes it
+#   select(muvi, start_TR_n_duration, dim4, diff) %>%
+#   filter(diff != 0) %>%
+#   mutate(diff_dim4_dur = dim4 -start_TR_n_duration) %>%
+#   select(!diff) %>%
+#   group_by(muvi) %>%
+#   group_split()
+
+
+# First note that there is a mismatch between expected and actual duration 
+# of the muvis.
+# Note that there is some similarity across subjects (try group_by(sub) )
+# and it happens only for 8 specific intact (M) muvis (try group_by(muvi) )
+df %>% 
+  group_by(muvi) %>% 
+  select(muvi,start_TR, end_TR, ExpectedDuration) %>% 
+  mutate(
+    RealDuration = end_TR - start_TR,
+    Expected_minus_Real = ExpectedDuration - RealDuration
+  ) %>% 
+  filter(Expected_minus_Real != 0) %>% 
+  group_split()
+
+
+
+# Calculate the total lenght of the time course for each sub if we consider
+# end_TR - start_TR
+df %>% 
+  group_by(sub) %>% 
+  select(sub,start_TR, end_TR) %>% 
+  mutate(CalculatedDuration = end_TR - start_TR) %>% 
+  summarise(total_tc_length = sum(CalculatedDuration))
+
+
+```
+
+
+
+
+## Fixing the problem using the expected rather than the actual duration of the movie
+```{r}
+# To fix this, we can use the expected duration instead of the calculated. 
+# As we saw above, this will obviously allow to have concatenated time
+# courses of the same lenght
+df %>% 
+  group_by(sub) %>%
+  select(sub,muvi,ExpectedDuration) %>%
+  summarise(tot_TR = sum(ExpectedDuration), .groups="drop")
+
+
+# However I need to make sure that using start_TR + ExpectedDuration
+# would not go over the actual length of the time course.
+# Let's check that.
+df %>% 
+  select(muvi,start_TR, end_TR, ExpectedDuration, dim4) %>% 
+  mutate(
+    ImposedDuration = start_TR + ExpectedDuration,
+    overflow = ImposedDuration - dim4
+  ) %>% 
+  filter(overflow > 0)
+
+
+# If I use start_TR + ExpectedDuration, I have three muvis that go
+# over the length of the fmri 4D. This is probably because Lorenzo
+# calculated the start_TR one volume after the actual start volume
+# of the muvi (because he didn't shift -1).
+# We can fix this by using start_TR - 1. This is better than
+# ExpectedDuration - 1 since it also fixes the issue of the lacked shift.
+df %>% 
+  select(muvi,start_TR, end_TR, ExpectedDuration, dim4) %>% 
+  mutate(
+    ImposedDuration = (start_TR - 1) + ExpectedDuration,
+    overflow = ImposedDuration - dim4
+  ) %>% 
+  filter(overflow == 0)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

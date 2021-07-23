@@ -1,0 +1,514 @@
+Scenario - Set1
+Logfile written - 03/02/2018 11:00:55
+
+Subject	Trial	Event Type	Code	Time	TTime	Uncertainty	Duration	Uncertainty	ReqTime	ReqDur	Stim Type	Pair Index
+
+S10_session1_set1_run1	0	Response	1	334116	334116	0
+S10_session1_set1_run1	0	Pulse	1	334116	334116	0
+S10_session1_set1_run1	0	Response	1	375206	375206	0
+S10_session1_set1_run1	0	Pulse	1	375206	375206	0
+S10_session1_set1_run1	1	Picture	BL	375802	0	1	623420	1	0	next	other	0
+S10_session1_set1_run1	1	Response	1	416296	40494	0
+S10_session1_set1_run1	1	Pulse	1	416296	40494	0
+S10_session1_set1_run1	1	Response	1	455805	80003	1582
+S10_session1_set1_run1	1	Pulse	1	455805	80003	1582
+S10_session1_set1_run1	1	Response	1	498476	122674	0
+S10_session1_set1_run1	1	Pulse	1	498476	122674	0
+S10_session1_set1_run1	1	Video	Action1	498569	122767	1			0		other	0
+S10_session1_set1_run1	1	Response	1	539566	163764	0
+S10_session1_set1_run1	1	Pulse	1	539566	163764	0
+S10_session1_set1_run1	1	Response	1	580656	204854	0
+S10_session1_set1_run1	1	Pulse	1	580656	204854	0
+S10_session1_set1_run1	1	Response	1	621746	245944	1
+S10_session1_set1_run1	1	Pulse	1	621746	245944	1
+S10_session1_set1_run1	1	Response	1	662836	287034	0
+S10_session1_set1_run1	1	Pulse	1	662836	287034	0
+S10_session1_set1_run1	1	Response	1	703926	328124	0
+S10_session1_set1_run1	1	Pulse	1	703926	328124	0
+S10_session1_set1_run1	1	Response	1	745016	369214	0
+S10_session1_set1_run1	1	Pulse	1	745016	369214	0
+S10_session1_set1_run1	1	Response	1	786097	410294	10
+S10_session1_set1_run1	1	Pulse	1	786097	410294	10
+S10_session1_set1_run1	1	Response	1	827196	451394	0
+S10_session1_set1_run1	1	Pulse	1	827196	451394	0
+S10_session1_set1_run1	1	Response	1	868286	492484	0
+S10_session1_set1_run1	1	Pulse	1	868286	492484	0
+S10_session1_set1_run1	1	Response	1	909376	533574	0
+S10_session1_set1_run1	1	Pulse	1	909376	533574	0
+S10_session1_set1_run1	1	Response	1	950466	574664	0
+S10_session1_set1_run1	1	Pulse	1	950466	574664	0
+S10_session1_set1_run1	1	Response	1	991556	615754	0
+S10_session1_set1_run1	1	Pulse	1	991556	615754	0
+S10_session1_set1_run1	2	Picture	BL	999222	0	1	906376	1	0	next	other	0
+S10_session1_set1_run1	2	Response	1	1032646	33424	0
+S10_session1_set1_run1	2	Pulse	1	1032646	33424	0
+S10_session1_set1_run1	2	Response	1	1073735	74514	0
+S10_session1_set1_run1	2	Pulse	1	1073735	74514	0
+S10_session1_set1_run1	2	Response	1	1114826	115604	0
+S10_session1_set1_run1	2	Pulse	1	1114826	115604	0
+S10_session1_set1_run1	2	Video	Action2	1114905	115683	1			0		other	0
+S10_session1_set1_run1	2	Response	1	1155915	156694	0
+S10_session1_set1_run1	2	Pulse	1	1155915	156694	0
+S10_session1_set1_run1	2	Response	1	1196996	197774	0
+S10_session1_set1_run1	2	Pulse	1	1196996	197774	0
+S10_session1_set1_run1	2	Response	1	1238086	238864	1
+S10_session1_set1_run1	2	Pulse	1	1238086	238864	1
+S10_session1_set1_run1	2	Response	1	1279175	279953	0
+S10_session1_set1_run1	2	Pulse	1	1279175	279953	0
+S10_session1_set1_run1	2	Response	1	1320265	321043	0
+S10_session1_set1_run1	2	Pulse	1	1320265	321043	0
+S10_session1_set1_run1	2	Response	1	1361356	362134	0
+S10_session1_set1_run1	2	Pulse	1	1361356	362134	0
+S10_session1_set1_run1	2	Response	1	1402440	403219	5
+S10_session1_set1_run1	2	Pulse	1	1402440	403219	5
+S10_session1_set1_run1	2	Response	1	1443535	444314	0
+S10_session1_set1_run1	2	Pulse	1	1443535	444314	0
+S10_session1_set1_run1	2	Response	1	1484625	485404	0
+S10_session1_set1_run1	2	Pulse	1	1484625	485404	0
+S10_session1_set1_run1	2	Response	1	1525715	526493	0
+S10_session1_set1_run1	2	Pulse	1	1525715	526493	0
+S10_session1_set1_run1	2	Response	1	1566805	567583	0
+S10_session1_set1_run1	2	Pulse	1	1566805	567583	0
+S10_session1_set1_run1	2	Response	1	1607895	608673	0
+S10_session1_set1_run1	2	Pulse	1	1607895	608673	0
+S10_session1_set1_run1	2	Response	1	1648985	649763	0
+S10_session1_set1_run1	2	Pulse	1	1648985	649763	0
+S10_session1_set1_run1	2	Response	1	1690075	690853	0
+S10_session1_set1_run1	2	Pulse	1	1690075	690853	0
+S10_session1_set1_run1	2	Response	1	1731165	731943	0
+S10_session1_set1_run1	2	Pulse	1	1731165	731943	0
+S10_session1_set1_run1	2	Response	1	1772255	773033	0
+S10_session1_set1_run1	2	Pulse	1	1772255	773033	0
+S10_session1_set1_run1	2	Response	1	1813345	814123	0
+S10_session1_set1_run1	2	Pulse	1	1813345	814123	0
+S10_session1_set1_run1	2	Response	1	1854435	855213	0
+S10_session1_set1_run1	2	Pulse	1	1854435	855213	0
+S10_session1_set1_run1	2	Response	1	1895525	896303	0
+S10_session1_set1_run1	2	Pulse	1	1895525	896303	0
+S10_session1_set1_run1	3	Picture	BL	1905598	0	1	624003	1	0	next	other	0
+S10_session1_set1_run1	3	Response	1	1936615	31017	0
+S10_session1_set1_run1	3	Pulse	1	1936615	31017	0
+S10_session1_set1_run1	3	Response	1	1977704	72107	0
+S10_session1_set1_run1	3	Pulse	1	1977704	72107	0
+S10_session1_set1_run1	3	Response	1	2018795	113197	0
+S10_session1_set1_run1	3	Pulse	1	2018795	113197	0
+S10_session1_set1_run1	3	Video	Action3	2018863	113266	1			0		other	0
+S10_session1_set1_run1	3	Response	1	2059885	154288	0
+S10_session1_set1_run1	3	Pulse	1	2059885	154288	0
+S10_session1_set1_run1	3	Response	1	2100975	195377	0
+S10_session1_set1_run1	3	Pulse	1	2100975	195377	0
+S10_session1_set1_run1	3	Response	1	2142064	236467	0
+S10_session1_set1_run1	3	Pulse	1	2142064	236467	0
+S10_session1_set1_run1	3	Response	1	2183155	277557	0
+S10_session1_set1_run1	3	Pulse	1	2183155	277557	0
+S10_session1_set1_run1	3	Response	1	2224245	318647	0
+S10_session1_set1_run1	3	Pulse	1	2224245	318647	0
+S10_session1_set1_run1	3	Response	1	2265334	359737	0
+S10_session1_set1_run1	3	Pulse	1	2265334	359737	0
+S10_session1_set1_run1	3	Response	1	2306424	400826	1
+S10_session1_set1_run1	3	Pulse	1	2306424	400826	1
+S10_session1_set1_run1	3	Response	1	2347514	441917	0
+S10_session1_set1_run1	3	Pulse	1	2347514	441917	0
+S10_session1_set1_run1	3	Response	1	2388604	483007	0
+S10_session1_set1_run1	3	Pulse	1	2388604	483007	0
+S10_session1_set1_run1	3	Response	1	2429694	524097	0
+S10_session1_set1_run1	3	Pulse	1	2429694	524097	0
+S10_session1_set1_run1	3	Response	1	2470785	565187	0
+S10_session1_set1_run1	3	Pulse	1	2470785	565187	0
+S10_session1_set1_run1	3	Response	1	2511874	606277	0
+S10_session1_set1_run1	3	Pulse	1	2511874	606277	0
+S10_session1_set1_run1	4	Picture	BL	2529601	0	1	826365	1	0	next	other	0
+S10_session1_set1_run1	4	Response	1	2552964	23363	0
+S10_session1_set1_run1	4	Pulse	1	2552964	23363	0
+S10_session1_set1_run1	4	Response	1	2594054	64453	0
+S10_session1_set1_run1	4	Pulse	1	2594054	64453	0
+S10_session1_set1_run1	4	Response	1	2635144	105543	0
+S10_session1_set1_run1	4	Pulse	1	2635144	105543	0
+S10_session1_set1_run1	4	Video	Action4	2635199	105598	1			0		other	0
+S10_session1_set1_run1	4	Response	1	2676234	146633	0
+S10_session1_set1_run1	4	Pulse	1	2676234	146633	0
+S10_session1_set1_run1	4	Response	1	2717324	187723	0
+S10_session1_set1_run1	4	Pulse	1	2717324	187723	0
+S10_session1_set1_run1	4	Response	1	2758414	228814	1
+S10_session1_set1_run1	4	Pulse	1	2758414	228814	1
+S10_session1_set1_run1	4	Response	1	2799504	269903	0
+S10_session1_set1_run1	4	Pulse	1	2799504	269903	0
+S10_session1_set1_run1	4	Response	1	2840594	310993	0
+S10_session1_set1_run1	4	Pulse	1	2840594	310993	0
+S10_session1_set1_run1	4	Response	1	2881684	352083	0
+S10_session1_set1_run1	4	Pulse	1	2881684	352083	0
+S10_session1_set1_run1	4	Response	1	2922763	393163	11
+S10_session1_set1_run1	4	Pulse	1	2922763	393163	11
+S10_session1_set1_run1	4	Response	1	2963864	434263	0
+S10_session1_set1_run1	4	Pulse	1	2963864	434263	0
+S10_session1_set1_run1	4	Response	1	3004954	475353	0
+S10_session1_set1_run1	4	Pulse	1	3004954	475353	0
+S10_session1_set1_run1	4	Response	1	3046044	516443	0
+S10_session1_set1_run1	4	Pulse	1	3046044	516443	0
+S10_session1_set1_run1	4	Response	1	3087134	557533	0
+S10_session1_set1_run1	4	Pulse	1	3087134	557533	0
+S10_session1_set1_run1	4	Response	1	3128224	598623	0
+S10_session1_set1_run1	4	Pulse	1	3128224	598623	0
+S10_session1_set1_run1	4	Response	1	3169314	639713	0
+S10_session1_set1_run1	4	Pulse	1	3169314	639713	0
+S10_session1_set1_run1	4	Response	1	3210403	680802	0
+S10_session1_set1_run1	4	Pulse	1	3210403	680802	0
+S10_session1_set1_run1	4	Response	1	3251494	721893	0
+S10_session1_set1_run1	4	Pulse	1	3251494	721893	0
+S10_session1_set1_run1	4	Response	1	3292574	762973	0
+S10_session1_set1_run1	4	Pulse	1	3292574	762973	0
+S10_session1_set1_run1	4	Response	1	3333663	804063	0
+S10_session1_set1_run1	4	Pulse	1	3333663	804063	0
+S10_session1_set1_run1	5	Picture	BL	3355965	0	1	891707	1	0	next	other	0
+S10_session1_set1_run1	5	Response	1	3374753	18788	0
+S10_session1_set1_run1	5	Pulse	1	3374753	18788	0
+S10_session1_set1_run1	5	Response	1	3415843	59878	0
+S10_session1_set1_run1	5	Pulse	1	3415843	59878	0
+S10_session1_set1_run1	5	Response	1	3456933	100968	0
+S10_session1_set1_run1	5	Pulse	1	3456933	100968	0
+S10_session1_set1_run1	5	Video	Action5	3456979	101014	1			0		other	0
+S10_session1_set1_run1	5	Response	1	3498023	142058	0
+S10_session1_set1_run1	5	Pulse	1	3498023	142058	0
+S10_session1_set1_run1	5	Response	1	3539113	183148	0
+S10_session1_set1_run1	5	Pulse	1	3539113	183148	0
+S10_session1_set1_run1	5	Response	1	3580203	224238	1
+S10_session1_set1_run1	5	Pulse	1	3580203	224238	1
+S10_session1_set1_run1	5	Response	1	3621293	265328	0
+S10_session1_set1_run1	5	Pulse	1	3621293	265328	0
+S10_session1_set1_run1	5	Response	1	3662383	306418	0
+S10_session1_set1_run1	5	Pulse	1	3662383	306418	0
+S10_session1_set1_run1	5	Response	1	3703473	347508	0
+S10_session1_set1_run1	5	Pulse	1	3703473	347508	0
+S10_session1_set1_run1	5	Response	1	3744562	388596	1
+S10_session1_set1_run1	5	Pulse	1	3744562	388596	1
+S10_session1_set1_run1	5	Response	1	3785653	429687	0
+S10_session1_set1_run1	5	Pulse	1	3785653	429687	0
+S10_session1_set1_run1	5	Response	1	3826743	470778	0
+S10_session1_set1_run1	5	Pulse	1	3826743	470778	0
+S10_session1_set1_run1	5	Response	1	3867833	511868	0
+S10_session1_set1_run1	5	Pulse	1	3867833	511868	0
+S10_session1_set1_run1	5	Response	1	3908923	552957	0
+S10_session1_set1_run1	5	Pulse	1	3908923	552957	0
+S10_session1_set1_run1	5	Response	1	3950013	594047	0
+S10_session1_set1_run1	5	Pulse	1	3950013	594047	0
+S10_session1_set1_run1	5	Response	1	3991103	635137	0
+S10_session1_set1_run1	5	Pulse	1	3991103	635137	0
+S10_session1_set1_run1	5	Response	1	4032192	676227	0
+S10_session1_set1_run1	5	Pulse	1	4032192	676227	0
+S10_session1_set1_run1	5	Response	1	4073283	717317	0
+S10_session1_set1_run1	5	Pulse	1	4073283	717317	0
+S10_session1_set1_run1	5	Response	1	4114373	758407	0
+S10_session1_set1_run1	5	Pulse	1	4114373	758407	0
+S10_session1_set1_run1	5	Response	1	4155463	799497	0
+S10_session1_set1_run1	5	Pulse	1	4155463	799497	0
+S10_session1_set1_run1	5	Response	1	4196540	840575	12
+S10_session1_set1_run1	5	Pulse	1	4196540	840575	12
+S10_session1_set1_run1	5	Response	1	4237642	881676	0
+S10_session1_set1_run1	5	Pulse	1	4237642	881676	0
+S10_session1_set1_run1	6	Picture	BL	4247672	0	1	934046	1	0	next	other	0
+S10_session1_set1_run1	6	Response	1	4278732	31060	0
+S10_session1_set1_run1	6	Pulse	1	4278732	31060	0
+S10_session1_set1_run1	6	Response	1	4319822	72150	0
+S10_session1_set1_run1	6	Pulse	1	4319822	72150	0
+S10_session1_set1_run1	6	Response	1	4360912	113240	0
+S10_session1_set1_run1	6	Pulse	1	4360912	113240	0
+S10_session1_set1_run1	6	Video	Action6	4361021	113349	1			0		other	0
+S10_session1_set1_run1	6	Response	1	4402002	154330	0
+S10_session1_set1_run1	6	Pulse	1	4402002	154330	0
+S10_session1_set1_run1	6	Response	1	4443092	195420	0
+S10_session1_set1_run1	6	Pulse	1	4443092	195420	0
+S10_session1_set1_run1	6	Response	1	4484182	236510	1
+S10_session1_set1_run1	6	Pulse	1	4484182	236510	1
+S10_session1_set1_run1	6	Response	1	4525272	277600	0
+S10_session1_set1_run1	6	Pulse	1	4525272	277600	0
+S10_session1_set1_run1	6	Response	1	4566362	318690	0
+S10_session1_set1_run1	6	Pulse	1	4566362	318690	0
+S10_session1_set1_run1	6	Response	1	4607452	359780	0
+S10_session1_set1_run1	6	Pulse	1	4607452	359780	0
+S10_session1_set1_run1	6	Response	1	4648534	400862	8
+S10_session1_set1_run1	6	Pulse	1	4648534	400862	8
+S10_session1_set1_run1	6	Response	1	4689632	441960	0
+S10_session1_set1_run1	6	Pulse	1	4689632	441960	0
+S10_session1_set1_run1	6	Response	1	4730722	483050	0
+S10_session1_set1_run1	6	Pulse	1	4730722	483050	0
+S10_session1_set1_run1	6	Response	1	4771812	524140	1
+S10_session1_set1_run1	6	Pulse	1	4771812	524140	1
+S10_session1_set1_run1	6	Response	1	4812902	565230	0
+S10_session1_set1_run1	6	Pulse	1	4812902	565230	0
+S10_session1_set1_run1	6	Response	1	4853992	606320	0
+S10_session1_set1_run1	6	Pulse	1	4853992	606320	0
+S10_session1_set1_run1	6	Response	1	4895082	647409	0
+S10_session1_set1_run1	6	Pulse	1	4895082	647409	0
+S10_session1_set1_run1	6	Response	1	4936172	688499	0
+S10_session1_set1_run1	6	Pulse	1	4936172	688499	0
+S10_session1_set1_run1	6	Response	1	4977262	729589	0
+S10_session1_set1_run1	6	Pulse	1	4977262	729589	0
+S10_session1_set1_run1	6	Response	1	5018351	770679	0
+S10_session1_set1_run1	6	Pulse	1	5018351	770679	0
+S10_session1_set1_run1	6	Response	1	5059442	811769	0
+S10_session1_set1_run1	6	Pulse	1	5059442	811769	0
+S10_session1_set1_run1	6	Response	1	5100532	852859	0
+S10_session1_set1_run1	6	Pulse	1	5100532	852859	0
+S10_session1_set1_run1	6	Response	1	5141622	893949	0
+S10_session1_set1_run1	6	Pulse	1	5141622	893949	0
+S10_session1_set1_run1	7	Picture	BL	5181719	0	1	803945	1	0	next	other	0
+S10_session1_set1_run1	7	Response	1	5182711	993	0
+S10_session1_set1_run1	7	Pulse	1	5182711	993	0
+S10_session1_set1_run1	7	Response	1	5223801	42083	0
+S10_session1_set1_run1	7	Pulse	1	5223801	42083	0
+S10_session1_set1_run1	7	Response	1	5264881	83162	0
+S10_session1_set1_run1	7	Pulse	1	5264881	83162	0
+S10_session1_set1_run1	7	Video	Action7	5264980	83262	1			0		other	0
+S10_session1_set1_run1	7	Response	1	5305971	124253	0
+S10_session1_set1_run1	7	Pulse	1	5305971	124253	0
+S10_session1_set1_run1	7	Response	1	5347061	165343	0
+S10_session1_set1_run1	7	Pulse	1	5347061	165343	0
+S10_session1_set1_run1	7	Response	1	5388151	206433	1
+S10_session1_set1_run1	7	Pulse	1	5388151	206433	1
+S10_session1_set1_run1	7	Response	1	5429241	247523	0
+S10_session1_set1_run1	7	Pulse	1	5429241	247523	0
+S10_session1_set1_run1	7	Response	1	5470331	288613	0
+S10_session1_set1_run1	7	Pulse	1	5470331	288613	0
+S10_session1_set1_run1	7	Response	1	5511421	329703	0
+S10_session1_set1_run1	7	Pulse	1	5511421	329703	0
+S10_session1_set1_run1	7	Response	1	5552507	370788	5
+S10_session1_set1_run1	7	Pulse	1	5552507	370788	5
+S10_session1_set1_run1	7	Response	1	5593601	411883	0
+S10_session1_set1_run1	7	Pulse	1	5593601	411883	0
+S10_session1_set1_run1	7	Response	1	5634691	452973	0
+S10_session1_set1_run1	7	Pulse	1	5634691	452973	0
+S10_session1_set1_run1	7	Response	1	5675781	494062	0
+S10_session1_set1_run1	7	Pulse	1	5675781	494062	0
+S10_session1_set1_run1	7	Response	1	5716871	535152	0
+S10_session1_set1_run1	7	Pulse	1	5716871	535152	0
+S10_session1_set1_run1	7	Response	1	5757961	576242	0
+S10_session1_set1_run1	7	Pulse	1	5757961	576242	0
+S10_session1_set1_run1	7	Response	1	5799051	617333	0
+S10_session1_set1_run1	7	Pulse	1	5799051	617333	0
+S10_session1_set1_run1	7	Response	1	5840140	658422	1
+S10_session1_set1_run1	7	Pulse	1	5840140	658422	1
+S10_session1_set1_run1	7	Response	1	5881230	699512	0
+S10_session1_set1_run1	7	Pulse	1	5881230	699512	0
+S10_session1_set1_run1	7	Response	1	5922321	740603	0
+S10_session1_set1_run1	7	Pulse	1	5922321	740603	0
+S10_session1_set1_run1	7	Response	1	5963411	781693	0
+S10_session1_set1_run1	7	Pulse	1	5963411	781693	0
+S10_session1_set1_run1	8	Picture	BL	5985663	0	1	1221753	1	0	next	other	0
+S10_session1_set1_run1	8	Response	1	6004501	18837	0
+S10_session1_set1_run1	8	Pulse	1	6004501	18837	0
+S10_session1_set1_run1	8	Response	1	6045590	59927	0
+S10_session1_set1_run1	8	Pulse	1	6045590	59927	0
+S10_session1_set1_run1	8	Response	1	6086680	101017	0
+S10_session1_set1_run1	8	Pulse	1	6086680	101017	0
+S10_session1_set1_run1	8	Video	Action8	6086761	101097	1			0		other	0
+S10_session1_set1_run1	8	Response	1	6127771	142107	0
+S10_session1_set1_run1	8	Pulse	1	6127771	142107	0
+S10_session1_set1_run1	8	Response	1	6168860	183197	0
+S10_session1_set1_run1	8	Pulse	1	6168860	183197	0
+S10_session1_set1_run1	8	Response	1	6209950	224287	0
+S10_session1_set1_run1	8	Pulse	1	6209950	224287	0
+S10_session1_set1_run1	8	Response	1	6251040	265377	0
+S10_session1_set1_run1	8	Pulse	1	6251040	265377	0
+S10_session1_set1_run1	8	Response	1	6292131	306467	0
+S10_session1_set1_run1	8	Pulse	1	6292131	306467	0
+S10_session1_set1_run1	8	Response	1	6333220	347557	0
+S10_session1_set1_run1	8	Pulse	1	6333220	347557	0
+S10_session1_set1_run1	8	Response	1	6374310	388647	1
+S10_session1_set1_run1	8	Pulse	1	6374310	388647	1
+S10_session1_set1_run1	8	Response	1	6415400	429737	0
+S10_session1_set1_run1	8	Pulse	1	6415400	429737	0
+S10_session1_set1_run1	8	Response	1	6456490	470827	0
+S10_session1_set1_run1	8	Pulse	1	6456490	470827	0
+S10_session1_set1_run1	8	Response	1	6497580	511917	0
+S10_session1_set1_run1	8	Pulse	1	6497580	511917	0
+S10_session1_set1_run1	8	Response	1	6538670	553007	0
+S10_session1_set1_run1	8	Pulse	1	6538670	553007	0
+S10_session1_set1_run1	8	Response	1	6579761	594097	0
+S10_session1_set1_run1	8	Pulse	1	6579761	594097	0
+S10_session1_set1_run1	8	Response	1	6620850	635187	0
+S10_session1_set1_run1	8	Pulse	1	6620850	635187	0
+S10_session1_set1_run1	8	Response	1	6661940	676276	0
+S10_session1_set1_run1	8	Pulse	1	6661940	676276	0
+S10_session1_set1_run1	8	Response	1	6703030	717367	0
+S10_session1_set1_run1	8	Pulse	1	6703030	717367	0
+S10_session1_set1_run1	8	Response	1	6744120	758456	0
+S10_session1_set1_run1	8	Pulse	1	6744120	758456	0
+S10_session1_set1_run1	8	Response	1	6785210	799546	0
+S10_session1_set1_run1	8	Pulse	1	6785210	799546	0
+S10_session1_set1_run1	8	Response	1	6826290	840626	10
+S10_session1_set1_run1	8	Pulse	1	6826290	840626	10
+S10_session1_set1_run1	8	Response	1	6867390	881726	0
+S10_session1_set1_run1	8	Pulse	1	6867390	881726	0
+S10_session1_set1_run1	8	Response	1	6908480	922816	0
+S10_session1_set1_run1	8	Pulse	1	6908480	922816	0
+S10_session1_set1_run1	8	Response	1	6949570	963906	0
+S10_session1_set1_run1	8	Pulse	1	6949570	963906	0
+S10_session1_set1_run1	8	Response	1	6990659	1004996	0
+S10_session1_set1_run1	8	Pulse	1	6990659	1004996	0
+S10_session1_set1_run1	8	Response	1	7031750	1046087	0
+S10_session1_set1_run1	8	Pulse	1	7031750	1046087	0
+S10_session1_set1_run1	8	Response	1	7072840	1087176	0
+S10_session1_set1_run1	8	Pulse	1	7072840	1087176	0
+S10_session1_set1_run1	8	Response	1	7113930	1128266	1
+S10_session1_set1_run1	8	Pulse	1	7113930	1128266	1
+S10_session1_set1_run1	8	Response	1	7155020	1169356	0
+S10_session1_set1_run1	8	Pulse	1	7155020	1169356	0
+S10_session1_set1_run1	8	Response	1	7196109	1210446	0
+S10_session1_set1_run1	8	Pulse	1	7196109	1210446	0
+S10_session1_set1_run1	9	Picture	BL	7207416	0	1	922711	1	0	next	other	0
+S10_session1_set1_run1	9	Response	1	7237199	29783	0
+S10_session1_set1_run1	9	Pulse	1	7237199	29783	0
+S10_session1_set1_run1	9	Response	1	7278289	70873	0
+S10_session1_set1_run1	9	Pulse	1	7278289	70873	0
+S10_session1_set1_run1	9	Response	1	7319379	111963	0
+S10_session1_set1_run1	9	Pulse	1	7319379	111963	0
+S10_session1_set1_run1	9	Video	Action9	7319432	112016	1			0		other	0
+S10_session1_set1_run1	9	Response	1	7360459	153043	0
+S10_session1_set1_run1	9	Pulse	1	7360459	153043	0
+S10_session1_set1_run1	9	Response	1	7401549	194133	0
+S10_session1_set1_run1	9	Pulse	1	7401549	194133	0
+S10_session1_set1_run1	9	Response	1	7442639	235222	1
+S10_session1_set1_run1	9	Pulse	1	7442639	235222	1
+S10_session1_set1_run1	9	Response	1	7483729	276313	0
+S10_session1_set1_run1	9	Pulse	1	7483729	276313	0
+S10_session1_set1_run1	9	Response	1	7524819	317403	0
+S10_session1_set1_run1	9	Pulse	1	7524819	317403	0
+S10_session1_set1_run1	9	Response	1	7565909	358493	0
+S10_session1_set1_run1	9	Pulse	1	7565909	358493	0
+S10_session1_set1_run1	9	Response	1	7606999	399583	0
+S10_session1_set1_run1	9	Pulse	1	7606999	399583	0
+S10_session1_set1_run1	9	Response	1	7648089	440673	0
+S10_session1_set1_run1	9	Pulse	1	7648089	440673	0
+S10_session1_set1_run1	9	Response	1	7689179	481763	0
+S10_session1_set1_run1	9	Pulse	1	7689179	481763	0
+S10_session1_set1_run1	9	Response	1	7730269	522852	1
+S10_session1_set1_run1	9	Pulse	1	7730269	522852	1
+S10_session1_set1_run1	9	Response	1	7771359	563943	0
+S10_session1_set1_run1	9	Pulse	1	7771359	563943	0
+S10_session1_set1_run1	9	Response	1	7812449	605032	0
+S10_session1_set1_run1	9	Pulse	1	7812449	605032	0
+S10_session1_set1_run1	9	Response	1	7853539	646123	0
+S10_session1_set1_run1	9	Pulse	1	7853539	646123	0
+S10_session1_set1_run1	9	Response	1	7894628	687212	1
+S10_session1_set1_run1	9	Pulse	1	7894628	687212	1
+S10_session1_set1_run1	9	Response	1	7935718	728302	0
+S10_session1_set1_run1	9	Pulse	1	7935718	728302	0
+S10_session1_set1_run1	9	Response	1	7976809	769392	0
+S10_session1_set1_run1	9	Pulse	1	7976809	769392	0
+S10_session1_set1_run1	9	Response	1	8017899	810482	0
+S10_session1_set1_run1	9	Pulse	1	8017899	810482	0
+S10_session1_set1_run1	9	Response	1	8058988	851572	0
+S10_session1_set1_run1	9	Pulse	1	8058988	851572	0
+S10_session1_set1_run1	9	Response	1	8100079	892662	0
+S10_session1_set1_run1	9	Pulse	1	8100079	892662	0
+S10_session1_set1_run1	10	Picture	BL	8130127	0	1	1914115	1	0	next	other	0
+S10_session1_set1_run1	10	Response	1	8141168	11041	0
+S10_session1_set1_run1	10	Pulse	1	8141168	11041	0
+S10_session1_set1_run1	10	Response	1	8182258	52131	0
+S10_session1_set1_run1	10	Pulse	1	8182258	52131	0
+S10_session1_set1_run1	10	Response	1	8223348	93221	0
+S10_session1_set1_run1	10	Pulse	1	8223348	93221	0
+S10_session1_set1_run1	10	Video	Action10	8223390	93263	1			0		other	0
+S10_session1_set1_run1	10	Response	1	8264438	134311	0
+S10_session1_set1_run1	10	Pulse	1	8264438	134311	0
+S10_session1_set1_run1	10	Response	1	8305528	175400	0
+S10_session1_set1_run1	10	Pulse	1	8305528	175400	0
+S10_session1_set1_run1	10	Response	1	8346618	216491	0
+S10_session1_set1_run1	10	Pulse	1	8346618	216491	0
+S10_session1_set1_run1	10	Response	1	8387709	257581	0
+S10_session1_set1_run1	10	Pulse	1	8387709	257581	0
+S10_session1_set1_run1	10	Response	1	8428798	298671	0
+S10_session1_set1_run1	10	Pulse	1	8428798	298671	0
+S10_session1_set1_run1	10	Response	1	8469888	339761	0
+S10_session1_set1_run1	10	Pulse	1	8469888	339761	0
+S10_session1_set1_run1	10	Response	1	8510968	380841	10
+S10_session1_set1_run1	10	Pulse	1	8510968	380841	10
+S10_session1_set1_run1	10	Response	1	8552068	421941	0
+S10_session1_set1_run1	10	Pulse	1	8552068	421941	0
+S10_session1_set1_run1	10	Response	1	8593158	463031	0
+S10_session1_set1_run1	10	Pulse	1	8593158	463031	0
+S10_session1_set1_run1	10	Response	1	8634248	504121	0
+S10_session1_set1_run1	10	Pulse	1	8634248	504121	0
+S10_session1_set1_run1	10	Response	1	8675338	545210	0
+S10_session1_set1_run1	10	Pulse	1	8675338	545210	0
+S10_session1_set1_run1	10	Response	1	8716428	586300	0
+S10_session1_set1_run1	10	Pulse	1	8716428	586300	0
+S10_session1_set1_run1	10	Response	1	8757518	627390	0
+S10_session1_set1_run1	10	Pulse	1	8757518	627390	0
+S10_session1_set1_run1	10	Response	1	8798608	668480	0
+S10_session1_set1_run1	10	Pulse	1	8798608	668480	0
+S10_session1_set1_run1	10	Response	1	8839698	709570	0
+S10_session1_set1_run1	10	Pulse	1	8839698	709570	0
+S10_session1_set1_run1	10	Response	1	8880788	750660	0
+S10_session1_set1_run1	10	Pulse	1	8880788	750660	0
+S10_session1_set1_run1	10	Response	1	8921878	791751	0
+S10_session1_set1_run1	10	Pulse	1	8921878	791751	0
+S10_session1_set1_run1	10	Response	1	8962968	832840	0
+S10_session1_set1_run1	10	Pulse	1	8962968	832840	0
+S10_session1_set1_run1	10	Response	1	9004058	873930	0
+S10_session1_set1_run1	10	Pulse	1	9004058	873930	0
+S10_session1_set1_run1	10	Response	1	9045147	915020	0
+S10_session1_set1_run1	10	Pulse	1	9045147	915020	0
+S10_session1_set1_run1	10	Response	1	9086238	956110	1
+S10_session1_set1_run1	10	Pulse	1	9086238	956110	1
+S10_session1_set1_run1	10	Response	1	9127327	997200	0
+S10_session1_set1_run1	10	Pulse	1	9127327	997200	0
+S10_session1_set1_run1	10	Response	1	9168417	1038290	0
+S10_session1_set1_run1	10	Pulse	1	9168417	1038290	0
+S10_session1_set1_run1	10	Response	1	9209507	1079380	0
+S10_session1_set1_run1	10	Pulse	1	9209507	1079380	0
+S10_session1_set1_run1	10	Response	1	9250597	1120470	0
+S10_session1_set1_run1	10	Pulse	1	9250597	1120470	0
+S10_session1_set1_run1	10	Response	1	9291687	1161560	0
+S10_session1_set1_run1	10	Pulse	1	9291687	1161560	0
+S10_session1_set1_run1	10	Response	1	9332767	1202640	0
+S10_session1_set1_run1	10	Pulse	1	9332767	1202640	0
+S10_session1_set1_run1	10	Response	1	9638827	1508699	0
+S10_session1_set1_run1	10	Pulse	1	9638827	1508699	0
+S10_session1_set1_run1	10	Response	1	9679917	1549789	0
+S10_session1_set1_run1	10	Pulse	1	9679917	1549789	0
+S10_session1_set1_run1	10	Response	1	9721007	1590879	0
+S10_session1_set1_run1	10	Pulse	1	9721007	1590879	0
+S10_session1_set1_run1	10	Response	1	9762096	1631969	0
+S10_session1_set1_run1	10	Pulse	1	9762096	1631969	0
+S10_session1_set1_run1	10	Response	1	9803186	1673059	0
+S10_session1_set1_run1	10	Pulse	1	9803186	1673059	0
+S10_session1_set1_run1	10	Quit		10023236	1893109	NA
+
+
+video summary
+filename	start frame	end frame	frames presented	frames dropped	start time	end time	duration
+H:\SBL\1.ActionPrediction_June2017\Stimuli\S1ballonD.avi	1	1250	1249	1	498569	998555	499986
+H:\SBL\1.ActionPrediction_June2017\Stimuli\S3breakfastD.avi	1	1975	1896	79	1114905	1904931	790026
+H:\SBL\1.ActionPrediction_June2017\Stimuli\M1ballonD.avi	1	1275	1224	51	2018863	2528934	510071
+H:\SBL\1.ActionPrediction_June2017\Stimuli\S6cigaretteD.avi	1	1800	1728	72	2635199	3355299	720100
+H:\SBL\1.ActionPrediction_June2017\Stimuli\M3breakfastD.avi	1	1975	1975	0	3456979	4247006	790026
+H:\SBL\1.ActionPrediction_June2017\Stimuli\S7flowersD.avi	1	2050	1968	82	4361021	5181052	820030
+H:\SBL\1.ActionPrediction_June2017\Stimuli\M6cigaretteD.avi	1	1800	1800	0	5264980	5984997	720017
+H:\SBL\1.ActionPrediction_June2017\Stimuli\S8frameD.avi	1	2800	2688	112	6086761	7206749	1119989
+H:\SBL\1.ActionPrediction_June2017\Stimuli\M7flowersD.avi	1	2025	2024	1	7319432	8129461	810029
+H:\SBL\1.ActionPrediction_June2017\Stimuli\M8frameD.avi	1	2800	2800	0	8223390	9343462	1120072
+
+
+Event Type	Code	Type	Response	RT	RT Uncertainty	Time	Uncertainty	Duration	Uncertainty	ReqTime	ReqDur
+
+Picture	BL	other				375802	1	623420	1	0	next
+Video	Action1	other				498569	1			0
+Picture	BL	other				999222	1	906376	1	0	next
+Video	Action2	other				1114905	1			0
+Picture	BL	other				1905598	1	624003	1	0	next
+Video	Action3	other				2018863	1			0
+Picture	BL	other				2529601	1	826365	1	0	next
+Video	Action4	other				2635199	1			0
+Picture	BL	other				3355965	1	891707	1	0	next
+Video	Action5	other				3456979	1			0
+Picture	BL	other				4247672	1	934046	1	0	next
+Video	Action6	other				4361021	1			0
+Picture	BL	other				5181719	1	803945	1	0	next
+Video	Action7	other				5264980	1			0
+Picture	BL	other				5985663	1	1221753	1	0	next
+Video	Action8	other				6086761	1			0
+Picture	BL	other				7207416	1	922711	1	0	next
+Video	Action9	other				7319432	1			0
+Picture	BL	other				8130127	1	1914115	1	0	next
+Video	Action10	other				8223390	1			0
