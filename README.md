@@ -3,7 +3,7 @@
 
 This is our official repository for processing the data for layer fMRI analysis acquired at the Spinoza Center in Amstedam in 2018.
 
-Each step of the process (preprocessing only so far) is stored within a folder that contains the script(s) to launch each preprocessing/analysis steps separately one from the other.
+Each step of the process is stored within a folder that contains the script(s) to launch each preprocessing/analysis steps separately one from the other.
 
 Each folder name is preceded by a number indicating which the order in which the scripts should be run.
 
