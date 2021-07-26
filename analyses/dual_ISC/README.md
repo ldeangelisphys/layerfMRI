@@ -1,0 +1,317 @@
+# Pipeline description dual_ISC
+
+This document is also contained in `pipeline_description_dual_ISC.Rmd`
+
+---
+
+## General strategy
+We want to extract for each Juelich region (JU) the average (mean) time course (tc) 
+of all the voxels which are significant in the first (localizer) ISC, carried out in 
+the MNI space. This mean tc will also be specific for depth "layer", where "layer"
+in this case simply means an equidistant space between two cortical depth values.
+This will be carried out for each movie.
+
+This mean time course, specific for subject (sub), JU ROI, depth and movie, will
+be concatenated across all movies, to finally produce one time course which is
+sub, JU and depth specific. The second ISC and the ISFC will be carried out on it.
+
+
+## Data requirement
+The following data in **native space** should be generated:
+
+- ISC MNI M_OR_S (the results of the first MNI for the intact (M) or scrambled (S) contrast)
+- JU atlas
+- cortical depth maps
+
+each of this map is specific for one task/run, so in total there are 24 maps.
+
+
+## Structure of folders required for the scripts
+The scripts use files created during the preprocessing phase (in the `regdata` folder). On our server, the following reflects the structure required. 
+
+If the code has been downloaded from the github repo, the following structure
+should be created (e.g. via symbolic links). Otherwise, it is also possible
+to modify the relevant folder names within each script.
+
+```
+data00/layerfMRI
+├── regdata
+└── Github_repo/layerfMRI/analyses/dual_ISC
+```
+
+
+## Preparation of data in native space
+```
+data00/layerfMRI
+└── Github_repo/layerfMRI/analyses/dual_ISC
+    └── 01_prepare_native_data
+        ├── 01_JU_and_depth_to_native
+        └── 02_ISC1_native_MNI_transformation
+```
+
+First we need to transfer the following data into native task/run space:
+
+- JU atlas
+- cortical depth maps
+- ISC MNI M_OR_S (the results of the first MNI for the intact (M) or scrambled (S) contrast)
+
+As a general note, the naming of folders/files strives to reflect the ANTs convention, which requires the target image (fixed image) to be specified before the image to be transformed into the space of the target space (moving image), therefore
+for instance `02_ISC1_native_MNI_transformation` means the transformation of 
+the results of the first ISC from MNI to native space.
+
+For the JU atlas and the cortical depth maps, we need to estimate and apply the
+following tranformations:
+
+- `native (fMRI space) <- JU (MNI space)`
+- `native (fMRI space) <- cortical depth (native T1w space)`
+
+This can be achieved using the `01_launch_estimate_apply.sh` script, which
+sequentially calls in parallel sessions `do_estimate_native_full_MNI.py` and 
+`do_apply_native_full_MNI.py`.
+
+The estimation is quite lengthy, so if you already carried it out, you can 
+run the application of the transformation only using `launch_ONLY_apply.sh`.
+
+
+**NB:** These scripts require ANTs to be installed in the python environment.
+This should be achieved by working in the `layerfMRI` conda environment which
+can be cloned from the [layerfMRI github repo](https://github.com/ldeangelisphys/layerfMRI)
+
+
+
+## Log file timings
+```
+data00/layerfMRI
+└── Github_repo/layerfMRI/analyses/dual_ISC
+    └── 02_logfile_parsing
+```
+We start with 4D niftis, and we need to retain only the TRs when a movie was displayed. To do this, we need to parse the Presentation log files and extract
+the first (`start_TR`) and last (`end_TR`) volume during which each movie was presented in each sub and each run.
+
+We used the parsing developed by Lorenzo on the original log files collected by
+Ritu. The result is the file `log_summary.csv`.
+
+There was an important issue: sometimes the `end_TR` was bigger than the number 
+of acquired volumes in the fMRI 4D. You can see the issue and the solution in
+the notebook `fixing_log_file.Rmd`, which resulted in the `log_summary_FIXED.csv`
+that was used from now on.
+
+The file `log_summary_FIXED.csv` was copied to the `03_TC_generation` folder, where
+it is required to be for the next step.
+
+
+
+## Generation of the average time courses for the second ISC
+```
+data00/layerfMRI
+└── Github_repo/layerfMRI/analyses/dual_ISC
+    └── 03_TC_generation/
+        ├── M_OR_S_JU_time_courses_thr100_bin6.csv
+        ├── TR_length_checks.Rmd
+        ├── dual_ISC_development_v8.Rmd
+        ├── dual_ISC_development_v8.html
+        ├── labels_juelich.csv
+        └── log_summary_FIXED.csv
+```
+We now use all the files described above, to produce average time courses
+for each sub/task/run/movie. 
+
+The whole process is implemented in the `dual_ISC_development_v8.Rmd` notebook.
+To run it and produce the result `M_OR_S_JU_time_courses_thr100_bin6.csv`, simply
+knitR the whole notebook, e.g. using `CMD + Shift + K`
+
+Note that the script allows choosing:
+
+```
+nbin <- 6                 # define numba of bins
+clusterSizeThr <- 100     # we don't want to consider ROIs with 2 voxels
+```
+
+_These preferences should be specified at the beginning of the notebook._ 
+
+Reasonable values for `nbin` are 4..10. For `clusterSizeThr`, note that going
+above 100-150 voxels can break the pipeline.
+
+The pipeline implemented in the notebook makes intensive use of functional
+programming (i.e. `map` function) without which it would have simply not been 
+possible to deal with this behemot.
+
+ETA is ~ 30 minutes, however by using `furrr` (parallelized version of `purrr`) 
+and 30 workers (taking ~ 150GB RAM) we can beat it down to 2 minutes. 
+Check the available RAM and cores on your system before adding more workers.
+To work on a single core, simply set the number of workers to 1 as in the following:
+
+```
+library(furrr)
+plan("multisession", workers=1)
+```
+
+The notebook `dual_ISC_development_v8.Rmd` is heavily commented to explain both
+the procedure and each choice during this lengthy process.
+
+**VERY IMPORTANT**: It turns out that the `end_TR` recorded in Presentation 
+log files are not accurate, since they reflect for _some_ intact movies _only_
+a mostly longer duration than the expected (and likely actual) one.
+
+This behaviour is very strange and we don't know what it can be due to. I passed
+the output of the notebook to Lorenzo for further processing (second ISC) and 
+therefore I didn't notice it until I tried to generate the concatenated time 
+courses for some other exploratory analyses, noticing that the total length was
+different across subjects.
+
+However, Lorenzo fixed this issue, effectively replacing the calculated movie
+duration (`end_TR - start_TR`) with the expected movie duration (`ExpectedDuration`),
+a value which is also recorded in the lower part of the logfiles.
+
+Further tests and descriptions of the issue and the solution can be found in 
+`TR_length_checks.Rmd`
+
+The output of the notebook `M_OR_S_JU_time_courses_thr100_bin6.csv` is then 
+passed to Lorenzo to carry on with the second ISC
+
+
+
+
+## Second ISC
+```
+data00/layerfMRI
+└── Github_repo/layerfMRI/analyses/dual_ISC
+    └── 04_second_ISC/
+        ├── RESULTS_ISC
+        │   ├── M_OR_S_JU_time_courses_thr100_bin6_isc.csv
+        ├── TC_4_lorenzo
+        │   ├── M_OR_S_JU_time_courses_thr100_bin6.csv
+        │   ├── M_OR_S_JU_time_courses_thr100_bin6_isc.csv
+        │   ├── M_OR_S_JU_time_courses_thr100_bin6_isc.png
+        │   └── RESULTS_TO_BE_DELETED.tar
+        ├── dual_ISC_results_v2.Rmd
+        └── dual_ISC_results_v2.html
+```
+
+Lorenzo takes as input of the second ISC the `M_OR_S_JU_time_courses_thr100_bin6.csv` 
+(or the equivalent file with different `nbin` and `clusterSizeThreshold`), 
+concatenates all the movies for each sub (see the VERY IMPORTANT note above) and
+produces the results in the form of a csv named `M_OR_S_JU_time_courses_thr100_bin6_isc.csv`.
+
+This csv contains the ISC estimate for each sub. In the notebook
+`dual_ISC_results_v2.Rmd` we carry out a paired t-test to get group-level
+estimate of the difference in the ISC estimate for each cortical depth bin of
+each region of interest.  
+
+Conveniently, the function to compare Intact vs. Scrambled is isolated, so that
+one can replace the original paired t-test with another function if desired:
+
+```{r, eval=F}
+# Function to test Motion > Scrambled in every nested df
+# It's defined outside so that it can be easily modified to be something
+# other than t.test
+compare_contrasts <- function(df) {
+  t.test(df %>% filter(contrast == "Motion") %>% select(isc) %>% pull(), 
+         df %>% filter(contrast == "Scrambled") %>% select(isc) %>% pull(), 
+         paired = TRUE)
+}
+
+
+# Carry out the comparison Motion > Scrambled for each D_bin in each JU ROI
+ttest_res <- ISC_estimates_nest %>% 
+  mutate(
+    ttest = map(data, compare_contrasts)
+  )
+```
+
+
+The output of this notebook are the descriptive and inferential
+stats, and the corresponding figures for the manuscript.
+
+The notebook `dual_ISC_results_v2.Rmd` is heavily commented, so all the details
+can be found in there.
+
+
+
+## ISFC
+```
+data00/layerfMRI
+└── Github_repo/layerfMRI/analyses/dual_ISC
+    └── 05_ISFC/
+        ├── explore_results
+        │   ├── FigureElementsPDF
+        │   │   └── ISFC_t-values_Motion_PFt-BA44_thr100_bin6.txt.pdf
+        │   ├── ISFC_t-values_Motion-Scrambled_PFt-BA44_thr100_bin6.txt
+        │   ├── ISFC_t-values_Motion-Scrambled_PFt-Vis_thr100_bin6.txt
+        │   ├── ISFC_t-values_Motion_PFt-BA44_thr100_bin6.txt
+        │   ├── ISFC_t-values_Motion_PFt-Vis_thr100_bin6.txt
+        │   ├── ISFC_t-values_Scrambled_PFt-BA44_thr100_bin6.txt
+        │   ├── ISFC_t-values_Scrambled_PFt-Vis_thr100_bin6.txt
+        │   ├── OLE
+        │   │   ├── ISFC_results.Rmd
+        │   │   ├── ISFC_results.html
+        │   │   ├── ISFC_results_app.R
+        │   │   ├── ISFC_seed_targets_app.R
+        │   │   └── ISFC_seed_targets_app_VIS.R
+        │   ├── Scripts
+        │   │   ├── OLE
+        │   │   │   └── fig_4_ISFC_matrices_V2.Rmd
+        │   │   └── fig_4_ISFC_matrices_V3.Rmd
+        │   ├── WSFC_t-values_Motion-Scrambled_PFt-BA44_thr100_bin6.txt
+        │   ├── WSFC_t-values_Motion-Scrambled_PFt-Vis_thr100_bin6.txt
+        │   ├── WSFC_t-values_Motion_PFt-BA44_thr100_bin6.txt
+        │   ├── WSFC_t-values_Motion_PFt-Vis_thr100_bin6.txt
+        │   ├── WSFC_t-values_Scrambled_PFt-BA44_thr100_bin6.txt
+        │   ├── WSFC_t-values_Scrambled_PFt-Vis_thr100_bin6.txt
+        │   └── app_results_ISFC.Rmd
+        └── results_lorenzo
+            ├── Motion - Scrambled_thr100_bin6.png
+            ├── Motion-Scrambled_BA44-BA44_thr100_bin3.txt
+            ├── Motion-Scrambled_BA44-BA44_thr100_bin4.txt
+            ├── Motion-Scrambled_BA44-BA44_thr100_bin5.txt
+            ├── ...
+```
+In addition to the ISC, Lorenzo also calculated the ISFC 
+(inter-subject functional connectivity) as well as the normal functional 
+connectivity within subject (WSFC, similar to PPI).
+
+Given the wide amount of results, and the equally wide amount of options to display
+the results, I created an app to explore them with different thresholds and
+different palettes. Once the desired configuration is chosen, a button allows
+to save the image for the manuscript in the `FigureElementsPDF` folder.
+
+This app is in the `app_results_ISFC.Rmd` notebook, and can be run by 
+entering `CMD + Shift + K`, or also explored on a browser on storm by 
+going to the link http://localhost:3838/ISFC_matrices/.
+
+Another version of the app, showing the corresponding Sankey diagram, can be 
+found at the link http://localhost:3838/ISFC_sankey/.
+
+
+## TICA
+Exploratory TICA here, not included in the manuscript.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
