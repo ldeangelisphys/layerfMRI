@@ -71,6 +71,17 @@ julabels <- read.csv("labels_juelich.csv", stringsAsFactors = F) %>%
   select(-index)
 
 
+# select only the three regions we want to examine
+julabels <- julabels %>% 
+  filter(
+    name %in% c(
+      "GM_Brocas_area_BA44_L",
+      "GM_Inferior_parietal_lobule_PFt_L",
+      "GM_HO_Lateral_Occipital_Inferior"
+    )
+  )
+
+
 # build filename of the ISC results based on the user-defined parameters
 lorenzo_results_csv <- paste0(
   results_dir,"/",
@@ -192,7 +203,7 @@ res %>%
 
 ## Plot T stat
 
-```{r plot-group-comparison-T, fig.width=10, fig.height=10}
+```{r plot-group-comparison-T, fig.width=10, fig.height=4}
 
 # Plot the effect size (actually T stat) for the comparison Motion > Scrambled
 res %>% 
@@ -222,7 +233,7 @@ res %>%
 
 ## Plot descriptives
 
-```{r plot-group-comparison-descriptives, fig.width=10, fig.height=8}
+```{r plot-group-comparison-descriptives, fig.width=10, fig.height=4}
 
 # function to calculate standard error after removing NAs
 sterr <- function(x) {
@@ -271,9 +282,9 @@ res_descriptives %>%
 
 
 
-## Plot T stat with ISC(Motion - Scrambled) variability within subject
+## Plot ISC(Motion - Scrambled) estimates with variability within subject
 
-```{r plot-group-variability, fig.width=10, fig.height=12}
+```{r plot-group-variability, fig.width=10, fig.height=4}
 
 # function to calculate the mean of Motion - Scrambled across participants
 get_M_minus_S <- function(df) {
