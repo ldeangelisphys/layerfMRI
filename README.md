@@ -12,12 +12,14 @@ The `layerfMRI` conda environment can be recreated locally with
 ```
 conda env create -f layerfMRI_conda_env.yml
 ```
-or updated with 
+or updated with
 ```
 conda env update --prefix ./env --file layerfMRI_conda_env.yml  --prune
 ```
 
 There are also personal folders where each of us can store notebook/scripts or whatever else should be shared.
+
+This work was funded by the [BIAL foundation](https://www.bial.com/com/bial-foundation/) grant 255/16 and the [European Commission ERC](https://erc.europa.eu/) grant VicariousBrain (ERC-StG 312511)
 
 <details>
 <summary>Dependencies</summary>
