@@ -14,6 +14,15 @@ __Note__: the raw data is in `/data01/layerfMRI/rawdata_RPI`, where the report h
 
 The preprocessed 4D is instead in `/data00/layerfMRI/regdata`
 
+**Important note**
+After this preprocessing was carried out, we noticed problems with the data
+of two participants - in addition to the originally excluded subjects 1,4,7 -
+which led to their exclusion from further analysis:
+
+- **subject 8** was excluded due to high motion and incomplete data acquisition
+- **subject 13** was excluded due to inconsistency between fMRI and log files
+
+
 <details>
 <summary>Example output:</summary>
 <p>

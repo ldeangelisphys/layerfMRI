@@ -25,8 +25,10 @@ labelmap_stub=$2
 labelmap_folder=$3
 
 
-# subjects 1 4 7 have missing data
-subject_numba_file=/data00/layerfMRI/list_subjects
+# subjects 1 4 7 have missing data; 8 and 13 were excluded due to high motion,
+# incomplete data acquisition and/or inconsistency between fMRI and log files
+# evidenced after basic fMRI preprocessing
+subject_numba_file=/data00/layerfMRI/Github_repo/layerfMRI/analyses/dual_ISC/list_subjects
 
 subjects=$(<${subject_numba_file})
 
