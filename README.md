@@ -1,6 +1,8 @@
 
 # SBL layer fMRI
 
+![image](img/stones-1058365_960_720.jpg)
+
 This is the official repository of the R/Python/bash scripts used to process the anatomical and high-resolution 7T layer fMRI data on action prediction, acquired at the Spinoza Center in Amstedam in 2018.
 
 These analyses converged into the following manuscript published on Cortex: _[Predictive coding during action observation - a depth-resolved intersubject functional correlation study at 7T.](https://www.sciencedirect.com/science/article/pii/S0010945222000016)_
@@ -38,4 +40,4 @@ This work was funded by the [BIAL foundation](https://www.bial.com/com/bial-foun
 
 
 
-![image](img/stones-1058365_960_720.jpg)
+
