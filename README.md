@@ -5,8 +5,7 @@ This is the official repository of the R/Python/bash scripts used to process the
 
 These analyses converged into the following manuscript published on Cortex: [Predictive coding during action observation - a depth-resolved intersubject functional correlation study at 7T.](https://www.sciencedirect.com/science/article/pii/S0010945222000016){:target="_blank"}
 
-
-<a target="_blank" rel="noopener" href="[https://devdocs.io/html/element/heading_elements](https://www.sciencedirect.com/science/article/pii/S0010945222000016)">Predictive coding during action observation - a depth-resolved intersubject functional correlation study at 7T.</a>
+[go](http://stackoverflow.com){:target="_blank"}
 
 Each step of the process is stored within a folder that contains the script(s) to launch each preprocessing/analysis steps separately one from the other.
 
