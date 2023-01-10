@@ -38,4 +38,4 @@ This work was funded by the [BIAL foundation](https://www.bial.com/com/bial-foun
 
 
 
-![image](https://cdn.pixabay.com/photo/2015/11/23/13/52/stones-1058365_960_720.jpg)
+![image](img/stones-1058365_960_720.jpg)
