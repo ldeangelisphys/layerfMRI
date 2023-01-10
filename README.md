@@ -3,7 +3,7 @@
 
 This is the official repository of the R/Python/bash scripts used to process the anatomical and high-resolution 7T layer fMRI data on action prediction, acquired at the Spinoza Center in Amstedam in 2018.
 
-These analyses converged into the following manuscript available on biorXiv: _[Predictive coding during action observation - a depth-resolved intersubject functional correlation study at 7T.](https://www.biorxiv.org/content/10.1101/2021.08.30.458143v2)_
+These analyses converged into the following manuscript published on Cortex: _[Predictive coding during action observation - a depth-resolved intersubject functional correlation study at 7T.](https://www.sciencedirect.com/science/article/pii/S0010945222000016)_
 
 
 Each step of the process is stored within a folder that contains the script(s) to launch each preprocessing/analysis steps separately one from the other.
